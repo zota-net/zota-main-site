@@ -10,7 +10,6 @@ import {
   BarChart3,
   Settings,
   Shield,
-  Radio,
   AlertTriangle,
   Users,
   FileText,
@@ -21,6 +20,9 @@ import {
   CreditCard,
   Headphones,
   X,
+  UserCheck,
+  Package,
+  Activity,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -49,15 +51,17 @@ const navGroups: NavGroup[] = [
     title: 'Dashboard',
     items: [
       { title: 'Overview', href: '/dashboard', icon: LayoutDashboard },
+      { title: 'My Activities', href: '/dashboard/agent-dashboard', icon: Activity },
       { title: 'Network', href: '/dashboard/network', icon: Network },
-      { title: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
-      { title: 'Control Center', href: '/dashboard/control', icon: Radio },
+      { title: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 }
     ],
   },
   {
     title: 'Management',
     items: [
       { title: 'Vouchers', href: '/dashboard/vouchers', icon: Ticket },
+      { title: 'Packages', href: '/dashboard/packages', icon: Package },
+      { title: 'Agents', href: '/dashboard/agents', icon: UserCheck },
       { title: 'Devices', href: '/dashboard/devices', icon: Smartphone },
       { title: 'Users', href: '/dashboard/users', icon: Users },
       { title: 'Payments', href: '/dashboard/payments', icon: CreditCard },
@@ -135,7 +139,8 @@ export function AppSidebar({ className }: SidebarProps) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setMobileOpen(false)}
-            className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm lg:hidden"
+            className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm lg:hidden cursor-pointer"
+            aria-label="Close menu"
           />
         )}
       </AnimatePresence>
@@ -185,8 +190,8 @@ export function AppSidebar({ className }: SidebarProps) {
           </div>
 
           {/* Navigation */}
-          <ScrollArea className="flex-1 px-3 py-4">
-            <nav className="space-y-6">
+          <ScrollArea className="flex-1 h-[calc(100vh-280px)] px-3 py-4 scrollbar-thin scrollbar-thumb-rounded-full scrollbar-thumb-border scrollbar-track-transparent hover:scrollbar-thumb-border/80">
+            <nav className="space-y-6 pr-4">
               {navGroups.map((group) => (
                 <div key={group.title} className="space-y-1">
                   {!collapsed && (
@@ -214,11 +219,15 @@ export function AppSidebar({ className }: SidebarProps) {
                         href={item.href}
                         className={cn(
                           'group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
-                          'hover:bg-accent/50',
+                          'hover:bg-accent/50 active:bg-accent/70',
+                          'cursor-pointer select-none',
+                          'touch-highlight-transparent',
                           isActive
-                            ? 'bg-primary/10 text-primary'
+                            ? 'bg-primary/10 text-primary shadow-sm'
                             : 'text-muted-foreground hover:text-foreground',
-                          collapsed && 'justify-center px-0'
+                          collapsed && 'justify-center px-0',
+                          // Mobile/tablet improvements
+                          'md:py-2.5 sm:py-3 min-h-[2.75rem] sm:min-h-[2.75rem]'
                         )}
                       >
                         {/* Active indicator */}
@@ -232,7 +241,7 @@ export function AppSidebar({ className }: SidebarProps) {
                         
                         <item.icon className={cn(
                           'h-5 w-5 shrink-0 transition-transform duration-200',
-                          'group-hover:scale-110',
+                          'group-hover:scale-110 group-active:scale-95',
                           isActive && 'text-primary'
                         )} />
                         
