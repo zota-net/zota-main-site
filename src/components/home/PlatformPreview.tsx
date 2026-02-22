@@ -220,7 +220,7 @@ export default function PlatformPreviewSection() {
                   <div className="w-3 h-3 rounded-full bg-yellow-500/70" />
                   <div className="w-3 h-3 rounded-full bg-green-500/70" />
                 </div>
-                <span className="text-xs font-mono text-home-text-faint">netnet://control-center</span>
+                <span className="text-xs font-mono text-home-text-faint">XETIHUB://control-center</span>
               </div>
               <div className="flex items-center gap-4">
                 <span className="text-[10px] font-mono text-green-400 flex items-center gap-1">

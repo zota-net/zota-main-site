@@ -45,7 +45,7 @@ export default function Footer() {
                   </svg>
                 </div>
                 <span className="text-base font-semibold text-home-text tracking-tight">
-                  Net<span className="text-[#FF6A00]">Net</span>
+                  Xeti<span className="text-[#FF6A00]">Hub</span>
                 </span>
               </a>
               <p className="text-sm text-home-text-faint leading-relaxed mb-6 max-w-[200px]">
@@ -94,7 +94,7 @@ export default function Footer() {
         {/* Bottom bar */}
         <div className="py-6 border-t border-home-border flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-4 text-xs text-home-text-faint font-mono">
-            <span>© {new Date().getFullYear()} NetNet</span>
+            <span>© {new Date().getFullYear()} XETIHUB</span>
             <span className="w-1 h-1 rounded-full bg-home-border" />
             <span>All rights reserved.</span>
           </div>

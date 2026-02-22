@@ -1,4 +1,4 @@
-// NetNet Brand Constants
+// XETIHUB Brand Constants
 export const COLORS = {
   primary: '#FF6A00',      // Signal Orange
   primaryDark: '#CC5500',

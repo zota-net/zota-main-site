@@ -57,7 +57,7 @@ const defaultPreferences: UserPreferences = {
 // Mock user for demo
 const mockUser: User = {
   id: 'user-001',
-  email: 'admin@netnet.io',
+  email: 'admin@XETIHUB.io',
   name: 'System Administrator',
   role: 'admin',
   permissions: ['*'],
@@ -156,7 +156,7 @@ export const useUserStore = create<UserState>()(
       },
     }),
     {
-      name: 'netnet-user-storage',
+      name: 'XETIHUB-user-storage',
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         user: state.user,

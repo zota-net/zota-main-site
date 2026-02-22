@@ -36,7 +36,7 @@ const caseStudies: CaseStudy[] = [
     industry: 'Telecommunications',
     logo: 'EU',
     challenge: 'Managing 120M+ endpoints across 12 countries with legacy NMS tools causing 4-hour MTTR and frequent blind spots in rural coverage areas.',
-    solution: 'Deployed NetNet control layer with AI-driven anomaly detection and autonomous remediation across all regions with zero downtime migration.',
+    solution: 'Deployed XETIHUB control layer with AI-driven anomaly detection and autonomous remediation across all regions with zero downtime migration.',
     results: [
       { metric: 'MTTR Reduction', value: '47%' },
       { metric: 'Blind Spot Elimination', value: '99.8%' },
@@ -48,7 +48,7 @@ const caseStudies: CaseStudy[] = [
     industry: 'Cloud Infrastructure',
     logo: 'AP',
     challenge: 'Scaling from 3 to 14 data centers in 18 months while maintaining sub-millisecond latency SLAs for financial services clients.',
-    solution: 'NetNet edge intelligence layer with predictive capacity planning and automated traffic engineering across all PoPs.',
+    solution: 'XETIHUB edge intelligence layer with predictive capacity planning and automated traffic engineering across all PoPs.',
     results: [
       { metric: 'Scale Increase', value: '467%' },
       { metric: 'SLA Compliance', value: '99.999%' },

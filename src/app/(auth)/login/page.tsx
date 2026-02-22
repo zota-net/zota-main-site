@@ -437,7 +437,7 @@ export default function LoginPage() {
             transition={{ delay: 1, duration: 0.4 }}
             className="text-center text-sm text-muted-foreground mt-6"
           >
-            © 2026 NetNet. All rights reserved.
+            © 2026 XETIHUB. All rights reserved.
           </motion.p>
         </div>
       </motion.div>

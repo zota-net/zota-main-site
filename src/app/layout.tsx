@@ -5,10 +5,10 @@ import './globals.css';
 // Using system fonts to avoid Turbopack Google Fonts resolution bug
 
 export const metadata: Metadata = {
-  title: 'NetNet | Immersive Telecom Control Platform',
+  title: 'XETIHUB | Immersive Telecom Control Platform',
   description: 'Next-generation network infrastructure visualization and control platform',
   keywords: ['telecom', 'network', 'control', 'dashboard', 'infrastructure'],
-  authors: [{ name: 'NetNet Team' }],
+  authors: [{ name: 'XETIHUB Team' }],
 };
 
 export const viewport: Viewport = {

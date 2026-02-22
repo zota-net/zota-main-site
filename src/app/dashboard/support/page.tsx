@@ -149,9 +149,9 @@ const generateTickets = (): Ticket[] => {
   const tags = ['vpn', 'billing', 'network', 'router', 'speed', 'outage', 'account'];
 
   const agents: Agent[] = [
-    { id: 'agent-1', name: 'Sarah Chen', email: 'sarah@netnet.com', status: 'online', activeChats: 3, department: 'Technical' },
-    { id: 'agent-2', name: 'Mike Johnson', email: 'mike@netnet.com', status: 'online', activeChats: 2, department: 'Billing' },
-    { id: 'agent-3', name: 'Emily Davis', email: 'emily@netnet.com', status: 'busy', activeChats: 5, department: 'Technical' },
+    { id: 'agent-1', name: 'Sarah Chen', email: 'sarah@XETIHUB.com', status: 'online', activeChats: 3, department: 'Technical' },
+    { id: 'agent-2', name: 'Mike Johnson', email: 'mike@XETIHUB.com', status: 'online', activeChats: 2, department: 'Billing' },
+    { id: 'agent-3', name: 'Emily Davis', email: 'emily@XETIHUB.com', status: 'busy', activeChats: 5, department: 'Technical' },
   ];
 
   const customers = [
@@ -216,11 +216,11 @@ const generateTickets = (): Ticket[] => {
 };
 
 const generateAgents = (): Agent[] => [
-  { id: 'agent-1', name: 'Sarah Chen', email: 'sarah@netnet.com', status: 'online', activeChats: 3, department: 'Technical' },
-  { id: 'agent-2', name: 'Mike Johnson', email: 'mike@netnet.com', status: 'online', activeChats: 2, department: 'Billing' },
-  { id: 'agent-3', name: 'Emily Davis', email: 'emily@netnet.com', status: 'busy', activeChats: 5, department: 'Technical' },
-  { id: 'agent-4', name: 'David Kim', email: 'david@netnet.com', status: 'away', activeChats: 0, department: 'Network' },
-  { id: 'agent-5', name: 'Lisa Wang', email: 'lisa@netnet.com', status: 'offline', activeChats: 0, department: 'General' },
+  { id: 'agent-1', name: 'Sarah Chen', email: 'sarah@XETIHUB.com', status: 'online', activeChats: 3, department: 'Technical' },
+  { id: 'agent-2', name: 'Mike Johnson', email: 'mike@XETIHUB.com', status: 'online', activeChats: 2, department: 'Billing' },
+  { id: 'agent-3', name: 'Emily Davis', email: 'emily@XETIHUB.com', status: 'busy', activeChats: 5, department: 'Technical' },
+  { id: 'agent-4', name: 'David Kim', email: 'david@XETIHUB.com', status: 'away', activeChats: 0, department: 'Network' },
+  { id: 'agent-5', name: 'Lisa Wang', email: 'lisa@XETIHUB.com', status: 'offline', activeChats: 0, department: 'General' },
 ];
 
 // Status and priority configs

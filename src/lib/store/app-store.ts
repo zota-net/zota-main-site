@@ -66,7 +66,7 @@ export const useAppStore = create<AppState>()(
       resetSettings: () => set({ settings: defaultSettings }),
     }),
     {
-      name: 'netnet-app-storage',
+      name: 'XETIHUB-app-storage',
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({ settings: state.settings }),
     }

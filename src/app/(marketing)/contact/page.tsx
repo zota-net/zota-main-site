@@ -62,8 +62,8 @@ const contactMethods = [
   {
     icon: <Mail className="w-5 h-5" />,
     label: 'Email',
-    value: 'hello@netnet.io',
-    href: 'mailto:hello@netnet.io',
+    value: 'hello@XETIHUB.io',
+    href: 'mailto:hello@XETIHUB.io',
     color: '#FF6A00',
   },
   {
@@ -378,10 +378,10 @@ export default function ContactPage() {
                     dedicated onboarding and SLA guarantees.
                   </p>
                   <a
-                    href="mailto:enterprise@netnet.io"
+                    href="mailto:enterprise@XETIHUB.io"
                     className="text-sm font-medium text-[#FF6A00] hover:underline flex items-center gap-1"
                   >
-                    enterprise@netnet.io
+                    enterprise@XETIHUB.io
                     <ArrowRight className="w-3 h-3" />
                   </a>
                 </div>

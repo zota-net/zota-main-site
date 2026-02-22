@@ -257,7 +257,7 @@ export const useNetworkStore = create<NetworkState>()(
       },
     }),
     {
-      name: 'netnet-network-storage',
+      name: 'XETIHUB-network-storage',
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         selectedNodeIds: state.selectedNodeIds,

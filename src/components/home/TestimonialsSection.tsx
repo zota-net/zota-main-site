@@ -27,7 +27,7 @@ const testimonials: Testimonial[] = [
     name: 'Sarah Chen',
     role: 'Chief Technology Officer',
     company: 'Nexus Global',
-    content: "Transitioning our settlement registry to NetNet reduced our cross-border finality from hours to milliseconds. The high-fidelity control layer is exactly what our infrastructure team needed.",
+    content: "Transitioning our settlement registry to XETIHUB reduced our cross-border finality from hours to milliseconds. The high-fidelity control layer is exactly what our infrastructure team needed.",
     verified: true,
     rating: 5
   },
@@ -45,7 +45,7 @@ const testimonials: Testimonial[] = [
     name: 'Elena Rodriguez',
     role: 'VP of Engineering',
     company: 'Vanguard Telco',
-    content: "Most platforms are built for yesterday's scales. NetNet handles our petabyte-level voucher distributions with zero downtime and perfect data integrity. Truly a game changer.",
+    content: "Most platforms are built for yesterday's scales. XETIHUB handles our petabyte-level voucher distributions with zero downtime and perfect data integrity. Truly a game changer.",
     verified: true,
     rating: 5
   }

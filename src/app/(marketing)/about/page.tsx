@@ -87,7 +87,7 @@ const values = [
 ];
 
 const timeline = [
-  { year: '2019', title: 'Founded', description: 'NetNet started with a vision to modernize telecom financial infrastructure.' },
+  { year: '2019', title: 'Founded', description: 'XETIHUB started with a vision to modernize telecom financial infrastructure.' },
   { year: '2020', title: 'First Registry', description: 'Launched the core financial registry with 3 operator partners.' },
   { year: '2021', title: 'Voucher Engine', description: 'Released industrial-scale voucher generation processing 50K/s.' },
   { year: '2022', title: 'Global Expansion', description: 'Expanded to 20+ regions with edge processing capabilities.' },
@@ -151,7 +151,7 @@ export default function AboutPage() {
             transition={{ duration: 0.7 }}
           >
             <span className="text-xs font-mono tracking-[0.4em] text-[#FF6A00]/80 uppercase">
-              ◆ About NetNet
+              ◆ About XETIHUB
             </span>
             <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold mt-4 leading-[1.1]">
               <span className="text-stone-800 dark:text-stone-300">Built by operators,</span>
@@ -213,7 +213,7 @@ export default function AboutPage() {
                   fragmented, legacy systems that are slow, opaque, and brittle.
                 </p>
                 <p className="text-home-text-muted leading-relaxed">
-                  NetNet replaces that entire stack with a unified, real-time control layer 
+                  XETIHUB replaces that entire stack with a unified, real-time control layer 
                   that gives operators complete visibility and instant action across their 
                   entire financial infrastructure.
                 </p>
@@ -391,7 +391,7 @@ export default function AboutPage() {
               Ready to take command?
             </h2>
             <p className="text-home-text-muted text-lg mb-8 max-w-xl mx-auto">
-              Join 180+ operators who trust NetNet to power their financial infrastructure.
+              Join 180+ operators who trust XETIHUB to power their financial infrastructure.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link

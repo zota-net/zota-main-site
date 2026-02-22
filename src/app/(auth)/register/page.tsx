@@ -256,7 +256,7 @@ export default function RegisterPage() {
                 Create your account
               </CardTitle>
               <CardDescription>
-                Fill in your details to get started with NetNet
+                Fill in your details to get started with XETIHUB
               </CardDescription>
             </CardHeader>
 

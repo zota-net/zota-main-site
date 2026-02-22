@@ -37,7 +37,7 @@ const mockVouchers: SearchResult[] = [
 ];
 
 const mockUsers: SearchResult[] = [
-  { id: 'u1', title: 'John Smith', description: 'admin@netnet.com • Administrator', category: 'user', path: '/dashboard/users?search=John', icon: 'user' },
+  { id: 'u1', title: 'John Smith', description: 'admin@XETIHUB.com • Administrator', category: 'user', path: '/dashboard/users?search=John', icon: 'user' },
   { id: 'u2', title: 'Sarah Johnson', description: 'sarah@company.com • Operator', category: 'user', path: '/dashboard/users?search=Sarah', icon: 'user' },
   { id: 'u3', title: 'Mike Wilson', description: 'mike@example.com • Viewer', category: 'user', path: '/dashboard/users?search=Mike', icon: 'user' },
 ];

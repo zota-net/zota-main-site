@@ -52,7 +52,7 @@ const navGroups: NavGroup[] = [
     items: [
       { title: 'Overview', href: '/dashboard', icon: LayoutDashboard },
       { title: 'My Activities', href: '/dashboard/agent-dashboard', icon: Activity },
-      { title: 'Network', href: '/dashboard/network', icon: Network },
+      // { title: 'Network', href: '/dashboard/network', icon: Network },
       { title: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 }
     ],
   },

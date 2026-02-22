@@ -114,7 +114,7 @@ export const defaultThemes: ColorTheme[] = [
 ];
 
 const defaultBranding: BrandingSettings = {
-  companyName: 'NetNet',
+  companyName: 'XETIHUB',
   logoUrl: null,
   logoLightUrl: null,
   logoDarkUrl: null,
@@ -176,7 +176,7 @@ export const useThemeStore = create<ThemeState>()(
         }),
     }),
     {
-      name: 'netnet-theme-storage',
+      name: 'XETIHUB-theme-storage',
       storage: createJSONStorage(() => localStorage),
     }
   )

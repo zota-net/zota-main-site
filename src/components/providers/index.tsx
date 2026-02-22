@@ -10,7 +10,7 @@ interface ProvidersProps {
 
 export function Providers({ children }: ProvidersProps) {
   return (
-    <ThemeProvider defaultTheme="system" storageKey="netnet-theme">
+    <ThemeProvider defaultTheme="system" storageKey="XETIHUB-theme">
       <SimulationProvider>
         {children}
         <Toaster 

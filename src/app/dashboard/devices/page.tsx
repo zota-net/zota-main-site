@@ -91,7 +91,7 @@ interface ConfigTemplate {
 const generateDevices = (): Device[] => {
   const types: Device['type'][] = ['router', 'access_point', 'switch', 'gateway', 'endpoint'];
   const statuses: Device['status'][] = ['online', 'offline', 'provisioning', 'error'];
-  const models = ['NetNet-R100', 'NetNet-AP200', 'NetNet-SW300', 'NetNet-GW400', 'NetNet-EP500'];
+  const models = ['XETIHUB-R100', 'XETIHUB-AP200', 'XETIHUB-SW300', 'XETIHUB-GW400', 'XETIHUB-EP500'];
   const locations = ['Main Office', 'Branch A', 'Branch B', 'Warehouse', 'Data Center'];
   
   return Array.from({ length: 30 }, (_, i) => {
@@ -120,7 +120,7 @@ const configTemplates: ConfigTemplate[] = [
     name: 'Basic Router Config',
     type: 'router',
     description: 'Standard router configuration with DHCP and NAT',
-    config: `# NetNet Router Configuration
+    config: `# XETIHUB Router Configuration
 # Generated: {{date}}
 
 interface WAN
@@ -146,7 +146,7 @@ password encrypted {{password_hash}}
     name: 'Access Point Config',
     type: 'access_point',
     description: 'WiFi access point with WPA3 security',
-    config: `# NetNet Access Point Configuration
+    config: `# XETIHUB Access Point Configuration
 # Generated: {{date}}
 
 wireless
@@ -170,7 +170,7 @@ radius
     name: 'Switch Config',
     type: 'switch',
     description: 'Managed switch with VLAN support',
-    config: `# NetNet Switch Configuration
+    config: `# XETIHUB Switch Configuration
 # Generated: {{date}}
 
 hostname {{device_name}}
@@ -273,7 +273,7 @@ export default function DevicesPage() {
       lastSeen: new Date(),
       configCode: `CFG-${Math.random().toString(36).substring(2, 10).toUpperCase()}`,
       location: newDevice.location,
-      model: 'NetNet-NEW',
+      model: 'XETIHUB-NEW',
     };
     
     setDevices([device, ...devices]);
@@ -287,7 +287,7 @@ export default function DevicesPage() {
     const config = template.config
       .replace('{{date}}', new Date().toISOString())
       .replace('{{device_name}}', device.name)
-      .replace('{{ssid}}', 'NetNet-WiFi')
+      .replace('{{ssid}}', 'XETIHUB-WiFi')
       .replace('{{wifi_password}}', 'SecurePassword123')
       .replace('{{password_hash}}', '$6$rounds=5000$salt$hash')
       .replace('{{radius_server}}', '192.168.1.10')

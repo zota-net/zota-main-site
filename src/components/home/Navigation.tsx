@@ -72,7 +72,7 @@ export default function Navigation() {
                   </svg>
                 </div>
                 <span className="text-lg font-semibold text-home-text tracking-tight">
-                  Net<span className="text-[#FF6A00]">Net</span>
+                  Xeti<span className="text-[#FF6A00]">Hub</span>
                 </span>
               </a>
 
