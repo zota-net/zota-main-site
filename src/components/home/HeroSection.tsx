@@ -106,10 +106,10 @@ export default function HeroSection() {
             transition={{ delay: 1.0, duration: 0.8 }}
           >
             <span className="block text-transparent bg-clip-text bg-gradient-to-r from-[#44403c] via-[#78716c] via-[40%] to-[#292524] dark:from-[#a8a29e] dark:via-[#fafaf9] dark:via-[50%] dark:to-[#a8a29e]">
-              <ScanningText text="COMMAND THE" delay={1200} isVisible={showContent} />
+              <ScanningText text="MASTER YOUR" delay={1200} isVisible={showContent} />
             </span>
             <span className="block text-transparent bg-clip-text bg-gradient-to-r from-[#c2410c] via-[#ea580c] to-[#c2410c] dark:from-[#FF6A00] dark:via-[#FF8533] dark:to-[#FF6A00] mt-2">
-              <ScanningText text="REGISTRY." delay={2000} isVisible={showContent} />
+              <ScanningText text="WIFI NETWORK." delay={2000} isVisible={showContent} />
             </span>
           </motion.h1>
 
@@ -120,8 +120,8 @@ export default function HeroSection() {
             transition={{ delay: 3.0, duration: 0.8 }}
             className="text-base sm:text-lg md:text-xl text-home-text-muted max-w-2xl mx-auto leading-relaxed font-light"
           >
-            The ultimate engine for revenue settlements, voucher distributions, 
-            and global financial operations in a high-fidelity control layer.
+            Comprehensive WiFi hotspot billing system with mobile money payments, voucher codes, 
+            multi-site management, and intelligent automatic reconnection for uninterrupted service.
           </motion.p>
         </div>
 
@@ -158,12 +158,12 @@ export default function HeroSection() {
           transition={{ delay: 4.0, duration: 0.8 }}
           className="mb-4 flex items-center gap-4 sm:gap-8 px-4 sm:px-6 py-3 rounded-lg border border-home-border bg-home-card backdrop-blur-md"
         >
-          <LiveStat label="Connected Devices" value={847} suffix="M" />
+          <LiveStat label="Active Hotspots" value={1247} suffix="" />
           <div className="w-px h-8 bg-home-border" />
-          <LiveStat label="Response Time" value={0.8} suffix="ms" decimals={1} />
+          <LiveStat label="Uptime" value={99.9} suffix="%" decimals={1} />
           <div className="w-px h-8 bg-home-border hidden sm:block" />
           <div className="hidden sm:block">
-            <LiveStat label="Active Endpoints" value={47.3} suffix="M" decimals={1} />
+            <LiveStat label="Connected Users" value={47.3} suffix="K" decimals={1} />
           </div>
         </motion.div>
       </div>

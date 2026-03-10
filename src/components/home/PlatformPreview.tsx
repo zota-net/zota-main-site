@@ -198,10 +198,10 @@ export default function PlatformPreviewSection() {
         >
           <span className="text-xs font-mono tracking-[0.4em] text-[#FF6A00]/80 uppercase">The Platform</span>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-home-text mt-4">
-            Unified Transaction Lifecycle
+            Unified WiFi Management Hub
           </h2>
           <p className="text-home-text-muted mt-4 max-w-2xl mx-auto text-lg">
-            Monitor revenue, voucher distributions, and network status from a single high-fidelity interface.
+            Monitor hotspots, user connections, payments, and network status from a single comprehensive interface.
           </p>
         </div>
 
@@ -234,34 +234,34 @@ export default function PlatformPreviewSection() {
             {/* Dashboard Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Network Map Panel */}
-              <DashboardPanel title="SYSTEM REGISTRY" className="md:col-span-2">
+              <DashboardPanel title="NETWORK MAP" className="md:col-span-2">
                 <NetworkMap />
               </DashboardPanel>
 
               {/* System Status */}
-              <DashboardPanel title="SYSTEM STATUS">
+              <DashboardPanel title="HOTSPOT STATUS">
                 <div className="space-y-3">
-                  <LiveMetric label="Payment Success" baseValue={99.8} suffix="%" color="#22C55E" variance={0.05} />
-                  <LiveMetric label="Active Vouchers" baseValue={14.2} suffix="M" color="#00D9FF" variance={0.01} />
-                  <LiveMetric label="Revenue Velocity" baseValue={842} suffix="k/hr" color="#FF6A00" />
-                  <LiveMetric label="Settlement Delay" baseValue={0.4} suffix="s" color="#22C55E" variance={0.1} />
+                  <LiveMetric label="Connection Success" baseValue={99.8} suffix="%" color="#22C55E" variance={0.05} />
+                  <LiveMetric label="Active Users" baseValue={14.2} suffix="K" color="#00D9FF" variance={0.01} />
+                  <LiveMetric label="Revenue Today" baseValue={842} suffix="$" color="#FF6A00" />
+                  <LiveMetric label="Auto-Reconnect Rate" baseValue={97.4} suffix="%" color="#22C55E" variance={0.1} />
                 </div>
               </DashboardPanel>
 
               {/* Traffic Chart */}
-              <DashboardPanel title="VOUCHER VELOCITY">
-                <div className="text-xs text-home-text-faint mb-1">Activations / Minute</div>
+              <DashboardPanel title="USER CONNECTIONS">
+                <div className="text-xs text-home-text-faint mb-1">Connections / Minute</div>
                 <div className="text-lg font-mono font-bold text-[#FF6A00]">8.4k</div>
                 <MiniChart color="#FF6A00" data={chartData1} />
               </DashboardPanel>
 
               {/* Alert Console */}
-              <DashboardPanel title="TRANSACTION ENGINE">
+              <DashboardPanel title="RECONNECTION ENGINE">
                 <div className="space-y-2">
                   {[
-                    { level: 'SECURE', msg: 'Batch #8821 Settled', color: '#22C55E', time: '2s ago' },
-                    { level: 'RETRY', msg: 'Auth delay: Provider XP', color: '#F59E0B', time: '14s ago' },
-                    { level: 'GEN', msg: '100k Bulk Export OK', color: '#00D9FF', time: '1m ago' },
+                    { level: 'AUTO', msg: 'Power restored: Site A1', color: '#22C55E', time: '2s ago' },
+                    { level: 'RETRY', msg: 'User back in range: Zone 3', color: '#F59E0B', time: '14s ago' },
+                    { level: 'SUCCESS', msg: 'Bulk reconnection: 50 users', color: '#00D9FF', time: '1m ago' },
                   ].map((alert, i) => (
                     <div key={i} className="flex items-center gap-2 text-[10px] font-mono">
                       <span className="px-1 rounded text-[8px] font-bold" style={{ backgroundColor: `${alert.color}20`, color: alert.color }}>
@@ -275,9 +275,9 @@ export default function PlatformPreviewSection() {
               </DashboardPanel>
 
               {/* Throughput */}
-              <DashboardPanel title="FINANCIAL THROUGHPUT">
-                <div className="text-xs text-home-text-faint mb-1">Volume (24h)</div>
-                <div className="text-lg font-mono font-bold text-[#00D9FF]">$1.42M</div>
+              <DashboardPanel title="BANDWIDTH USAGE">
+                <div className="text-xs text-home-text-faint mb-1">Data Transfer (24h)</div>
+                <div className="text-lg font-mono font-bold text-[#00D9FF]">2.4 TB</div>
                 <MiniChart color="#00D9FF" data={chartData2} />
               </DashboardPanel>
             </div>
@@ -294,10 +294,10 @@ export default function PlatformPreviewSection() {
           style={{ opacity: 0 }}
         >
           {[
-            { label: 'Transaction Latency', value: '< 200ms', icon: <Zap className="w-4 h-4" /> },
-            { label: 'Financial Security', value: 'Bank-Grade', icon: <Shield className="w-4 h-4" /> },
-            { label: 'Monthly Vouchers', value: '45M+', icon: <Cpu className="w-4 h-4" /> },
-            { label: 'Data Integrity', value: '99.999%', icon: <Database className="w-4 h-4" /> },
+            { label: 'Reconnection Speed', value: '< 5s', icon: <Zap className="w-4 h-4" /> },
+            { label: 'Network Security', value: 'WPA3-Enterprise', icon: <Shield className="w-4 h-4" /> },
+            { label: 'Daily Connections', value: '250K+', icon: <Wifi className="w-4 h-4" /> },
+            { label: 'Uptime Guarantee', value: '99.999%', icon: <Database className="w-4 h-4" /> },
           ].map((stat) => (
             <div key={stat.label} className="text-center p-6 rounded-lg border border-home-border bg-home-card">
               <div className="flex justify-center text-[#FF6A00] mb-2">{stat.icon}</div>

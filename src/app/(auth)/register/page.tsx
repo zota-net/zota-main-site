@@ -181,7 +181,7 @@ export default function RegisterPage() {
             <Logo className="w-10 h-10" />
             <div className="mt-1">
               <span className="text-xl font-semibold tracking-tight">
-                Net<span className="text-primary">Net</span>
+                Xeti<span className="text-primary">Hub</span>
               </span>
             </div>
           </div>
@@ -194,12 +194,12 @@ export default function RegisterPage() {
               transition={{ duration: 0.7, delay: 0.3 }}
             >
               <h1 className="text-4xl xl:text-5xl font-bold tracking-tight leading-[1.1] mb-6">
-                Start commanding
-                <span className="text-primary block mt-1">your registry.</span>
+                Start managing
+                <span className="text-primary block mt-1">your hotspots.</span>
               </h1>
               <p className="text-muted-foreground text-lg leading-relaxed mb-8">
-                Create your account and get instant access to the most powerful 
-                telecom financial infrastructure platform.
+                Create your account and gain access to the ultimate WiFi hotspot
+                billing and control platform.
               </p>
             </motion.div>
 
@@ -246,7 +246,7 @@ export default function RegisterPage() {
           <div className="lg:hidden mb-8 text-center">
             <Logo className="w-10 h-10 mx-auto" />
             <span className="text-xl font-semibold tracking-tight block mt-2">
-              Net<span className="text-primary">Net</span>
+              Xeti<span className="text-primary">Hub</span>
             </span>
           </div>
 
@@ -256,7 +256,7 @@ export default function RegisterPage() {
                 Create your account
               </CardTitle>
               <CardDescription>
-                Fill in your details to get started with XETIHUB
+                Fill in your details to begin managing your WiFi network
               </CardDescription>
             </CardHeader>
 

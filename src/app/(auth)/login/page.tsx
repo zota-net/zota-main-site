@@ -168,13 +168,12 @@ export default function LoginPage() {
               transition={{ delay: 0.3, duration: 0.6 }}
             >
               <h1 className="text-4xl xl:text-5xl font-bold tracking-tight mb-6">
-                <span className="text-primary">Command</span> the Network.
+                <span className="text-primary">Manage</span> Your Hotspots.
                 <br />
-                <span className="text-muted-foreground">Control</span> the Future.
+                <span className="text-muted-foreground">Control</span> the Network.
               </h1>
               <p className="text-lg text-muted-foreground max-w-md">
-                Next-generation telecom control platform for real-time intelligence, 
-                autonomous operations, and infrastructure at global scale.
+                XETIHUB makes billing, authentication, and reconnection easy for WiFi operators.
               </p>
             </motion.div>
             
@@ -242,9 +241,9 @@ export default function LoginPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3, duration: 0.4 }}
               >
-                <CardTitle className="text-2xl font-bold">Welcome back</CardTitle>
+                <CardTitle className="text-2xl font-bold">Welcome back to XETIHUB</CardTitle>
                 <CardDescription className="text-muted-foreground">
-                  Enter your credentials to access the control platform
+                  Enter your credentials to manage your WiFi hotspot network
                 </CardDescription>
               </motion.div>
             </CardHeader>
@@ -401,10 +400,10 @@ export default function LoginPage() {
                 </motion.div>
               </form>
               
-              {/* Divider */}
+              {/* Divider + create account button */}
               <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.8, duration: 0.4 }}
                 className="relative my-6"
               >
@@ -412,20 +411,22 @@ export default function LoginPage() {
                   <div className="w-full border-t border-border" />
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-card px-2 text-muted-foreground">
-                    Demo Credentials
-                  </span>
+                  <span className="bg-card px-2 text-muted-foreground">New to XETIHUB?</span>
                 </div>
               </motion.div>
-              
-              {/* Demo Hint */}
+
               <motion.div
-                initial={{ opacity: 0, y: 10 }}
+                initial={{ opacity: 0, y: 5 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.9, duration: 0.4 }}
-                className="p-3 rounded-lg bg-muted/50 text-center text-sm text-muted-foreground"
               >
-                <p>Use any email and password (4+ chars) to access the demo</p>
+                <Button
+                  variant="outline"
+                  className="w-full h-11"
+                  onClick={() => router.push('/register')}
+                >
+                  Create account
+                </Button>
               </motion.div>
             </CardContent>
           </Card>

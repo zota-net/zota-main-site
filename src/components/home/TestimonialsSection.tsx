@@ -25,27 +25,27 @@ const testimonials: Testimonial[] = [
   {
     id: 'TX-482',
     name: 'Sarah Chen',
-    role: 'Chief Technology Officer',
-    company: 'Nexus Global',
-    content: "Transitioning our settlement registry to XETIHUB reduced our cross-border finality from hours to milliseconds. The high-fidelity control layer is exactly what our infrastructure team needed.",
+    role: 'Network Operations Manager',
+    company: 'CityWiFi Networks',
+    content: "The automatic reconnection feature has been a lifesaver. During power outages, users reconnect seamlessly without any manual intervention. Our customer satisfaction has improved dramatically.",
     verified: true,
     rating: 5
   },
   {
     id: 'TX-911',
     name: 'Marcus Thorne',
-    role: 'Lead Network Architect',
-    company: 'SkyLink Systems',
-    content: "The level of detail in the atomic transaction DNA is unprecedented. We now have 100% visibility into every packet, allowing us to proactively stop fraud before it touches the ledger.",
+    role: 'IT Director',
+    company: 'Campus Connect',
+    content: "Managing 200+ access points across multiple buildings was a nightmare until we integrated with Mikrotik and TP-Link controllers. The multi-site management and RADIUS support make everything so much easier.",
     verified: true,
     rating: 5
   },
   {
     id: 'TX-203',
     name: 'Elena Rodriguez',
-    role: 'VP of Engineering',
-    company: 'Vanguard Telco',
-    content: "Most platforms are built for yesterday's scales. XETIHUB handles our petabyte-level voucher distributions with zero downtime and perfect data integrity. Truly a game changer.",
+    role: 'Business Development Lead',
+    company: 'Hotspot Plus',
+    content: "Mobile money integration and voucher management have streamlined our operations. We can now offer flexible payment options and our agents love the comprehensive support platform.",
     verified: true,
     rating: 5
   }

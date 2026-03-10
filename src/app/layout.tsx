@@ -5,9 +5,9 @@ import './globals.css';
 // Using system fonts to avoid Turbopack Google Fonts resolution bug
 
 export const metadata: Metadata = {
-  title: 'XETIHUB | Immersive Telecom Control Platform',
-  description: 'Next-generation network infrastructure visualization and control platform',
-  keywords: ['telecom', 'network', 'control', 'dashboard', 'infrastructure'],
+  title: 'XETIHUB | WiFi Hotspot Billing & Management Platform',
+  description: 'Comprehensive WiFi hotspot billing system with mobile money payments, voucher codes, multi-site management, and intelligent automatic reconnection',
+  keywords: ['WiFi', 'hotspot', 'billing', 'mobile money', 'voucher', 'RADIUS', 'network management'],
   authors: [{ name: 'XETIHUB Team' }],
 };
 

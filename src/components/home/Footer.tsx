@@ -3,16 +3,23 @@
 import { motion } from 'framer-motion';
 
 const FOOTER_LINKS = {
-  Platform: ['Network Monitor', 'Traffic Analytics', 'Signal Control', 'Threat Detection', 'API Gateway'],
+  Platform: ['Hotspot Management', 'Billing Analytics', 'Mobile Money', 'Voucher System', 'RADIUS Control'],
   Company: [
     { label: 'About Us', href: '/about' },
-    { label: 'Careers', href: '#' },
-    { label: 'Press', href: '#' },
     { label: 'Contact', href: '/contact' },
-    { label: 'Blog', href: '#' },
   ],
-  Resources: ['Documentation', 'Case Studies', 'Whitepapers', 'Webinars', 'Status'],
-  Legal: ['Privacy Policy', 'Terms of Service', 'Security', 'Compliance', 'Cookie Policy'],
+  Resources: [
+    { label: 'Hardware Integration', href: '#' },
+    { label: 'API Documentation', href: '#' },
+    { label: 'Case Studies', href: '#' },
+    { label: 'Support Center', href: '/support' },
+  ],
+  Legal: [
+    { label: 'Privacy Policy', href: '/privacy' },
+    { label: 'Terms of Service', href: '/terms' },
+    { label: 'Security', href: '#' },
+    { label: 'Compliance', href: '#' },
+  ],
 };
 
 const SOCIAL_LINKS = [
@@ -33,7 +40,7 @@ export default function Footer() {
           <div className="grid grid-cols-2 md:grid-cols-5 gap-8 md:gap-12">
             {/* Brand column */}
             <div className="col-span-2 md:col-span-1">
-              <a href="#" className="flex items-center gap-2.5 mb-4">
+              <a href="/" className="flex items-center gap-2.5 mb-4">
                 <div className="w-6 h-6">
                   <svg viewBox="0 0 28 28" fill="none" className="w-full h-full">
                     <rect x="2" y="2" width="24" height="24" rx="3" stroke="#FF6A00" strokeWidth="1.5" />
@@ -49,7 +56,7 @@ export default function Footer() {
                 </span>
               </a>
               <p className="text-sm text-home-text-faint leading-relaxed mb-6 max-w-[200px]">
-                The telecom control platform built for operators who demand absolute command.
+                Comprehensive WiFi hotspot billing platform with mobile money payments and automatic reconnection.
               </p>
               <div className="flex items-center gap-3">
                 {SOCIAL_LINKS.map((social) => (

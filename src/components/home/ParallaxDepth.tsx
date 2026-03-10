@@ -18,7 +18,7 @@ const scenes: ParallaxScene[] = [
   {
     id: 'global',
     title: 'Revenue Ecosystem Control',
-    subtitle: 'Every transaction, mapped in real-time across the global XETIHUB registry.',
+    subtitle: 'Every connection, mapped in real-time across your WiFi hotspot network.',
     icon: <Globe className="w-8 h-8" />,
     color: '#00D9FF',
     metrics: [

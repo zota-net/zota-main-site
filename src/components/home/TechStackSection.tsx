@@ -6,8 +6,8 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import dynamic from 'next/dynamic';
 import { 
-  Brain, Zap, Network, Shield, Code, 
-  ArrowRight, Sparkles
+  Router, Server, Smartphone, Ticket, MapPin, 
+  ArrowRight, Sparkles, Wifi, Zap, Users
 } from 'lucide-react';
 
 const FloatingGrid = dynamic(() => import('@/components/three/FloatingGrid'), {
@@ -25,38 +25,38 @@ interface TechCard {
 
 const techCards: TechCard[] = [
   {
-    icon: <Brain className="w-6 h-6" />,
-    title: 'AI Registry Optimization',
-    description: 'Neural models predict voucher demand and settlement nodes',
-    detail: 'Proprietary AI engines that forecast revenue spikes and automatically re-route validation packets to the lowest-latency nodes in real-time.',
+    icon: <Router className="w-6 h-6" />,
+    title: 'Hardware Integration',
+    description: 'Seamless support for Mikrotik, TP-Link Omada, Unifi, and Ruijie controllers',
+    detail: 'Native integration with leading WiFi hardware platforms. Automatic device discovery, configuration management, and real-time monitoring across all supported systems.',
     color: '#FF6A00',
   },
   {
-    icon: <Zap className="w-6 h-6" />,
-    title: 'Sub-Millisecond Settlements',
-    description: 'Transaction finality at the speed of light',
-    detail: 'High-performance consensus protocols designed for high-volume financial throughput, ensuring sub-second verification across the global registry.',
+    icon: <Server className="w-6 h-6" />,
+    title: 'RADIUS Server Support',
+    description: 'Full RADIUS protocol implementation for enterprise authentication',
+    detail: 'Complete RADIUS server integration with support for EAP, PAP, CHAP, and MS-CHAPv2. Centralized user management and policy enforcement across multiple sites.',
     color: '#00D9FF',
   },
   {
-    icon: <Network className="w-6 h-6" />,
-    title: 'Elastic Distributed Ledger',
-    description: 'Infinite scalability with zero single points of failure',
-    detail: 'Mesh-based data structure that scales linearly with every active device. Resilient to regional outages with auto-healing peer nodes.',
+    icon: <Smartphone className="w-6 h-6" />,
+    title: 'Mobile Money Integration',
+    description: 'Direct payment processing through mobile money platforms',
+    detail: 'Integrated payment gateways for mobile money services. Real-time transaction processing, automatic reconciliation, and multi-currency support.',
     color: '#22C55E',
   },
   {
-    icon: <Shield className="w-6 h-6" />,
-    title: 'Atomic Fraud Prevention',
-    description: 'Every bit verified, every identity challenged',
-    detail: 'Real-time 7-layer packet inspection coupled with identity-based access control. Hardware-backed security for all transaction keys.',
+    icon: <Ticket className="w-6 h-6" />,
+    title: 'Voucher Management',
+    description: 'Advanced voucher generation, distribution, and redemption system',
+    detail: 'Bulk voucher creation with customizable expiration, usage limits, and pricing tiers. QR code generation, email/SMS distribution, and detailed usage analytics.',
     color: '#E63946',
   },
   {
-    icon: <Code className="w-6 h-6" />,
-    title: 'SDK-First Programmability',
-    description: 'Build custom logic on top of the registry core',
-    detail: 'Comprehensive gRPC and REST APIs allowing developers to trigger custom rewards, logic, or financial operations based on any registry event.',
+    icon: <MapPin className="w-6 h-6" />,
+    title: 'Multi-Site Management',
+    description: 'Centralized control over multiple hotspot locations and devices',
+    detail: 'Unified dashboard for managing hundreds of sites and thousands of devices. Hierarchical organization, role-based access, and automated reporting.',
     color: '#A855F7',
   },
 ];
@@ -216,10 +216,10 @@ export default function TechStackSection() {
           >
             <span className="text-xs font-mono tracking-[0.4em] text-[#FF6A00]/80 uppercase">The Tech Architecture</span>
             <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-home-text mt-4 max-w-4xl mx-auto leading-[1.1]">
-              Built for the Speed of Global Finance
+              Built for Seamless WiFi Management
             </h2>
             <p className="text-xl text-home-text-muted mt-6 max-w-2xl mx-auto font-light">
-              Atomic transaction processing and sub-millisecond registry updates at petabyte scale.
+              Hardware integration, RADIUS support, and intelligent reconnection at enterprise scale.
             </p>
           </motion.div>
         </div>

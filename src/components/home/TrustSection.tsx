@@ -20,39 +20,39 @@ interface CaseStudy {
 }
 
 const logos = [
-  { name: 'Vodafone', abbr: 'VF', color: '#E60000' },
-  { name: 'Deutsche Telekom', abbr: 'DT', color: '#E20074' },
-  { name: 'AT&T', abbr: 'AT', color: '#009FDB' },
-  { name: 'NTT', abbr: 'NT', color: '#FF6600' },
-  { name: 'Orange', abbr: 'OR', color: '#FF7900' },
-  { name: 'Telefonica', abbr: 'TF', color: '#0066FF' },
-  { name: 'Singtel', abbr: 'ST', color: '#EE0000' },
-  { name: 'Telstra', abbr: 'TS', color: '#001E82' },
+  { name: 'Mikrotik', abbr: 'MT', color: '#E60000' },
+  { name: 'TP-Link', abbr: 'TP', color: '#E20074' },
+  { name: 'Ubiquiti', abbr: 'UB', color: '#009FDB' },
+  { name: 'Ruijie', abbr: 'RJ', color: '#FF6600' },
+  { name: 'Cisco', abbr: 'CS', color: '#FF7900' },
+  { name: 'Huawei', abbr: 'HW', color: '#0066FF' },
+  { name: 'Juniper', abbr: 'JN', color: '#EE0000' },
+  { name: 'Aruba', abbr: 'AR', color: '#001E82' },
 ];
 
 const caseStudies: CaseStudy[] = [
   {
-    company: 'European Tier-1 Operator',
-    industry: 'Telecommunications',
-    logo: 'EU',
-    challenge: 'Managing 120M+ endpoints across 12 countries with legacy NMS tools causing 4-hour MTTR and frequent blind spots in rural coverage areas.',
-    solution: 'Deployed XETIHUB control layer with AI-driven anomaly detection and autonomous remediation across all regions with zero downtime migration.',
+    company: 'Urban Hotspot Network',
+    industry: 'Public WiFi',
+    logo: 'UH',
+    challenge: 'Managing 500+ hotspots across 12 cities with frequent disconnections during power outages and user mobility issues.',
+    solution: 'Implemented automatic reconnection system with RADIUS integration and multi-site management, reducing downtime by 95%.',
     results: [
-      { metric: 'MTTR Reduction', value: '47%' },
-      { metric: 'Blind Spot Elimination', value: '99.8%' },
-      { metric: 'Cost Savings / Year', value: '$12M' },
+      { metric: 'Reconnection Success', value: '99.7%' },
+      { metric: 'User Satisfaction', value: '+85%' },
+      { metric: 'Revenue Increase', value: '$2.4M' },
     ],
   },
   {
-    company: 'Asia-Pacific Data Center Group',
-    industry: 'Cloud Infrastructure',
-    logo: 'AP',
-    challenge: 'Scaling from 3 to 14 data centers in 18 months while maintaining sub-millisecond latency SLAs for financial services clients.',
-    solution: 'XETIHUB edge intelligence layer with predictive capacity planning and automated traffic engineering across all PoPs.',
+    company: 'Campus WiFi Operator',
+    industry: 'Education',
+    logo: 'CW',
+    challenge: 'Scaling from 50 to 200 access points while maintaining seamless connectivity for 10,000+ students and staff.',
+    solution: 'Deployed hardware integration with Mikrotik and TP-Link controllers, voucher management, and agent support platform.',
     results: [
-      { metric: 'Scale Increase', value: '467%' },
-      { metric: 'SLA Compliance', value: '99.999%' },
-      { metric: 'Provisioning Time', value: '-89%' },
+      { metric: 'Network Coverage', value: '400%' },
+      { metric: 'Connection Uptime', value: '99.99%' },
+      { metric: 'Support Efficiency', value: '+60%' },
     ],
   },
 ];

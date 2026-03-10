@@ -41,58 +41,58 @@ const FloatingGrid = dynamic(() => import('@/components/three/FloatingGrid'), {
 /* ─── DATA ─── */
 
 const stats = [
-  { value: '500M+', label: 'Devices Managed' },
-  { value: '42', label: 'Global Regions' },
+  { value: '1.2K+', label: 'Active Hotspots' },
+  { value: '42', label: 'Cities Covered' },
   { value: '99.99%', label: 'Uptime SLA' },
-  { value: '$2.4B', label: 'Revenue Processed' },
+  { value: '$2.4M', label: 'Monthly Revenue' },
 ];
 
 const values = [
   {
     icon: <Shield className="w-6 h-6" />,
-    title: 'Security First',
-    description: 'Zero-trust architecture with hardware-backed encryption. Every transaction is verified at seven layers.',
+    title: 'Reliability First',
+    description: 'Zero-downtime architecture with automatic reconnection. Every connection is monitored and recovered instantly.',
     color: '#E63946',
   },
   {
     icon: <Zap className="w-6 h-6" />,
-    title: 'Speed at Scale',
-    description: 'Sub-millisecond settlements across petabyte-scale infrastructure. No compromises on performance.',
+    title: 'Lightning Fast',
+    description: 'Sub-second authentication and billing across thousands of hotspots. No compromises on user experience.',
     color: '#FF6A00',
   },
   {
     icon: <Globe className="w-6 h-6" />,
-    title: 'Global Reach',
-    description: 'Operating across 42 regions with edge nodes in every major market. Local speed, global coverage.',
+    title: 'Multi-Site Scale',
+    description: 'Operating across 42 cities with centralized management. Local performance, global oversight.',
     color: '#00D9FF',
   },
   {
     icon: <Users className="w-6 h-6" />,
-    title: 'Operator-Centric',
-    description: 'Built by telecom engineers for telecom operators. Every feature solves a real operational pain point.',
+    title: 'Operator-Focused',
+    description: 'Built by network engineers for hotspot operators. Every feature solves a real connectivity challenge.',
     color: '#22C55E',
   },
   {
     icon: <Target className="w-6 h-6" />,
-    title: 'Mission Critical',
-    description: 'Designed for systems that cannot fail. Redundant, resilient, and self-healing by architecture.',
+    title: 'Always Connected',
+    description: 'Designed for networks that cannot fail. Intelligent reconnection handles outages, mobility, and signal loss.',
     color: '#A855F7',
   },
   {
     icon: <Award className="w-6 h-6" />,
-    title: 'Compliance Ready',
-    description: 'Pre-certified for SOC 2, ISO 27001, and PCI DSS. Audit trails are immutable and always available.',
+    title: 'Hardware Ready',
+    description: 'Pre-integrated with Mikrotik, TP-Link, Unifi, and Ruijie. RADIUS certified and enterprise-grade.',
     color: '#F59E0B',
   },
 ];
 
 const timeline = [
-  { year: '2019', title: 'Founded', description: 'XETIHUB started with a vision to modernize telecom financial infrastructure.' },
-  { year: '2020', title: 'First Registry', description: 'Launched the core financial registry with 3 operator partners.' },
-  { year: '2021', title: 'Voucher Engine', description: 'Released industrial-scale voucher generation processing 50K/s.' },
-  { year: '2022', title: 'Global Expansion', description: 'Expanded to 20+ regions with edge processing capabilities.' },
-  { year: '2023', title: 'AI Integration', description: 'Introduced predictive analytics and autonomous fraud prevention.' },
-  { year: '2024', title: 'Platform Scale', description: 'Surpassed 500M managed devices and $2.4B in processed revenue.' },
+  { year: '2019', title: 'Founded', description: 'XETIHUB started with a vision to revolutionize WiFi hotspot billing and management.' },
+  { year: '2020', title: 'First Hotspot Network', description: 'Launched the core platform with 3 hotspot operators and mobile money integration.' },
+  { year: '2021', title: 'Voucher Engine', description: 'Released industrial-scale voucher generation processing 50K vouchers per second.' },
+  { year: '2022', title: 'Hardware Integration', description: 'Expanded to support Mikrotik, TP-Link, and Unifi controllers with RADIUS servers.' },
+  { year: '2023', title: 'Auto-Reconnect', description: 'Introduced intelligent reconnection technology handling power outages and mobility.' },
+  { year: '2024', title: 'Network Scale', description: 'Surpassed 1,200 active hotspots and $2.4M in monthly processed revenue.' },
 ];
 
 const team = [
@@ -154,12 +154,12 @@ export default function AboutPage() {
               ◆ About XETIHUB
             </span>
             <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold mt-4 leading-[1.1]">
-              <span className="text-stone-800 dark:text-stone-300">Built by operators,</span>
+              <span className="text-stone-800 dark:text-stone-300">Built by network engineers,</span>
               <br />
-              <span className="text-black dark:text-white">for operators.</span>
+              <span className="text-black dark:text-white">for hotspot operators.</span>
             </h1>
             <p className="text-home-text-muted mt-6 max-w-2xl mx-auto text-lg sm:text-xl font-light leading-relaxed">
-              We&apos;re building the financial infrastructure layer that every telecom operator 
+              We&apos;re building the WiFi hotspot billing platform that every network operator 
               needs but no one has built right — until now.
             </p>
           </motion.div>
@@ -205,25 +205,25 @@ export default function AboutPage() {
                   ◆ Our Mission
                 </span>
                 <h2 className="text-3xl sm:text-4xl font-bold text-home-text mt-3 mb-6">
-                  Command-grade infrastructure for every operator.
+                  Enterprise-grade hotspot management for every operator.
                 </h2>
                 <p className="text-home-text-muted leading-relaxed mb-4">
-                  Telecom operators handle billions of dollars in revenue settlements, voucher 
-                  distributions, and device registrations every day. Yet most still rely on 
-                  fragmented, legacy systems that are slow, opaque, and brittle.
+                  WiFi hotspot operators manage thousands of access points, handle diverse payment methods, 
+                  and ensure seamless connectivity across multiple sites. Yet most still rely on 
+                  fragmented systems that are slow, unreliable, and hard to scale.
                 </p>
                 <p className="text-home-text-muted leading-relaxed">
-                  XETIHUB replaces that entire stack with a unified, real-time control layer 
-                  that gives operators complete visibility and instant action across their 
-                  entire financial infrastructure.
+                  XETIHUB replaces that entire stack with a unified, intelligent platform 
+                  that gives operators complete control and instant insights across their 
+                  entire hotspot network.
                 </p>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 {[
                   { icon: <Building2 className="w-5 h-5" />, label: 'Operators Served', value: '180+' },
-                  { icon: <Cpu className="w-5 h-5" />, label: 'Edge Nodes', value: '8.4K' },
-                  { icon: <Network className="w-5 h-5" />, label: 'API Calls/Day', value: '1.2B' },
-                  { icon: <Globe className="w-5 h-5" />, label: 'Countries', value: '42' },
+                  { icon: <Cpu className="w-5 h-5" />, label: 'Access Points', value: '8.4K' },
+                  { icon: <Network className="w-5 h-5" />, label: 'Daily Sessions', value: '1.2M' },
+                  { icon: <Globe className="w-5 h-5" />, label: 'Cities', value: '42' },
                 ].map((item) => (
                   <div
                     key={item.label}
@@ -350,7 +350,7 @@ export default function AboutPage() {
                 The team behind the platform.
               </h2>
               <p className="text-home-text-muted mt-4 max-w-xl mx-auto">
-                Industry veterans from telecom, fintech, and distributed systems.
+                Industry veterans from networking, payments, and distributed systems.
               </p>
             </div>
           </FadeIn>
@@ -388,10 +388,10 @@ export default function AboutPage() {
         <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center">
           <FadeIn>
             <h2 className="text-3xl sm:text-4xl font-bold text-home-text mb-4">
-              Ready to take command?
+              Ready to master your network?
             </h2>
             <p className="text-home-text-muted text-lg mb-8 max-w-xl mx-auto">
-              Join 180+ operators who trust XETIHUB to power their financial infrastructure.
+              Join 180+ hotspot operators who trust XETIHUB to power their WiFi networks.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link

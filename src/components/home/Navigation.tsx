@@ -5,11 +5,11 @@ import { motion, AnimatePresence, useScroll, useMotionValueEvent } from 'framer-
 import { Menu, X } from 'lucide-react';
 
 const NAV_LINKS = [
-  { label: 'Capabilities', href: '#signal-flow' },
+  { label: 'Features', href: '#signal-flow' },
   { label: 'Platform', href: '#platform' },
   { label: 'Technology', href: '#tech' },
-  { label: 'Trust', href: '#trust' },
   { label: 'About', href: '/about' },
+  { label: 'Support', href: '/support' },
 ];
 
 export default function Navigation() {
@@ -51,14 +51,13 @@ export default function Navigation() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16 md:h-20">
               {/* Logo */}
-              <a href="#" className="flex items-center gap-2.5 group">
+              <a href="/" className="flex items-center gap-2.5 group">
                 <div className="relative w-7 h-7">
                   <svg viewBox="0 0 28 28" fill="none" className="w-full h-full">
                     <rect
                       x="2"
                       y="2"
-                      width="24"
-                      height="24"
+                      width="24" height="24"
                       rx="3"
                       stroke="#FF6A00"
                       strokeWidth="1.5"

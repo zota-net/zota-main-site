@@ -106,15 +106,15 @@ export default function FinalCTASection() {
 
           {/* Headline */}
           <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-home-text leading-[0.95] mb-6">
-            <span className="block">Own the</span>
+            <span className="block">Master Your</span>
             <span className="block text-transparent bg-clip-text bg-gradient-to-r from-[#FF6A00] via-[#FF8533] to-[#FF6A00] mt-2">
-              Financial Registry
+              WiFi Network
             </span>
-            <span className="block text-home-text mt-2">of the Future.</span>
+            <span className="block text-home-text mt-2">Infrastructure.</span>
           </h2>
 
           <p className="text-lg text-home-text-muted max-w-xl mx-auto mb-10 leading-relaxed">
-            Join the organizations already redefining how payments, vouchers, and settlements are governed globally.
+            Join the hotspot operators already delivering seamless connectivity with automatic reconnection and comprehensive billing.
           </p>
 
           {/* CTA Buttons */}
@@ -155,13 +155,13 @@ export default function FinalCTASection() {
             animate={isInView ? { opacity: 1 } : {}}
             transition={{ delay: 0.8, duration: 0.6 }}
           >
-            <span>SOC2 Compliant</span>
+            <span>RADIUS Certified</span>
             <span className="w-1 h-1 rounded-full bg-home-border" />
-            <span>ISO 27001</span>
+            <span>Hardware Integrated</span>
             <span className="w-1 h-1 rounded-full bg-home-border" />
-            <span>GDPR Ready</span>
+            <span>Auto-Reconnect</span>
             <span className="w-1 h-1 rounded-full bg-home-border hidden sm:block" />
-            <span className="hidden sm:block">99.999% SLA</span>
+            <span className="hidden sm:block">99.999% Uptime</span>
           </motion.div>
         </motion.div>
       </div>
