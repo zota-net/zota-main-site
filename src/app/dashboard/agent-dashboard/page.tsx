@@ -342,54 +342,7 @@ export default function AgentDashboardPage() {
           ))}
         </div>
 
-        {/* Monthly Target Progress */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Target className="h-5 w-5" />
-              Monthly Target Progress
-            </CardTitle>
-            <CardDescription>
-              ${dailyStats.targetProgress} of ${dailyStats.targetGoal}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {/* Progress Bar */}
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="font-medium">Achievement</span>
-                  <span className="text-muted-foreground">{targetPercentage}%</span>
-                </div>
-                <div className="h-3 bg-muted rounded-full overflow-hidden">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${targetPercentage}%` }}
-                    transition={{ duration: 1, delay: 0.2 }}
-                    className="h-full bg-gradient-to-r from-cyan-500 to-blue-500"
-                  />
-                </div>
-              </div>
-
-              {/* Stats Row */}
-              <div className="grid grid-cols-3 gap-4">
-                <div className="p-3 bg-muted rounded">
-                  <p className="text-xs text-muted-foreground">Achieved</p>
-                  <p className="text-lg font-bold mt-1">${dailyStats.targetProgress}</p>
-                </div>
-                <div className="p-3 bg-muted rounded">
-                  <p className="text-xs text-muted-foreground">Remaining</p>
-                  <p className="text-lg font-bold text-orange-500 mt-1">${remainingTarget}</p>
-                </div>
-                <div className="p-3 bg-muted rounded">
-                  <p className="text-xs text-muted-foreground">Goal</p>
-                  <p className="text-lg font-bold mt-1">${dailyStats.targetGoal}</p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
+        
         {/* Activity Timeline */}
         <Card>
           <CardHeader className="pb-3">
