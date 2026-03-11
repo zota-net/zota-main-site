@@ -95,44 +95,44 @@ export default function DashboardOverviewPage() {
         <StaggerContainer className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <StaggerItem>
             <StatsCard
-              title="Active Nodes"
+              title="Net Sales"
               value={metrics.activeNodes}
-              description={`of ${metrics.totalNodes} total nodes`}
+              description={`Total Sales Today`}
               icon={Server}
-              trend={{ value: 2.5, label: 'vs yesterday', isPositive: true }}
+              // trend={{ value: 2.5, label: 'vs yesterday', isPositive: true }}
               variant="primary"
             />
           </StaggerItem>
           <StaggerItem>
             <StatsCard
-              title="Total Traffic"
+              title="Voucher Sales"
               value={metrics.totalTraffic}
               suffix=" Gbps"
               decimals={1}
-              description="Current throughput"
+              description="Voucher Sales Today"
               icon={Activity}
-              trend={{ value: 12.3, label: 'vs yesterday', isPositive: true }}
+              // trend={{ value: 12.3, label: 'vs yesterday', isPositive: true }}
               variant="success"
             />
           </StaggerItem>
           <StaggerItem>
             <StatsCard
-              title="Avg Latency"
+              title="Account Balance"
               value={metrics.averageLatency}
               suffix=" ms"
               decimals={1}
-              description="P95 latency"
+              description="Current Account Balance"
               icon={Clock}
-              trend={{ value: -3.2, label: 'improved', isPositive: true }}
+              // trend={{ value: -3.2, label: 'improved', isPositive: true }}
             />
           </StaggerItem>
           <StaggerItem>
             <StatsCard
-              title="Uptime"
+              title="Connected Devices"
               value={metrics.uptime}
               suffix="%"
               decimals={4}
-              description="Last 30 days"
+              description="Actively Connected Devices"
               icon={Zap}
               variant="success"
             />
@@ -146,7 +146,7 @@ export default function DashboardOverviewPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <TrendingUp className="h-5 w-5 text-primary" />
-                Network Traffic
+                Sales Trend
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -199,53 +199,6 @@ export default function DashboardOverviewPage() {
 
           {/* Alerts */}
           <AlertsCard className="lg:col-span-1" maxItems={5} />
-        </div>
-
-        {/* Bottom Grid */}
-        <div className="grid gap-6 lg:grid-cols-3">
-          {/* Latency Chart */}
-          <Card className="lg:col-span-1">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Clock className="h-5 w-5 text-primary" />
-                Latency (Last 30 min)
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ChartContainer 
-                config={{ latency: { label: 'Latency', color: 'hsl(var(--primary))' }}}
-                className="h-[200px] w-full"
-              >
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={latencyData}>
-                    <XAxis 
-                      dataKey="minute" 
-                      tickLine={false}
-                      axisLine={false}
-                      tick={{ fontSize: 10 }}
-                    />
-                    <YAxis 
-                      tickLine={false}
-                      axisLine={false}
-                      tick={{ fontSize: 10 }}
-                      tickFormatter={(value) => `${value}ms`}
-                    />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <Line
-                      type="monotone"
-                      dataKey="latency"
-                      stroke="hsl(var(--primary))"
-                      strokeWidth={2}
-                      dot={false}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </ChartContainer>
-            </CardContent>
-          </Card>
-
-          {/* Active Nodes */}
-          <NodesCard className="lg:col-span-2" maxItems={6} />
         </div>
 
         {/* Quick Stats */}
