@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Smartphone,
@@ -62,6 +62,10 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { PageTransition, AnimatedCounter } from '@/components/common';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { devicesService } from '@/lib/api/services/devices';
+import { useUserStore } from '@/lib/store/user-store';
+import { ApiError } from '@/lib/api/client';
+import type { Device as ApiDevice } from '@/lib/api/types';
 
 // Device types
 interface Device {
@@ -87,32 +91,6 @@ interface ConfigTemplate {
   config: string;
 }
 
-// Generate mock devices
-const generateDevices = (): Device[] => {
-  const types: Device['type'][] = ['router', 'access_point', 'switch', 'gateway', 'endpoint'];
-  const statuses: Device['status'][] = ['online', 'offline', 'provisioning', 'error'];
-  const models = ['XETIHUB-R100', 'XETIHUB-AP200', 'XETIHUB-SW300', 'XETIHUB-GW400', 'XETIHUB-EP500'];
-  const locations = ['Main Office', 'Branch A', 'Branch B', 'Warehouse', 'Data Center'];
-  
-  return Array.from({ length: 30 }, (_, i) => {
-    const type = types[Math.floor(Math.random() * types.length)];
-    const status = i < 20 ? 'online' : statuses[Math.floor(Math.random() * statuses.length)];
-    
-    return {
-      id: `device-${i + 1}`,
-      name: `${type.replace('_', ' ').toUpperCase()}-${String(i + 1).padStart(3, '0')}`,
-      type,
-      status,
-      mac: Array.from({ length: 6 }, () => Math.floor(Math.random() * 256).toString(16).padStart(2, '0')).join(':').toUpperCase(),
-      ip: `192.168.${Math.floor(Math.random() * 10)}.${Math.floor(Math.random() * 254) + 1}`,
-      firmware: `v${Math.floor(Math.random() * 3) + 1}.${Math.floor(Math.random() * 10)}.${Math.floor(Math.random() * 10)}`,
-      lastSeen: new Date(Date.now() - Math.random() * 24 * 60 * 60 * 1000),
-      configCode: `CFG-${Math.random().toString(36).substring(2, 10).toUpperCase()}`,
-      location: locations[Math.floor(Math.random() * locations.length)],
-      model: models[types.indexOf(type)],
-    };
-  });
-};
 
 const configTemplates: ConfigTemplate[] = [
   {
@@ -193,7 +171,19 @@ interface 25-26
   },
 ];
 
-const initialDevices = generateDevices();
+// Map API device to local Device interface
+const mapApiDevice = (d: ApiDevice): Device => ({
+  id: d.id,
+  name: d.name,
+  type: (d.type || 'endpoint') as Device['type'],
+  status: (d.status || 'offline') as Device['status'],
+  mac: d.macAddress || '',
+  ip: d.ipAddress || '',
+  firmware: d.firmwareVersion || 'v1.0.0',
+  lastSeen: new Date(d.lastSeen || d.createdAt),
+  location: d.location,
+  model: d.model,
+});
 
 const statusConfig = {
   online: { label: 'Online', color: 'bg-green-500/10 text-green-500 border-green-500/20', icon: Wifi },
@@ -211,7 +201,27 @@ const typeConfig = {
 };
 
 export default function DevicesPage() {
-  const [devices, setDevices] = useState<Device[]>(initialDevices);
+  const [devices, setDevices] = useState<Device[]>([]);
+  const [isLoadingDevices, setIsLoadingDevices] = useState(true);
+  const user = useUserStore((s) => s.user);
+
+  const fetchDevices = useCallback(async () => {
+    if (!user?.client_id) return;
+    try {
+      setIsLoadingDevices(true);
+      const data = await devicesService.getByClient(user.client_id);
+      setDevices(data.map(mapApiDevice));
+    } catch (err) {
+      console.error('Failed to fetch devices:', err);
+      toast.error(err instanceof ApiError ? err.message : 'Failed to load devices');
+    } finally {
+      setIsLoadingDevices(false);
+    }
+  }, [user?.client_id]);
+
+  useEffect(() => {
+    fetchDevices();
+  }, [fetchDevices]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
@@ -261,25 +271,24 @@ export default function DevicesPage() {
     setTimeout(() => setCopiedCode(null), 2000);
   };
 
-  const handleAddDevice = () => {
-    const device: Device = {
-      id: `device-${Date.now()}`,
-      name: newDevice.name || `DEVICE-${Date.now()}`,
-      type: newDevice.type,
-      status: 'provisioning',
-      mac: newDevice.mac || Array.from({ length: 6 }, () => Math.floor(Math.random() * 256).toString(16).padStart(2, '0')).join(':').toUpperCase(),
-      ip: newDevice.ip || '0.0.0.0',
-      firmware: 'v1.0.0',
-      lastSeen: new Date(),
-      configCode: `CFG-${Math.random().toString(36).substring(2, 10).toUpperCase()}`,
-      location: newDevice.location,
-      model: 'XETIHUB-NEW',
-    };
-    
-    setDevices([device, ...devices]);
-    setAddDialogOpen(false);
-    setNewDevice({ name: '', type: 'router', mac: '', ip: '', location: '' });
-    toast.success('Device added successfully');
+  const handleAddDevice = async () => {
+    if (!user?.client_id) return;
+    try {
+      await devicesService.add({
+        name: newDevice.name || `DEVICE-${Date.now()}`,
+        type: newDevice.type,
+        macAddress: newDevice.mac,
+        ipAddress: newDevice.ip || '0.0.0.0',
+        location: newDevice.location,
+        client_id: user.client_id,
+      });
+      setAddDialogOpen(false);
+      setNewDevice({ name: '', type: 'router', mac: '', ip: '', location: '' });
+      toast.success('Device added successfully');
+      fetchDevices();
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Failed to add device');
+    }
   };
 
   const handleGenerateConfig = (device: Device) => {
@@ -298,9 +307,14 @@ export default function DevicesPage() {
     setConfigDialogOpen(true);
   };
 
-  const handleDeleteDevice = (id: string) => {
-    setDevices(devices.filter((d) => d.id !== id));
-    toast.success('Device deleted');
+  const handleDeleteDevice = async (id: string) => {
+    try {
+      await devicesService.delete(id);
+      toast.success('Device deleted');
+      fetchDevices();
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Failed to delete device');
+    }
   };
 
   const handleRebootDevice = (id: string) => {

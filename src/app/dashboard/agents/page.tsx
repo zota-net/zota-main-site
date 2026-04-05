@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   UserCheck,
@@ -74,6 +74,11 @@ import {
 import { PageTransition, AnimatedCounter } from '@/components/common';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { authService } from '@/lib/api/services/auth';
+import { accountsService } from '@/lib/api/services/wallet';
+import { useUserStore } from '@/lib/store/user-store';
+import { ApiError } from '@/lib/api/client';
+import type { AgentAccount } from '@/lib/api/types';
 
 // Agent types
 interface Agent {
@@ -94,43 +99,20 @@ interface Agent {
   monthlyAchieved: number;
 }
 
-// Generate mock agents
-const generateAgents = (): Agent[] => {
-  const tiers: Agent['tier'][] = ['bronze', 'silver', 'gold', 'platinum'];
-  const statuses: Agent['status'][] = ['active', 'inactive', 'suspended', 'pending'];
-  const regions = ['North', 'South', 'East', 'West', 'Central'];
-  const firstNames = ['James', 'Patricia', 'Michael', 'Linda', 'Robert', 'Barbara', 'William', 'Nancy', 'David', 'Chris'];
-  const lastNames = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez'];
-  
-  return Array.from({ length: 32 }, (_, i) => {
-    const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
-    const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
-    const tier = i < 4 ? tiers[i] : tiers[Math.floor(Math.random() * tiers.length)];
-    const status = i < 25 ? 'active' : statuses[Math.floor(Math.random() * statuses.length)];
-    const commissionRate = tier === 'platinum' ? 15 : tier === 'gold' ? 12 : tier === 'silver' ? 10 : 8;
-    const monthlyTarget = tier === 'platinum' ? 5000 : tier === 'gold' ? 3500 : tier === 'silver' ? 2500 : 1500;
-    const monthlyAchieved = Math.floor(monthlyTarget * (0.6 + Math.random() * 0.5));
-
-    return {
-      id: `agent-${i + 1}`,
-      name: `${firstName} ${lastName}`,
-      email: `${firstName.toLowerCase()}.${lastName.toLowerCase()}@agents.com`,
-      phone: `+1 ${Math.floor(Math.random() * 900) + 100}-${Math.floor(Math.random() * 900) + 100}-${Math.floor(Math.random() * 9000) + 1000}`,
-      tier,
-      status: status,
-      commissionRate,
-      totalVouchersSold: Math.floor(Math.random() * 1000) + 50,
-      totalEarnings: Math.floor(Math.random() * 50000) + 5000,
-      createdAt: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000),
-      lastActive: Math.random() > 0.2 ? new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000) : undefined,
-      region: regions[Math.floor(Math.random() * regions.length)],
-      monthlyTarget,
-      monthlyAchieved,
-    };
-  });
-};
-
-const initialAgents = generateAgents();
+// Map API agent account to local Agent interface
+const mapApiAgent = (a: AgentAccount): Agent => ({
+  id: a.id,
+  name: a.agentFullname,
+  email: a.agentEmail,
+  tier: 'bronze',
+  status: 'active',
+  commissionRate: 8,
+  totalVouchersSold: 0,
+  totalEarnings: a.balance || 0,
+  createdAt: new Date(a.createdAt),
+  monthlyTarget: 1500,
+  monthlyAchieved: 0,
+});
 
 const tierConfig = {
   bronze: { label: 'Bronze', color: 'bg-amber-600/10 text-amber-600 border-amber-600/20', icon: Award },
@@ -147,7 +129,27 @@ const statusConfig = {
 };
 
 export default function AgentsPage() {
-  const [agents, setAgents] = useState<Agent[]>(initialAgents);
+  const [agents, setAgents] = useState<Agent[]>([]);
+  const [isLoadingAgents, setIsLoadingAgents] = useState(true);
+  const user = useUserStore((s) => s.user);
+
+  const fetchAgents = useCallback(async () => {
+    if (!user?.client_id) return;
+    try {
+      setIsLoadingAgents(true);
+      const data = await accountsService.getAgentsByClient(user.client_id);
+      setAgents(data.map(mapApiAgent));
+    } catch (err) {
+      console.error('Failed to fetch agents:', err);
+      toast.error(err instanceof ApiError ? err.message : 'Failed to load agents');
+    } finally {
+      setIsLoadingAgents(false);
+    }
+  }, [user?.client_id]);
+
+  useEffect(() => {
+    fetchAgents();
+  }, [fetchAgents]);
   const [searchQuery, setSearchQuery] = useState('');
   const [tierFilter, setTierFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -208,46 +210,29 @@ export default function AgentsPage() {
     }
   };
 
-  const handleCreateAgent = () => {
-    const tierCommissionMap = {
-      bronze: 8,
-      silver: 10,
-      gold: 12,
-      platinum: 15,
-    };
-
-    const newAgent: Agent = {
-      id: `agent-${Date.now()}`,
-      name: formData.name,
-      email: formData.email,
-      phone: formData.phone,
-      tier: formData.tier,
-      status: formData.status,
-      commissionRate: tierCommissionMap[formData.tier],
-      totalVouchersSold: 0,
-      totalEarnings: 0,
-      createdAt: new Date(),
-      region: formData.region,
-      monthlyTarget: formData.monthlyTarget,
-      monthlyAchieved: 0,
-    };
-
-    setAgents([newAgent, ...agents]);
-    setCreateDialogOpen(false);
-    resetForm();
-    toast.success('Agent created successfully');
+  const handleCreateAgent = async () => {
+    if (!user?.client_id) return;
+    try {
+      // Register agent user via auth service
+      await authService.addAgent({
+        fullname: formData.name,
+        email: formData.email,
+        password: 'TempPassword123!', // Agent will reset on first login
+        client_id: user.client_id,
+      });
+      setCreateDialogOpen(false);
+      resetForm();
+      toast.success('Agent created successfully');
+      fetchAgents();
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Failed to create agent');
+    }
   };
 
   const handleEditAgent = () => {
     if (!selectedAgent) return;
 
-    const tierCommissionMap = {
-      bronze: 8,
-      silver: 10,
-      gold: 12,
-      platinum: 15,
-    };
-
+    // Local UI update since there's no dedicated agent profile update endpoint
     setAgents(agents.map((a) =>
       a.id === selectedAgent.id
         ? {
@@ -257,7 +242,7 @@ export default function AgentsPage() {
             phone: formData.phone,
             tier: formData.tier,
             status: formData.status,
-            commissionRate: tierCommissionMap[formData.tier],
+            commissionRate: formData.commissionRate,
             region: formData.region,
             monthlyTarget: formData.monthlyTarget,
           }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
 import {
@@ -68,6 +68,9 @@ import {
 import { PageTransition, AnimatedCounter } from '@/components/common';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { vouchersService } from '@/lib/api/services/base-operations';
+import { useUserStore } from '@/lib/store/user-store';
+import { ApiError } from '@/lib/api/client';
 
 // Voucher types
 type VoucherCategory = 'hotspot' | 'pppoe' | 'prepaid' | 'corporate' | 'guest';
@@ -97,42 +100,6 @@ const categoryConfig: Record<VoucherCategory, { label: string; color: string; de
   guest: { label: 'Guest', color: 'bg-gray-500/10 text-gray-500', description: 'Temporary guest access' },
 };
 
-// Generate mock vouchers
-const generateVouchers = (): Voucher[] => {
-  const types: Voucher['type'][] = ['time', 'data', 'unlimited'];
-  const categories: VoucherCategory[] = ['hotspot', 'pppoe', 'prepaid', 'corporate', 'guest'];
-  const statuses: Voucher['status'][] = ['active', 'used', 'expired', 'revoked'];
-  const durations = ['1 Hour', '3 Hours', '1 Day', '7 Days', '30 Days'];
-  const values = ['100MB', '500MB', '1GB', '5GB', 'Unlimited'];
-  
-  return Array.from({ length: 50 }, (_, i) => {
-    const type = types[Math.floor(Math.random() * types.length)];
-    const category = categories[Math.floor(Math.random() * categories.length)];
-    const status = statuses[Math.floor(Math.random() * statuses.length)];
-    const createdAt = new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000);
-    const startDate = new Date(createdAt.getTime() + Math.random() * 2 * 24 * 60 * 60 * 1000);
-    const expiresAt = new Date(startDate.getTime() + Math.random() * 60 * 24 * 60 * 60 * 1000);
-    
-    return {
-      id: `voucher-${i + 1}`,
-      code: `NET-${Math.random().toString(36).substring(2, 6).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`,
-      type,
-      category,
-      value: type === 'time' ? durations[Math.floor(Math.random() * durations.length)] : values[Math.floor(Math.random() * values.length)],
-      duration: durations[Math.floor(Math.random() * durations.length)],
-      status,
-      createdAt,
-      startDate,
-      usedAt: status === 'used' ? new Date(startDate.getTime() + Math.random() * 10 * 24 * 60 * 60 * 1000) : undefined,
-      usedBy: status === 'used' ? `user${Math.floor(Math.random() * 100)}@example.com` : undefined,
-      expiresAt,
-      batchId: `BATCH-${Math.floor(Math.random() * 10) + 1}`,
-    };
-  });
-};
-
-const initialVouchers = generateVouchers();
-
 const statusConfig = {
   active: { label: 'Active', color: 'bg-green-500/10 text-green-500 border-green-500/20', icon: CheckCircle2 },
   used: { label: 'Used', color: 'bg-blue-500/10 text-blue-500 border-blue-500/20', icon: Check },
@@ -147,7 +114,41 @@ const typeConfig = {
 };
 
 export default function VouchersPage() {
-  const [vouchers, setVouchers] = useState<Voucher[]>(initialVouchers);
+  const [vouchers, setVouchers] = useState<Voucher[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { user } = useUserStore();
+
+  const fetchVouchers = useCallback(async () => {
+    const clientId = user?.client_id;
+    if (!clientId) return;
+    try {
+      setLoading(true);
+      const data = await vouchersService.getByClient(clientId);
+      const mapped: Voucher[] = (Array.isArray(data) ? data : []).map((v: Record<string, unknown>) => ({
+        id: String(v.id),
+        code: String(v.code ?? ''),
+        type: 'time' as const,
+        category: 'hotspot' as VoucherCategory,
+        value: '',
+        duration: '',
+        status: (v.status as Voucher['status']) ?? 'active',
+        createdAt: new Date(String(v.createdAt ?? '')),
+        startDate: new Date(String(v.createdAt ?? '')),
+        usedAt: v.usedAt ? new Date(String(v.usedAt)) : undefined,
+        expiresAt: v.expiresAt ? new Date(String(v.expiresAt)) : new Date(Date.now() + 30 * 86400000),
+        batchId: String(v.package_id ?? ''),
+      }));
+      setVouchers(mapped);
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Failed to load vouchers');
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.client_id]);
+
+  useEffect(() => {
+    fetchVouchers();
+  }, [fetchVouchers]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
@@ -247,38 +248,45 @@ export default function VouchersPage() {
     }
   };
 
-  const handleCreateVouchers = () => {
-    const newVouchers: Voucher[] = Array.from({ length: newVoucher.quantity }, (_, i) => ({
-      id: `voucher-${Date.now()}-${i}`,
-      code: `${newVoucher.prefix}-${Math.random().toString(36).substring(2, 6).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`,
-      type: newVoucher.type,
-      category: newVoucher.category,
-      value: newVoucher.value,
-      duration: newVoucher.duration,
-      status: 'active' as const,
-      createdAt: new Date(),
-      startDate: newVoucher.startDate,
-      expiresAt: newVoucher.expiresAt,
-      batchId: `BATCH-${Date.now()}`,
-    }));
-    
-    setVouchers([...newVouchers, ...vouchers]);
-    setCreateDialogOpen(false);
-    toast.success(`${newVoucher.quantity} vouchers created successfully`);
+  const handleCreateVouchers = async () => {
+    const clientId = user?.client_id;
+    if (!clientId) { toast.error('No client ID'); return; }
+    try {
+      await vouchersService.create({
+        length: 8,
+        count: newVoucher.quantity,
+        prefix: newVoucher.prefix,
+        package_id: '',
+        client_id: clientId,
+      });
+      setCreateDialogOpen(false);
+      toast.success(`${newVoucher.quantity} vouchers created successfully`);
+      fetchVouchers();
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Failed to create vouchers');
+    }
   };
 
-  const handleDeleteSelected = () => {
-    setVouchers(vouchers.filter((v) => !selectedVouchers.includes(v.id)));
-    toast.success(`${selectedVouchers.length} vouchers deleted`);
-    setSelectedVouchers([]);
+  const handleDeleteSelected = async () => {
+    try {
+      await Promise.all(selectedVouchers.map((id) => vouchersService.delete(id)));
+      toast.success(`${selectedVouchers.length} vouchers deleted`);
+      setSelectedVouchers([]);
+      fetchVouchers();
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Failed to delete vouchers');
+    }
   };
 
-  const handleRevokeSelected = () => {
-    setVouchers(vouchers.map((v) => 
-      selectedVouchers.includes(v.id) ? { ...v, status: 'revoked' as const } : v
-    ));
-    toast.success(`${selectedVouchers.length} vouchers revoked`);
-    setSelectedVouchers([]);
+  const handleRevokeSelected = async () => {
+    try {
+      await Promise.all(selectedVouchers.map((id) => vouchersService.updateStatus(id, 'revoked')));
+      toast.success(`${selectedVouchers.length} vouchers revoked`);
+      setSelectedVouchers([]);
+      fetchVouchers();
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Failed to revoke vouchers');
+    }
   };
 
   const handleMarkAsUsed = () => {
@@ -322,16 +330,24 @@ export default function VouchersPage() {
     window.print();
   };
 
-  const handleRevokeVoucher = (id: string) => {
-    setVouchers(vouchers.map((v) => 
-      v.id === id ? { ...v, status: 'revoked' as const } : v
-    ));
-    toast.success('Voucher revoked');
+  const handleRevokeVoucher = async (id: string) => {
+    try {
+      await vouchersService.updateStatus(id, 'revoked');
+      toast.success('Voucher revoked');
+      fetchVouchers();
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Failed to revoke voucher');
+    }
   };
 
-  const handleDeleteVoucher = (id: string) => {
-    setVouchers(vouchers.filter((v) => v.id !== id));
-    toast.success('Voucher deleted');
+  const handleDeleteVoucher = async (id: string) => {
+    try {
+      await vouchersService.delete(id);
+      toast.success('Voucher deleted');
+      fetchVouchers();
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Failed to delete voucher');
+    }
   };
 
   return (

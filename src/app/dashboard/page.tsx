@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Activity,
@@ -16,6 +17,9 @@ import { PageTransition, StaggerContainer, StaggerItem } from '@/components/comm
 import { StatsCard, AlertsCard, NodesCard } from '@/components/dashboard/cards';
 import { useNetworkStore } from '@/lib/store/network-store';
 import { useUserStore } from '@/lib/store/user-store';
+import { clientsService } from '@/lib/api/services/base-operations';
+import { walletsService } from '@/lib/api/services/wallet';
+import type { ClientReport } from '@/lib/api/types';
 import {
   ChartConfig,
   ChartContainer,
@@ -65,6 +69,21 @@ const trafficChartConfig: ChartConfig = {
 export default function DashboardOverviewPage() {
   const { metrics, nodes } = useNetworkStore();
   const { user } = useUserStore();
+  const [report, setReport] = useState<ClientReport | null>(null);
+  const [walletBalance, setWalletBalance] = useState<number>(0);
+
+  useEffect(() => {
+    const clientId = user?.client_id;
+    if (!clientId) return;
+
+    clientsService.getReport(clientId)
+      .then(setReport)
+      .catch(() => {});
+
+    walletsService.getByUser(user.id, 'Client')
+      .then((w) => setWalletBalance(w.balance ?? 0))
+      .catch(() => {});
+  }, [user?.client_id, user?.id]);
 
   const greeting = () => {
     const hour = new Date().getHours();
@@ -96,42 +115,39 @@ export default function DashboardOverviewPage() {
           <StaggerItem>
             <StatsCard
               title="Net Sales"
-              value={metrics.activeNodes}
+              value={report?.totalRevenue ?? metrics.activeNodes}
               description={`Total Sales Today`}
               icon={Server}
-              // trend={{ value: 2.5, label: 'vs yesterday', isPositive: true }}
               variant="primary"
             />
           </StaggerItem>
           <StaggerItem>
             <StatsCard
               title="Voucher Sales"
-              value={metrics.totalTraffic}
-              suffix=" Gbps"
-              decimals={1}
-              description="Voucher Sales Today"
+              value={report?.activeVouchers ?? metrics.totalTraffic}
+              suffix=""
+              decimals={0}
+              description="Active Vouchers"
               icon={Activity}
-              // trend={{ value: 12.3, label: 'vs yesterday', isPositive: true }}
               variant="success"
             />
           </StaggerItem>
           <StaggerItem>
             <StatsCard
               title="Account Balance"
-              value={metrics.averageLatency}
-              suffix=" ms"
-              decimals={1}
+              value={walletBalance}
+              prefix="$"
+              decimals={2}
               description="Current Account Balance"
               icon={Clock}
-              // trend={{ value: -3.2, label: 'improved', isPositive: true }}
             />
           </StaggerItem>
           <StaggerItem>
             <StatsCard
               title="Connected Devices"
-              value={metrics.uptime}
-              suffix="%"
-              decimals={4}
+              value={report?.totalDevices ?? metrics.uptime}
+              suffix=""
+              decimals={0}
               description="Actively Connected Devices"
               icon={Zap}
               variant="success"

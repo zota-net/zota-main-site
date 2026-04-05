@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Package as PackageIcon,
@@ -67,6 +67,9 @@ import {
 import { PageTransition, AnimatedCounter } from '@/components/common';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { packagesService } from '@/lib/api/services/base-operations';
+import { useUserStore } from '@/lib/store/user-store';
+import { ApiError } from '@/lib/api/client';
 
 interface SubscriptionPackage {
   id: string;
@@ -84,28 +87,7 @@ interface SubscriptionPackage {
   featured: boolean;
 }
 
-function generateMockPackages(): SubscriptionPackage[] {
-  const names = ['Basic', 'Standard', 'Premium', 'Enterprise'];
-  const categories: Array<SubscriptionPackage['category']> = ['hotspot', 'pppoe', 'prepaid'];
-  
-  return Array.from({ length: 10 }, (_, i) => ({
-    id: `pkg-${i}`,
-    name: `${names[i % names.length]}-${i + 1}`,
-    description: `Package ${i + 1}`,
-    duration: (i + 1) * 10,
-    price: (i + 1) * 100,
-    agentCommission: 10,
-    dataLimit: '10GB',
-    category: categories[i % categories.length],
-    status: 'active' as const,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    usageCount: 0,
-    featured: false,
-  }));
-}
 
-const initialPackages = generateMockPackages();
 
 const categoryConfig: Record<SubscriptionPackage['category'], { label: string; color: string }> = {
   hotspot: { label: 'Hotspot', color: 'bg-orange-500/10 text-orange-500 border-orange-500/20' },
@@ -121,7 +103,39 @@ const statusConfig = {
 };
 
 export default function PackagesPage() {
-  const [packages, setPackages] = useState<SubscriptionPackage[]>(initialPackages);
+  const [packages, setPackages] = useState<SubscriptionPackage[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchPackages = useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await packagesService.getAll();
+      const mapped: SubscriptionPackage[] = (Array.isArray(data) ? data : []).map((p: Record<string, unknown>) => ({
+        id: String(p.id),
+        name: String(p.title ?? ''),
+        description: String(p.title ?? ''),
+        duration: Math.round(Number(p.period ?? 0) / 86400),
+        price: Number(p.price ?? 0),
+        agentCommission: Number(p.agentComissionPercentage ?? 0),
+        dataLimit: 'Unlimited',
+        category: 'hotspot' as const,
+        status: 'active' as const,
+        createdAt: new Date(String(p.createdAt ?? '')),
+        updatedAt: new Date(String(p.updatedAt ?? '')),
+        usageCount: 0,
+        featured: false,
+      }));
+      setPackages(mapped);
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Failed to load packages');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchPackages();
+  }, [fetchPackages]);
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -199,68 +213,66 @@ export default function PackagesPage() {
     }
   };
 
-  const handleCreatePackage = () => {
-    const newPackage: SubscriptionPackage = {
-      id: `package-${Date.now()}`,
-      name: formData.name,
-      description: formData.description,
-      duration: formData.duration,
-      price: formData.price,
-      agentCommission: formData.agentCommission,
-      dataLimit: formData.dataLimit,
-      category: formData.category,
-      status: formData.status,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      usageCount: 0,
-      featured: formData.featured,
-    };
-
-    setPackages([newPackage, ...packages]);
-    setCreateDialogOpen(false);
-    resetForm();
-    toast.success('Package created successfully');
+  const handleCreatePackage = async () => {
+    try {
+      await packagesService.create({
+        title: formData.name,
+        period: formData.duration * 86400,
+        price: formData.price,
+        agentComissionPercentage: formData.agentCommission,
+      });
+      setCreateDialogOpen(false);
+      resetForm();
+      toast.success('Package created successfully');
+      fetchPackages();
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Failed to create package');
+    }
   };
 
-  const handleEditPackage = () => {
+  const handleEditPackage = async () => {
     if (!selectedPackage) return;
 
-    setPackages(packages.map((p) =>
-      p.id === selectedPackage.id
-        ? {
-            ...p,
-            name: formData.name,
-            description: formData.description,
-            duration: formData.duration,
-            price: formData.price,
-            agentCommission: formData.agentCommission,
-            dataLimit: formData.dataLimit,
-            category: formData.category,
-            status: formData.status,
-            updatedAt: new Date(),
-            featured: formData.featured,
-          }
-        : p
-    ));
-    setEditDialogOpen(false);
-    setSelectedPackage(null);
-    resetForm();
-    toast.success('Package updated successfully');
+    try {
+      await packagesService.update(selectedPackage.id, {
+        title: formData.name,
+        period: formData.duration * 86400,
+        price: formData.price,
+        agentComissionPercentage: formData.agentCommission,
+      });
+      setEditDialogOpen(false);
+      setSelectedPackage(null);
+      resetForm();
+      toast.success('Package updated successfully');
+      fetchPackages();
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Failed to update package');
+    }
   };
 
-  const handleDeletePackage = () => {
+  const handleDeletePackage = async () => {
     if (!selectedPackage) return;
 
-    setPackages(packages.filter((p) => p.id !== selectedPackage.id));
-    setDeleteDialogOpen(false);
-    setSelectedPackage(null);
-    toast.success('Package deleted successfully');
+    try {
+      await packagesService.delete(selectedPackage.id);
+      setDeleteDialogOpen(false);
+      setSelectedPackage(null);
+      toast.success('Package deleted successfully');
+      fetchPackages();
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Failed to delete package');
+    }
   };
 
-  const handleDeleteSelected = () => {
-    setPackages(packages.filter((p) => !selectedPackages.includes(p.id)));
-    toast.success(`${selectedPackages.length} packages deleted`);
-    setSelectedPackages([]);
+  const handleDeleteSelected = async () => {
+    try {
+      await Promise.all(selectedPackages.map((id) => packagesService.delete(id)));
+      toast.success(`${selectedPackages.length} packages deleted`);
+      setSelectedPackages([]);
+      fetchPackages();
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Failed to delete packages');
+    }
   };
 
   const openEditDialog = (pkg: SubscriptionPackage) => {

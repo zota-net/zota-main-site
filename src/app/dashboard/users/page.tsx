@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Users,
@@ -76,6 +76,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PageTransition, AnimatedCounter } from '@/components/common';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { authService } from '@/lib/api/services/auth';
+import { clientsService } from '@/lib/api/services/base-operations';
+import { useUserStore } from '@/lib/store/user-store';
+import { ApiError } from '@/lib/api/client';
 
 // User types
 interface User {
@@ -92,42 +96,6 @@ interface User {
   permissions: string[];
 }
 
-// Generate mock users
-const generateUsers = (): User[] => {
-  const roles: User['role'][] = ['admin', 'operator', 'viewer', 'customer'];
-  const statuses: User['status'][] = ['active', 'inactive', 'suspended', 'pending'];
-  const departments = ['Engineering', 'Operations', 'Sales', 'Support', 'Management'];
-  const firstNames = ['John', 'Jane', 'Michael', 'Sarah', 'David', 'Emily', 'Chris', 'Lisa', 'Robert', 'Amanda'];
-  const lastNames = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez'];
-  
-  return Array.from({ length: 40 }, (_, i) => {
-    const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
-    const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
-    const role = i < 2 ? 'admin' : roles[Math.floor(Math.random() * roles.length)];
-    
-    return {
-      id: `user-${i + 1}`,
-      name: `${firstName} ${lastName}`,
-      email: `${firstName.toLowerCase()}.${lastName.toLowerCase()}@company.com`,
-      phone: `+1 ${Math.floor(Math.random() * 900) + 100}-${Math.floor(Math.random() * 900) + 100}-${Math.floor(Math.random() * 9000) + 1000}`,
-      role,
-      status: i < 30 ? 'active' : statuses[Math.floor(Math.random() * statuses.length)],
-      createdAt: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000),
-      lastLogin: Math.random() > 0.2 ? new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000) : undefined,
-      department: departments[Math.floor(Math.random() * departments.length)],
-      permissions: role === 'admin' 
-        ? ['all'] 
-        : role === 'operator' 
-          ? ['read', 'write', 'manage_devices'] 
-          : role === 'viewer' 
-            ? ['read'] 
-            : ['read', 'self_manage'],
-    };
-  });
-};
-
-const initialUsers = generateUsers();
-
 const roleConfig = {
   admin: { label: 'Admin', color: 'bg-red-500/10 text-red-500 border-red-500/20', icon: ShieldAlert },
   operator: { label: 'Operator', color: 'bg-blue-500/10 text-blue-500 border-blue-500/20', icon: ShieldCheck },
@@ -143,7 +111,38 @@ const statusConfig = {
 };
 
 export default function UsersPage() {
-  const [users, setUsers] = useState<User[]>(initialUsers);
+  const [users, setUsers] = useState<User[]>([]);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(true);
+  const currentUser = useUserStore((s) => s.user);
+
+  const fetchUsers = useCallback(async () => {
+    if (!currentUser?.client_id) return;
+    try {
+      setIsLoadingUsers(true);
+      const clients = await clientsService.getAll();
+      const mapped: User[] = clients.map((c) => ({
+        id: c.id,
+        name: c.adminFullName || c.businessName,
+        email: c.adminEmail,
+        phone: c.contact,
+        role: 'admin' as const,
+        status: (c.status === 'active' ? 'active' : c.status === 'suspended' ? 'suspended' : 'inactive') as User['status'],
+        createdAt: new Date(c.createdAt),
+        department: c.businessName,
+        permissions: ['all'],
+      }));
+      setUsers(mapped);
+    } catch (err) {
+      console.error('Failed to fetch users:', err);
+      toast.error(err instanceof ApiError ? err.message : 'Failed to load users');
+    } finally {
+      setIsLoadingUsers(false);
+    }
+  }, [currentUser?.client_id]);
+
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -198,27 +197,23 @@ export default function UsersPage() {
     }
   };
 
-  const handleCreateUser = () => {
-    const newUser: User = {
-      id: `user-${Date.now()}`,
-      name: formData.name,
-      email: formData.email,
-      phone: formData.phone,
-      role: formData.role,
-      status: formData.status,
-      createdAt: new Date(),
-      department: formData.department,
-      permissions: formData.role === 'admin' 
-        ? ['all'] 
-        : formData.role === 'operator' 
-          ? ['read', 'write', 'manage_devices'] 
-          : ['read'],
-    };
-    
-    setUsers([newUser, ...users]);
-    setCreateDialogOpen(false);
-    resetForm();
-    toast.success('User created successfully');
+  const handleCreateUser = async () => {
+    if (!currentUser?.client_id) return;
+    try {
+      await authService.register({
+        fullname: formData.name,
+        email: formData.email,
+        password: 'TempPassword123!',
+        role: formData.role,
+        client_id: currentUser.client_id,
+      });
+      setCreateDialogOpen(false);
+      resetForm();
+      toast.success('User created successfully');
+      fetchUsers();
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Failed to create user');
+    }
   };
 
   const handleEditUser = () => {

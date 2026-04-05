@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import { authService } from '@/lib/api/services/auth';
+import { ApiError } from '@/lib/api/client';
 
 export interface User {
   id: string;
@@ -7,6 +9,7 @@ export interface User {
   name: string;
   avatar?: string;
   role: 'admin' | 'operator' | 'viewer';
+  client_id: string;
   permissions: string[];
   lastLogin: number;
   preferences: UserPreferences;
@@ -37,6 +40,7 @@ export interface UserState {
   
   // Actions
   login: (email: string, password: string) => Promise<boolean>;
+  register: (fullname: string, email: string, password: string, company?: string) => Promise<boolean>;
   logout: () => void;
   updateUser: (updates: Partial<User>) => void;
   updatePreferences: (preferences: Partial<UserPreferences>) => void;
@@ -54,17 +58,6 @@ const defaultPreferences: UserPreferences = {
   pushNotifications: false,
 };
 
-// Mock user for demo
-const mockUser: User = {
-  id: 'user-001',
-  email: 'admin@XETIHUB.io',
-  name: 'System Administrator',
-  role: 'admin',
-  permissions: ['*'],
-  lastLogin: Date.now(),
-  preferences: defaultPreferences,
-};
-
 export const useUserStore = create<UserState>()(
   persist(
     (set, get) => ({
@@ -77,20 +70,24 @@ export const useUserStore = create<UserState>()(
       login: async (email: string, password: string) => {
         set({ isLoading: true, error: null });
         
-        // Simulate API call
-        await new Promise((resolve) => setTimeout(resolve, 1500));
-        
-        // Mock validation (in real app, this would be an API call)
-        if (email && password.length >= 4) {
+        try {
+          const clientId = process.env.NEXT_PUBLIC_CLIENT_ID || '';
+          const result = await authService.login({ email, password, client_id: clientId });
+
           const session: Session = {
-            token: `mock-token-${Date.now()}`,
+            token: result.token,
             expiresAt: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
           };
           
           const user: User = {
-            ...mockUser,
-            email,
+            id: result.user.id,
+            email: result.user.email,
+            name: result.user.fullname,
+            role: result.user.role as User['role'],
+            client_id: result.user.client_id,
+            permissions: result.user.role === 'admin' ? ['*'] : [],
             lastLogin: Date.now(),
+            preferences: defaultPreferences,
           };
           
           set({
@@ -102,10 +99,36 @@ export const useUserStore = create<UserState>()(
           });
           
           return true;
-        } else {
+        } catch (err) {
+          const message = err instanceof ApiError ? err.message : 'Login failed. Please try again.';
           set({
             isLoading: false,
-            error: 'Invalid email or password',
+            error: message,
+          });
+          return false;
+        }
+      },
+
+      register: async (fullname: string, email: string, password: string, company?: string) => {
+        set({ isLoading: true, error: null });
+
+        try {
+          const clientId = process.env.NEXT_PUBLIC_CLIENT_ID || '';
+          await authService.register({
+            fullname,
+            email,
+            password,
+            role: 'admin',
+            client_id: clientId || undefined,
+          });
+
+          set({ isLoading: false, error: null });
+          return true;
+        } catch (err) {
+          const message = err instanceof ApiError ? err.message : 'Registration failed. Please try again.';
+          set({
+            isLoading: false,
+            error: message,
           });
           return false;
         }
