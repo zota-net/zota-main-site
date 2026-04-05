@@ -17,7 +17,9 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Logo } from '@/components/common';
+import { useUserStore } from '@/lib/store/user-store';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 const OrbitalScene = dynamic(() => import('@/components/three/OrbitalScene'), {
   ssr: false,
@@ -132,7 +134,7 @@ export default function RegisterPage() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const { register: registerUser, isLoading, error } = useUserStore();
 
   const form = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
@@ -150,11 +152,11 @@ export default function RegisterPage() {
   const strength = getPasswordStrength(watchPassword || '');
 
   const onSubmit = async (data: RegisterFormData) => {
-    setIsLoading(true);
-    // Simulate API call
-    await new Promise((r) => setTimeout(r, 1500));
-    setIsLoading(false);
-    router.push('/login');
+    const success = await registerUser(data.fullName, data.email, data.password, data.company);
+    if (success) {
+      toast.success('Account created! Please check your email to verify your account.');
+      router.push('/login');
+    }
   };
 
   return (
@@ -410,6 +412,13 @@ export default function RegisterPage() {
                 </div>
                 {form.formState.errors.agreeTerms && (
                   <p className="text-xs text-destructive">{form.formState.errors.agreeTerms.message}</p>
+                )}
+
+                {/* Error Message */}
+                {error && (
+                  <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+                    {error}
+                  </div>
                 )}
 
                 {/* Submit */}

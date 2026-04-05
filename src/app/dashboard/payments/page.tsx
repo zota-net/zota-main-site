@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   CreditCard,
@@ -80,6 +80,10 @@ import { Area, AreaChart, XAxis, YAxis, ResponsiveContainer, Bar, BarChart } fro
 import { PageTransition, AnimatedCounter } from '@/components/common';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { walletsService, purchasesService } from '@/lib/api/services/wallet';
+import { useUserStore } from '@/lib/store/user-store';
+import { ApiError } from '@/lib/api/client';
+import type { Transaction as ApiTransaction, VoucherSale } from '@/lib/api/types';
 
 // Payment types
 interface Payment {
@@ -100,51 +104,40 @@ interface Payment {
   metadata?: Record<string, string>;
 }
 
-// Generate mock payments
-const generatePayments = (): Payment[] => {
-  const statuses: Payment['status'][] = ['completed', 'pending', 'failed', 'refunded', 'cancelled'];
-  const methods: Payment['method'][] = ['card', 'bank_transfer', 'wallet', 'crypto'];
-  const types: Payment['type'][] = ['subscription', 'voucher', 'topup', 'service'];
-  const descriptions = {
-    subscription: ['Monthly Plan', 'Annual Plan', 'Enterprise Plan', 'Basic Plan'],
-    voucher: ['100MB Voucher', '1GB Voucher', '5GB Voucher', 'Unlimited Voucher'],
-    topup: ['Account Top-up', 'Balance Reload', 'Credit Addition'],
-    service: ['Installation Fee', 'Support Fee', 'Equipment Fee', 'Upgrade Fee'],
-  };
-  const names = ['John Smith', 'Sarah Johnson', 'Mike Davis', 'Emily Brown', 'Chris Wilson', 'Lisa Garcia'];
-  const phones = ['+1 (555) 123-4567', '+1 (555) 234-5678', '+1 (555) 345-6789', '+1 (555) 456-7890', '+1 (555) 567-8901', '+1 (555) 678-9012'];
-  
-  return Array.from({ length: 60 }, (_, i) => {
-    const type = types[Math.floor(Math.random() * types.length)];
-    const status = i < 40 ? 'completed' : statuses[Math.floor(Math.random() * statuses.length)];
-    const method = methods[Math.floor(Math.random() * methods.length)];
-    const nameIndex = Math.floor(Math.random() * names.length);
-    const name = names[nameIndex];
-    // Create a date with random day and random hour
-    const randomDaysAgo = Math.random() * 30;
-    const randomHour = Math.floor(Math.random() * 24);
-    const randomMinute = Math.floor(Math.random() * 60);
-    const createdAt = new Date(Date.now() - randomDaysAgo * 24 * 60 * 60 * 1000);
-    createdAt.setHours(randomHour, randomMinute, 0, 0);
-    
-    return {
-      id: `pay-${i + 1}`,
-      transactionId: `TXN-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
-      customerId: `cust-${Math.floor(Math.random() * 100) + 1}`,
-      customerName: name,
-      customerEmail: `${name.toLowerCase().replace(' ', '.')}@email.com`,
-      customerPhone: phones[nameIndex],
-      amount: Math.floor(Math.random() * 500) + 10,
-      currency: 'USD',
-      status,
-      method,
-      type,
-      description: descriptions[type][Math.floor(Math.random() * descriptions[type].length)],
-      createdAt,
-      completedAt: status === 'completed' ? new Date(createdAt.getTime() + Math.random() * 60 * 60 * 1000) : undefined,
-    };
-  }).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-};
+// Map API transaction to local Payment interface
+const mapApiTransaction = (t: ApiTransaction): Payment => ({
+  id: t.id,
+  transactionId: t.reference || t.id,
+  customerId: t.walletId,
+  customerName: t.description || 'Unknown',
+  customerEmail: '',
+  customerPhone: '',
+  amount: Math.abs(t.amount),
+  currency: 'USD',
+  status: (t.status === 'completed' ? 'completed' : t.status === 'pending' ? 'pending' : t.status === 'failed' ? 'failed' : 'completed') as Payment['status'],
+  method: 'wallet' as Payment['method'],
+  type: (t.type === 'purchase' ? 'voucher' : t.type === 'topup' ? 'topup' : 'service') as Payment['type'],
+  description: t.description || '',
+  createdAt: new Date(t.createdAt),
+  completedAt: t.status === 'completed' ? new Date(t.createdAt) : undefined,
+});
+
+const mapVoucherSale = (s: VoucherSale): Payment => ({
+  id: s.id,
+  transactionId: s.voucherCode,
+  customerId: s.clientId,
+  customerName: s.phone || 'Voucher Sale',
+  customerEmail: '',
+  customerPhone: s.phone || '',
+  amount: s.amount,
+  currency: 'USD',
+  status: 'completed',
+  method: 'wallet',
+  type: 'voucher',
+  description: `Voucher ${s.voucherCode}`,
+  createdAt: new Date(s.createdAt),
+  completedAt: new Date(s.createdAt),
+});
 
 // Revenue chart data for different time ranges
 const revenueDataSets = {
@@ -198,8 +191,6 @@ const methodColors = {
   crypto: '#F59E0B', // amber
 };
 
-const initialPayments = generatePayments();
-
 const statusConfig = {
   completed: { label: 'Completed', color: 'bg-green-500/10 text-green-500 border-green-500/20', icon: CheckCircle },
   pending: { label: 'Pending', color: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20', icon: Clock },
@@ -221,7 +212,29 @@ const chartConfig = {
 };
 
 export default function PaymentsPage() {
-  const [payments, setPayments] = useState<Payment[]>(initialPayments);
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [isLoadingPayments, setIsLoadingPayments] = useState(true);
+  const user = useUserStore((s) => s.user);
+
+  const fetchPayments = useCallback(async () => {
+    if (!user?.client_id) return;
+    try {
+      setIsLoadingPayments(true);
+      // Fetch voucher sales as the primary payment source
+      const sales = await purchasesService.getVoucherSales(user.client_id);
+      const mapped = sales.map(mapVoucherSale).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      setPayments(mapped);
+    } catch (err) {
+      console.error('Failed to fetch payments:', err);
+      toast.error(err instanceof ApiError ? err.message : 'Failed to load payments');
+    } finally {
+      setIsLoadingPayments(false);
+    }
+  }, [user?.client_id]);
+
+  useEffect(() => {
+    fetchPayments();
+  }, [fetchPayments]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [methodFilter, setMethodFilter] = useState<string>('all');
@@ -464,14 +477,6 @@ export default function PaymentsPage() {
       p.id === id ? { ...p, status: 'pending' as const } : p
     ));
     toast.success('Payment retry initiated');
-    
-    // Simulate completion
-    setTimeout(() => {
-      setPayments((prev) => prev.map((p) => 
-        p.id === id ? { ...p, status: 'completed' as const, completedAt: new Date() } : p
-      ));
-      toast.success('Payment completed');
-    }, 2000);
   };
 
   const formatCurrency = (amount: number, currency: string = 'USD', compact: boolean = true) => {
