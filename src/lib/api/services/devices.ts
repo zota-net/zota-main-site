@@ -9,29 +9,29 @@ import type {
 
 export const devicesService = {
   add: (data: CreateDeviceRequest) =>
-    api.post<ApiResponse<Device>>('/devices/addDevice', data),
+    api.post<ApiResponse<Device>>('/devices', data),
 
   getAll: () =>
-    api.get<Device[]>('/devices/devices'),
+    api.get<Device[]>('/devices'),
 
   getByClient: (clientId: string) =>
-    api.get<Device[]>(`/devices/devices/client/${clientId}`),
+    api.get<Device[]>(`/devices/client/${clientId}`),
 
-  getByStatus: (status: string) =>
-    api.get<Device[]>(`/devices/devices/status/${status}`),
-
-  getByType: (deviceType: string) =>
-    api.get<Device[]>(`/devices/devices/type/${deviceType}`),
-
-  getByLocation: (location: string) =>
-    api.get<Device[]>(`/devices/devices/location/${location}`),
+  getByVoucher: (voucherId: string) =>
+    api.get<Device>(`/devices/voucher/${voucherId}`),
 
   getById: (id: string) =>
-    api.get<Device>(`/devices/devices/${id}`),
+    api.get<Device>(`/devices/${id}`),
 
   update: (id: string, data: Partial<Device>) =>
-    api.put<ApiResponse<Device>>(`/devices/devices/${id}`, data),
+    api.put<ApiResponse<Device>>(`/devices/${id}`, data),
 
   delete: (id: string) =>
-    api.delete<ApiResponse>(`/devices/devices/${id}`),
+    api.delete<ApiResponse>(`/devices/${id}`),
+
+  getByMac: (macAddress: string) =>
+    api.get<Device>(`/devices/mac/${macAddress}`),
+
+  updateExpiry: (id: string, expiresAt: string) =>
+    api.put<ApiResponse>(`/devices/${id}/expiry`, { expiresAt }),
 };

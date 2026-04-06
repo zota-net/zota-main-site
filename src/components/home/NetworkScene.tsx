@@ -5,7 +5,7 @@ import { Canvas, useFrame, useThree, invalidate } from '@react-three/fiber';
 import * as THREE from 'three';
 
 // Animated particle network node system
-function NetworkNodes({ count = 200, mousePos }: { count?: number; mousePos: { x: number; y: number } }) {
+function NetworkNodes({ count = 100, mousePos }: { count?: number; mousePos: { x: number; y: number } }) {
   const meshRef = useRef<THREE.InstancedMesh>(null);
   const dummy = useMemo(() => new THREE.Object3D(), []);
   const clock = useRef(0);

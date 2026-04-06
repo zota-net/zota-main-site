@@ -124,7 +124,7 @@ export default function VouchersPage() {
     try {
       setLoading(true);
       const data = await vouchersService.getByClient(clientId);
-      const mapped: Voucher[] = (Array.isArray(data) ? data : []).map((v: Record<string, unknown>) => ({
+      const mapped: Voucher[] = (Array.isArray(data) ? data : []).map((v: any) => ({
         id: String(v.id),
         code: String(v.code ?? ''),
         type: 'time' as const,

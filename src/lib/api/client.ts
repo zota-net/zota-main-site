@@ -1,6 +1,11 @@
 import { useUserStore } from '@/lib/store/user-store';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost';
+const AUTH_API_BASE_URL = process.env.NEXT_PUBLIC_AUTH_API_BASE_URL || `${API_BASE_URL}/auth`;
+const BASE_OPS_API_BASE_URL = process.env.NEXT_PUBLIC_BASE_OPS_API_BASE_URL || `${API_BASE_URL}/bop`;
+const WALLET_API_BASE_URL = process.env.NEXT_PUBLIC_WALLET_API_BASE_URL || `${API_BASE_URL}/wallet`;
+const MIKROTIK_API_BASE_URL = process.env.NEXT_PUBLIC_MIKROTIK_API_BASE_URL || `${API_BASE_URL}/mikrotik`;
+const DEVICES_API_BASE_URL = process.env.NEXT_PUBLIC_DEVICES_API_BASE_URL || `${API_BASE_URL}/devices`;
 const CLIENT_ID = process.env.NEXT_PUBLIC_CLIENT_ID || '';
 
 export class ApiError extends Error {
@@ -18,6 +23,26 @@ export class ApiError extends Error {
 interface RequestOptions extends Omit<RequestInit, 'body'> {
   body?: unknown;
   skipAuth?: boolean;
+}
+
+function resolveApiUrl(endpoint: string) {
+  const servicePath = endpoint.replace(/^\/(auth|bop|wallet|mikrotik|devices)/, '');
+  if (endpoint.startsWith('/auth/')) {
+    return `${AUTH_API_BASE_URL}${servicePath}`;
+  }
+  if (endpoint.startsWith('/bop/')) {
+    return `${BASE_OPS_API_BASE_URL}${servicePath}`;
+  }
+  if (endpoint.startsWith('/wallet/')) {
+    return `${WALLET_API_BASE_URL}${servicePath}`;
+  }
+  if (endpoint.startsWith('/mikrotik/')) {
+    return `${MIKROTIK_API_BASE_URL}${servicePath}`;
+  }
+  if (endpoint.startsWith('/devices/')) {
+    return `${DEVICES_API_BASE_URL}${servicePath}`;
+  }
+  return `${API_BASE_URL}${endpoint}`;
 }
 
 async function apiFetch<T = unknown>(endpoint: string, options: RequestOptions = {}): Promise<T> {

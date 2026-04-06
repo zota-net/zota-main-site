@@ -3,32 +3,13 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import dynamic from 'next/dynamic';
-import { useMouseParallax, useTypingEffect, useLiveValue } from '@/lib/engine/hooks';
+import { useMouseParallax } from '@/lib/engine/hooks';
 import { ArrowRight, Play } from 'lucide-react';
 
 const NetworkScene = dynamic(() => import('./NetworkScene'), {
   ssr: false,
   loading: () => <div className="absolute inset-0 bg-home-bg" />,
 });
-
-// Scanning text reveal effect
-function ScanningText({ text, className, delay = 0, isVisible = true }: {
-  text: string;
-  className?: string;
-  delay?: number;
-  isVisible?: boolean;
-}) {
-  const { displayText, isComplete } = useTypingEffect(text, 55, isVisible, delay);
-  
-  return (
-    <span className={className}>
-      {displayText}
-      {!isComplete && isVisible && (
-        <span className="inline-block w-[3px] h-[1em] bg-[#FF6A00] ml-0.5 animate-pulse align-middle" />
-      )}
-    </span>
-  );
-}
 
 // Grid Floor SVG overlay
 function GridOverlay() {
@@ -55,18 +36,23 @@ function GridOverlay() {
 
 export default function HeroSection() {
   const [showContent, setShowContent] = useState(false);
+  const [showBackground, setShowBackground] = useState(false);
   const mousePos = useMouseParallax(0.015);
 
   useEffect(() => {
-    const timer = setTimeout(() => setShowContent(true), 600);
-    return () => clearTimeout(timer);
+    const timer = setTimeout(() => setShowContent(true), 100);
+    const bgTimer = setTimeout(() => setShowBackground(true), 500);
+    return () => {
+      clearTimeout(timer);
+      clearTimeout(bgTimer);
+    };
   }, []);
 
   return (
     <section id="hero" className="relative w-full min-h-screen overflow-hidden bg-home-bg">
       {/* 3D Network Background */}
       <div className="absolute inset-0 z-0">
-        <NetworkScene className="w-full h-full" mousePos={mousePos} />
+        {showBackground && <NetworkScene className="w-full h-full" mousePos={mousePos} />}
       </div>
 
       {/* Grid Overlay */}
@@ -106,10 +92,10 @@ export default function HeroSection() {
             transition={{ delay: 1.0, duration: 0.8 }}
           >
             <span className="block text-transparent bg-clip-text bg-gradient-to-r from-[#44403c] via-[#78716c] via-[40%] to-[#292524] dark:from-[#a8a29e] dark:via-[#fafaf9] dark:via-[50%] dark:to-[#a8a29e]">
-              <ScanningText text="MASTER YOUR" delay={1200} isVisible={showContent} />
+              MASTER YOUR
             </span>
             <span className="block text-transparent bg-clip-text bg-gradient-to-r from-[#c2410c] via-[#ea580c] to-[#c2410c] dark:from-[#FF6A00] dark:via-[#FF8533] dark:to-[#FF6A00] mt-2">
-              <ScanningText text="WIFI NETWORK." delay={2000} isVisible={showContent} />
+              WIFI NETWORK.
             </span>
           </motion.h1>
 
@@ -117,7 +103,7 @@ export default function HeroSection() {
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: showContent ? 0.7 : 0, y: showContent ? 0 : 20 }}
-            transition={{ delay: 3.0, duration: 0.8 }}
+            transition={{ delay: 0.5, duration: 0.8 }}
             className="text-base sm:text-lg md:text-xl text-home-text-muted max-w-2xl mx-auto leading-relaxed font-light"
           >
             Comprehensive WiFi hotspot billing system with mobile money payments, voucher codes, 
@@ -129,7 +115,7 @@ export default function HeroSection() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: showContent ? 1 : 0, y: showContent ? 0 : 20 }}
-          transition={{ delay: 3.5, duration: 0.8 }}
+          transition={{ delay: 0.7, duration: 0.8 }}
           className="flex flex-col sm:flex-row items-center gap-4 mt-10"
         >
           {/* Primary CTA */}
@@ -155,7 +141,7 @@ export default function HeroSection() {
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: showContent ? 1 : 0, y: showContent ? 0 : 30 }}
-          transition={{ delay: 4.0, duration: 0.8 }}
+          transition={{ delay: 0.9, duration: 0.8 }}
           className="mb-4 flex items-center gap-4 sm:gap-8 px-4 sm:px-6 py-3 rounded-lg border border-home-border bg-home-card backdrop-blur-md"
         >
           <LiveStat label="Active Hotspots" value={1247} suffix="" />
@@ -178,12 +164,10 @@ function LiveStat({ label, value, suffix = '', decimals = 0 }: {
   suffix?: string;
   decimals?: number;
 }) {
-  const liveVal = useLiveValue(value, 0.02, 200);
-  
   return (
     <div className="text-center">
       <div className="text-lg sm:text-xl font-bold text-home-text tabular-nums">
-        {liveVal.toFixed(decimals)}<span className="text-[#FF6A00] text-sm ml-0.5">{suffix}</span>
+        {value.toFixed(decimals)}<span className="text-[#FF6A00] text-sm ml-0.5">{suffix}</span>
       </div>
       <div className="text-[10px] font-mono text-home-text-faint tracking-wider uppercase">{label}</div>
     </div>

@@ -68,6 +68,7 @@ import { PageTransition, AnimatedCounter } from '@/components/common';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { packagesService } from '@/lib/api/services/base-operations';
+import type { Package } from '@/lib/api/types';
 import { useUserStore } from '@/lib/store/user-store';
 import { ApiError } from '@/lib/api/client';
 
@@ -110,7 +111,7 @@ export default function PackagesPage() {
     try {
       setLoading(true);
       const data = await packagesService.getAll();
-      const mapped: SubscriptionPackage[] = (Array.isArray(data) ? data : []).map((p: Record<string, unknown>) => ({
+      const mapped: SubscriptionPackage[] = (Array.isArray(data) ? data : []).map((p: Package) => ({
         id: String(p.id),
         name: String(p.title ?? ''),
         description: String(p.title ?? ''),
