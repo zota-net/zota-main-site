@@ -14,9 +14,17 @@ import type {
 
 // Nginx proxies /auth/ → auth-service:3001
 
+type ApiResponseWithData<T> = {
+  status: number;
+  message: string;
+  data: T;
+};
+
 export const authService = {
   login: (data: LoginRequest) =>
-    api.post<LoginResponse>('/auth/login', data, { skipAuth: true }),
+    api
+      .post<ApiResponseWithData<LoginResponse>>('/auth/login', data, { skipAuth: true })
+      .then((response) => response.data),
 
   register: (data: RegisterRequest) =>
     api.post<RegisterResponse>('/auth/register', data, { skipAuth: true }),

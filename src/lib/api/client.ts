@@ -68,7 +68,7 @@ async function apiFetch<T = unknown>(endpoint: string, options: RequestOptions =
     headers['client_id'] = clientId;
   }
 
-  const url = `${API_BASE_URL}${endpoint}`;
+  const url = resolveApiUrl(endpoint);
 
   const response = await fetch(url, {
     ...rest,
