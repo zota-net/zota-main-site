@@ -136,7 +136,7 @@ export default function VouchersPage() {
           usedAt: v.usedAt ? new Date(String(v.usedAt)) : undefined,
           expiresAt: v.expiresAt ? new Date(String(v.expiresAt)) : new Date(Date.now() + 30 * 86400000),
           batchId: String(v.package_id ?? ''),
-          packageTitle: packageInfo?.title || 'Unknown Package',
+          packageTitle: v.package.title || 'Unknown Package',
         };
       });
       setVouchers(mapped);
