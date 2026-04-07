@@ -42,10 +42,13 @@ export const packagesService = {
     api.post<ApiResponse<Package>>('/bop/packages', data),
 
   getAll: () =>
-    api.get<Package[]>('/bop/packages'),
+    api.get<ApiResponse<Package[]>>('/bop/packages').then((response) => response.data),
+
+  getByClient: (clientId: string) =>
+    api.get<ApiResponse<Package[]>>(`/bop/clients/${clientId}/packages`).then((response) => response.data),
 
   getById: (id: string) =>
-    api.get<Package>(`/bop/packages/${id}`),
+    api.get<ApiResponse<Package>>(`/bop/packages/${id}`).then((response) => response.data),
 
   update: (id: string, data: UpdatePackageRequest) =>
     api.put<ApiResponse<Package>>(`/bop/packages/${id}`, data),
@@ -58,13 +61,13 @@ export const packagesService = {
 
 export const vouchersService = {
   create: (data: CreateVoucherRequest) =>
-    api.post<ApiResponse<Voucher[]>>('/bop/vouchers', data),
+    api.post<ApiResponse<Voucher[]>>('/bop/vouchers', data).then((response) => response.data),
 
   getByClient: (clientId: string) =>
-    api.get<Voucher[]>(`/bop/vouchers/client/${clientId}`),
+    api.get<ApiResponse<Voucher[]>>(`/bop/vouchers/client/${clientId}`).then((response) => response.data),
 
   getByCode: (code: string) =>
-    api.get<Voucher>(`/bop/vouchers/code/${code}`),
+    api.get<ApiResponse<Voucher>>(`/bop/vouchers/code/${code}`).then((response) => response.data),
 
   updateStatus: (id: string, status: string) =>
     api.put<ApiResponse>(`/bop/vouchers/${id}/status`, { status }),
@@ -80,13 +83,13 @@ export const advertsService = {
     api.post<ApiResponse<Advert>>('/bop/adverts', data),
 
   getByClient: (clientId: string) =>
-    api.get<Advert[]>(`/bop/adverts/client/${clientId}`),
+    api.get<ApiResponse<Advert[]>>(`/bop/adverts/client/${clientId}`).then((response) => response.data),
 
   getActiveByClient: (clientId: string) =>
-    api.get<Advert[]>(`/bop/adverts/client/${clientId}/active`),
+    api.get<ApiResponse<Advert[]>>(`/bop/adverts/client/${clientId}/active`).then((response) => response.data),
 
   getById: (id: string) =>
-    api.get<Advert>(`/bop/adverts/${id}`),
+    api.get<ApiResponse<Advert>>(`/bop/adverts/${id}`).then((response) => response.data),
 
   update: (id: string, data: Partial<CreateAdvertRequest>) =>
     api.put<ApiResponse<Advert>>(`/bop/adverts/${id}`, data),

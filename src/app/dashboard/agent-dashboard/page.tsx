@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
   BarChart3,
@@ -15,6 +15,7 @@ import {
   Calendar,
   Copy,
   ExternalLink,
+  Users,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -28,6 +29,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { PageTransition, AnimatedCounter } from '@/components/common';
+import { accountsService, purchasesService } from '@/lib/api/services/wallet';
+import { useUserStore } from '@/lib/store/user-store';
+import type { AgentAccount, VoucherSale } from '@/lib/api/types';
 import { cn } from '@/lib/utils';
 
 // Activity types
@@ -72,77 +76,6 @@ interface Voucher {
   commission: number;
 }
 
-// Mock agent data
-const mockAgent = {
-  id: 'agent-1',
-  name: 'James Smith',
-  email: 'james.smith@example.com',
-  phone: '+1-555-0123',
-  tier: 'gold',
-  region: 'West Region',
-  avatar: undefined,
-  totalEarnings: 12500,
-  monthlyTarget: 5000,
-  monthlyAchieved: 4200,
-};
-
-// Generate mock daily activities
-const generateDailyActivities = (): Activity[] => {
-  const activities: Activity[] = [
-    {
-      id: '1',
-      type: 'voucher_created',
-      title: 'Voucher Batch Created',
-      description: 'Created 50 Hotspot vouchers (7-day packages)',
-      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-      amount: 50,
-      icon: <Ticket className="h-4 w-4" />,
-      color: 'bg-blue-500/10 text-blue-500',
-    },
-    {
-      id: '2',
-      type: 'commission_earned',
-      title: 'Commission Earned',
-      description: 'Commission from 15 voucher sales',
-      timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000), // 4 hours ago
-      amount: 180,
-      icon: <DollarSign className="h-4 w-4" />,
-      color: 'bg-green-500/10 text-green-500',
-    },
-    {
-      id: '3',
-      type: 'voucher_used',
-      title: 'Vouchers Redeemed',
-      description: '8 vouchers were redeemed by customers',
-      timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000), // 5 hours ago
-      amount: 8,
-      icon: <CheckCircle className="h-4 w-4" />,
-      color: 'bg-purple-500/10 text-purple-500',
-    },
-    {
-      id: '4',
-      type: 'target_update',
-      title: 'Target Progress Update',
-      description: 'Monthly target 82% complete',
-      timestamp: new Date(Date.now() - 7 * 60 * 60 * 1000), // 7 hours ago
-      amount: 4100,
-      icon: <Target className="h-4 w-4" />,
-      color: 'bg-orange-500/10 text-orange-500',
-    },
-    {
-      id: '5',
-      type: 'voucher_created',
-      title: 'Voucher Batch Created',
-      description: 'Created 30 PPPoE vouchers (30-day packages)',
-      timestamp: new Date(Date.now() - 10 * 60 * 60 * 1000), // 10 hours ago
-      amount: 30,
-      icon: <Ticket className="h-4 w-4" />,
-      color: 'bg-blue-500/10 text-blue-500',
-    },
-  ];
-  return activities;
-};
-
 const activityTypeConfig = {
   voucher_created: { label: 'Voucher Created', icon: Ticket, color: 'bg-blue-500' },
   voucher_used: { label: 'Voucher Used', icon: CheckCircle, color: 'bg-purple-500' },
@@ -151,7 +84,6 @@ const activityTypeConfig = {
   status_change: { label: 'Status Change', icon: AlertCircle, color: 'bg-red-500' },
 };
 
-// Voucher configurations
 const voucherCategoryConfig: Record<VoucherCategory, { label: string; color: string }> = {
   hotspot: { label: 'Hotspot', color: 'bg-orange-500/10 text-orange-500' },
   pppoe: { label: 'PPPoE', color: 'bg-blue-500/10 text-blue-500' },
@@ -173,65 +105,74 @@ const voucherStatusConfig: Record<VoucherStatus, { label: string; color: string;
   revoked: { label: 'Revoked', color: 'bg-red-500/10 text-red-500', icon: AlertCircle },
 };
 
-// Generate mock vouchers sold by agent
-const generateAgentVouchers = (): Voucher[] => {
-  const codes = ['VOC', 'VUC', 'VPC', 'VHC', 'VEC'];
-  const categories: VoucherCategory[] = ['hotspot', 'pppoe', 'prepaid', 'corporate', 'guest'];
-  const types: VoucherType[] = ['time', 'data', 'unlimited'];
-  const statuses: VoucherStatus[] = ['active', 'used', 'expired', 'active', 'active', 'used'];
-
-  return Array.from({ length: 15 }, (_, i) => {
-    const code = `${codes[Math.floor(Math.random() * codes.length)]}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-    const type = types[Math.floor(Math.random() * types.length)];
-    const category = categories[Math.floor(Math.random() * categories.length)];
-    const status = statuses[Math.floor(Math.random() * statuses.length)];
-    const price = 10 + Math.random() * 90;
-    const commission = price * 0.1; // 10% commission
-
-    return {
-      id: `voucher-${i}`,
-      code,
-      type,
-      category,
-      value: type === 'time' ? `${7 + i % 3 * 10}d` : type === 'data' ? `${5 + i % 4 * 5}GB` : 'Unlimited',
-      duration: type === 'time' ? `${7 + i % 3 * 10} days` : 'N/A',
-      price: Math.round(price * 100) / 100,
-      status,
-      createdAt: new Date(Date.now() - Math.random() * 24 * 60 * 60 * 1000), // Last 24 hours
-      usedAt: status === 'used' ? new Date(Date.now() - Math.random() * 12 * 60 * 60 * 1000) : undefined,
-      usedBy: status === 'used' ? `Customer-${Math.floor(Math.random() * 1000)}` : undefined,
-      commission: Math.round(commission * 100) / 100,
-    };
-  });
-};
-
-const dailyStats: DailyStats = {
-  vouchersCreated: 80,
-  vouchersUsed: 23,
-  commissionsEarned: 456.75,
-  activeListings: 324,
-  targetProgress: 4200,
-  targetGoal: 5000,
-};
-
 export default function AgentDashboardPage() {
+  const { user } = useUserStore();
   const [filterType, setFilterType] = useState<string>('all');
   const [voucherStatusFilter, setVoucherStatusFilter] = useState<string>('all');
-  const activities = generateDailyActivities();
-  const vouchers = generateAgentVouchers();
+  const [agentAccounts, setAgentAccounts] = useState<AgentAccount[]>([]);
+  const [voucherSales, setVoucherSales] = useState<VoucherSale[]>([]);
+  const [activities, setActivities] = useState<Activity[]>([]);
+
+  useEffect(() => {
+    const clientId = user?.client_id;
+    if (!clientId) return;
+
+    Promise.all([
+      accountsService.getAgentsByClient(clientId),
+      purchasesService.getVoucherSales(clientId),
+    ])
+      .then(([agents, sales]) => {
+        setAgentAccounts(agents);
+        setVoucherSales(sales || []);
+
+        const mappedActivities: Activity[] = (sales || []).slice(0, 12).map((sale) => ({
+          id: sale.id,
+          type: 'voucher_created',
+          title: 'Voucher Sale Recorded',
+          description: `Sale of ${sale.voucherCode} for UGX ${sale.amount.toLocaleString()}`,
+          timestamp: new Date(sale.createdAt),
+          amount: sale.netAmount,
+          icon: <Ticket className="h-4 w-4" />,
+          color: 'bg-blue-500/10 text-blue-500',
+        }));
+
+        setActivities(mappedActivities);
+      })
+      .catch(() => {
+        setAgentAccounts([]);
+        setVoucherSales([]);
+        setActivities([]);
+      });
+  }, [user?.client_id]);
 
   const filteredActivities = useMemo(() => {
     if (filterType === 'all') return activities;
-    return activities.filter(a => a.type === filterType);
+    return activities.filter((a) => a.type === filterType);
   }, [filterType, activities]);
 
   const filteredVouchers = useMemo(() => {
-    if (voucherStatusFilter === 'all') return vouchers;
-    return vouchers.filter(v => v.status === voucherStatusFilter);
-  }, [voucherStatusFilter, vouchers]);
+    const mapped = voucherSales.map((sale) => ({
+      id: sale.id,
+      code: sale.voucherCode,
+      type: 'time' as const,
+      category: 'hotspot' as const,
+      value: `UGX ${sale.amount.toLocaleString()}`,
+      duration: 'N/A',
+      price: sale.amount,
+      status: 'active' as const,
+      createdAt: new Date(sale.createdAt),
+      usedAt: undefined,
+      usedBy: sale.phone,
+      commission: sale.fee,
+    }));
+    if (voucherStatusFilter === 'all') return mapped;
+    return mapped.filter((v) => v.status === voucherStatusFilter);
+  }, [voucherSales, voucherStatusFilter]);
 
-  const targetPercentage = Math.round((dailyStats.targetProgress / dailyStats.targetGoal) * 100);
-  const remainingTarget = dailyStats.targetGoal - dailyStats.targetProgress;
+  const targetPercentage = Math.min(100, Math.round((voucherSales.length / 50) * 100));
+  const remainingTarget = 50 - voucherSales.length;
+  const primaryAgent = agentAccounts[0];
+  const totalEarnings = voucherSales.reduce((sum, sale) => sum + sale.netAmount, 0);
 
   const formatTime = (date: Date) => {
     const now = new Date();
@@ -253,11 +194,13 @@ export default function AgentDashboardPage() {
           <div>
             <h1 className="text-2xl font-bold flex items-center gap-2">
               <BarChart3 className="h-6 w-6" />
-              My Activities
+              Agent Team
             </h1>
-            <p className="text-muted-foreground mt-1">Today's performance and activity log</p>
+            <p className="text-muted-foreground mt-1">Live agent activity from backend sales and accounts</p>
           </div>
-          <Badge className="h-fit capitalize">{mockAgent.tier}</Badge>
+          <Badge className="h-fit capitalize">
+            {agentAccounts.length > 0 ? `${agentAccounts.length} agents` : 'No agents'}
+          </Badge>
         </div>
 
         {/* Agent Info Card */}
@@ -267,21 +210,25 @@ export default function AgentDashboardPage() {
               <div className="flex items-center gap-4">
                 <Avatar className="h-16 w-16 bg-primary text-primary-foreground text-xl">
                   <AvatarFallback>
-                    {mockAgent.name.split(' ').map(n => n[0]).join('')}
+                    {primaryAgent ? primaryAgent.agentFullname.split(' ').map((n) => n[0]).join('') : 'AG'}
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <h3 className="font-semibold text-lg">{mockAgent.name}</h3>
+                  <h3 className="font-semibold text-lg">
+                    {primaryAgent ? primaryAgent.agentFullname : 'Agent Team Overview'}
+                  </h3>
                   <p className="text-sm text-muted-foreground flex items-center gap-1">
                     <MapPin className="h-3 w-3" />
-                    {mockAgent.region}
+                    {primaryAgent ? primaryAgent.agentEmail : 'No agent account selected'}
                   </p>
-                  <p className="text-sm text-muted-foreground">{mockAgent.email}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {agentAccounts.length > 0 ? `${agentAccounts.length} active agents` : 'No active agents found'}
+                  </p>
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-sm text-muted-foreground">Total Earnings</p>
-                <p className="text-2xl font-bold text-green-500">${mockAgent.totalEarnings}</p>
+                <p className="text-sm text-muted-foreground">Total Sales Revenue</p>
+                <p className="text-2xl font-bold text-green-500">UGX {totalEarnings.toLocaleString()}</p>
               </div>
             </div>
           </CardContent>
@@ -291,26 +238,26 @@ export default function AgentDashboardPage() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
           {[
             {
-              label: 'Vouchers Created',
-              value: dailyStats.vouchersCreated,
-              icon: Ticket,
+              label: 'Agents',
+              value: agentAccounts.length,
+              icon: Users,
               color: 'text-blue-500',
             },
             {
-              label: 'Vouchers Used',
-              value: dailyStats.vouchersUsed,
-              icon: CheckCircle,
+              label: 'Voucher Sales',
+              value: voucherSales.length,
+              icon: Ticket,
               color: 'text-purple-500',
             },
             {
-              label: 'Commission Earned',
-              value: `$${dailyStats.commissionsEarned.toFixed(2)}`,
+              label: 'Revenue',
+              value: `UGX ${totalEarnings.toLocaleString()}`,
               icon: DollarSign,
               color: 'text-green-500',
             },
             {
               label: 'Active Listings',
-              value: dailyStats.activeListings,
+              value: agentAccounts.length > 0 ? agentAccounts.length * 5 : 0,
               icon: TrendingUp,
               color: 'text-orange-500',
             },

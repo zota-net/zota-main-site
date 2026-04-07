@@ -106,11 +106,15 @@ const statusConfig = {
 export default function PackagesPage() {
   const [packages, setPackages] = useState<SubscriptionPackage[]>([]);
   const [loading, setLoading] = useState(true);
+  const user = useUserStore((state) => state.user);
 
   const fetchPackages = useCallback(async () => {
+    const clientId = user?.client_id;
+    if (!clientId) return;
+
     try {
       setLoading(true);
-      const data = await packagesService.getAll();
+      const data = await packagesService.getByClient(clientId);
       const mapped: SubscriptionPackage[] = (Array.isArray(data) ? data : []).map((p: Package) => ({
         id: String(p.id),
         name: String(p.title ?? ''),
@@ -132,7 +136,7 @@ export default function PackagesPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user?.client_id]);
 
   useEffect(() => {
     fetchPackages();
@@ -215,8 +219,14 @@ export default function PackagesPage() {
   };
 
   const handleCreatePackage = async () => {
+    if (!user?.client_id) {
+      toast.error('Unable to create package: missing client ID');
+      return;
+    }
+
     try {
       await packagesService.create({
+        clientId: user.client_id,
         title: formData.name,
         period: formData.duration * 86400,
         price: formData.price,
@@ -298,9 +308,9 @@ export default function PackagesPage() {
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-UG', {
       style: 'currency',
-      currency: 'USD',
+      currency: 'UGX',
       maximumFractionDigits: 0,
     }).format(amount);
   };
@@ -437,7 +447,7 @@ export default function PackagesPage() {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label>Price ($)</Label>
+                        <Label>Price (UGX)</Label>
                         <Input
                           type="number"
                           value={formData.price}
@@ -663,7 +673,7 @@ export default function PackagesPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Price ($)</Label>
+                  <Label>Price (UGX)</Label>
                   <Input
                     type="number"
                     value={formData.price}

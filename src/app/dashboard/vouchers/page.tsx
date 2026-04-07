@@ -68,7 +68,8 @@ import {
 import { PageTransition, AnimatedCounter } from '@/components/common';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import { vouchersService } from '@/lib/api/services/base-operations';
+import { packagesService, vouchersService } from '@/lib/api/services/base-operations';
+import type { Package } from '@/lib/api/types';
 import { useUserStore } from '@/lib/store/user-store';
 import { ApiError } from '@/lib/api/client';
 
@@ -89,6 +90,7 @@ interface Voucher {
   usedBy?: string;
   expiresAt: Date;
   batchId?: string;
+  packageTitle?: string;
 }
 
 // Category configuration
@@ -107,15 +109,10 @@ const statusConfig = {
   revoked: { label: 'Revoked', color: 'bg-red-500/10 text-red-500 border-red-500/20', icon: XCircle },
 };
 
-const typeConfig = {
-  time: { label: 'Time-based', color: 'bg-purple-500/10 text-purple-500' },
-  data: { label: 'Data-based', color: 'bg-cyan-500/10 text-cyan-500' },
-  unlimited: { label: 'Unlimited', color: 'bg-amber-500/10 text-amber-500' },
-};
-
 export default function VouchersPage() {
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const [loading, setLoading] = useState(true);
+  const [clientPackages, setClientPackages] = useState<Package[]>([]);
   const { user } = useUserStore();
 
   const fetchVouchers = useCallback(async () => {
@@ -124,20 +121,24 @@ export default function VouchersPage() {
     try {
       setLoading(true);
       const data = await vouchersService.getByClient(clientId);
-      const mapped: Voucher[] = (Array.isArray(data) ? data : []).map((v: any) => ({
-        id: String(v.id),
-        code: String(v.code ?? ''),
-        type: 'time' as const,
-        category: 'hotspot' as VoucherCategory,
-        value: '',
-        duration: '',
-        status: (v.status as Voucher['status']) ?? 'active',
-        createdAt: new Date(String(v.createdAt ?? '')),
-        startDate: new Date(String(v.createdAt ?? '')),
-        usedAt: v.usedAt ? new Date(String(v.usedAt)) : undefined,
-        expiresAt: v.expiresAt ? new Date(String(v.expiresAt)) : new Date(Date.now() + 30 * 86400000),
-        batchId: String(v.package_id ?? ''),
-      }));
+      const mapped: Voucher[] = (Array.isArray(data) ? data : []).map((v: any) => {
+        const packageInfo = clientPackages.find(pkg => String(pkg.id) === String(v.package_id));
+        return {
+          id: String(v.id),
+          code: String(v.code ?? ''),
+          type: 'time' as const,
+          category: 'hotspot' as VoucherCategory,
+          value: '',
+          duration: '',
+          status: (v.status as Voucher['status']) ?? 'active',
+          createdAt: new Date(String(v.createdAt ?? '')),
+          startDate: new Date(String(v.createdAt ?? '')),
+          usedAt: v.usedAt ? new Date(String(v.usedAt)) : undefined,
+          expiresAt: v.expiresAt ? new Date(String(v.expiresAt)) : new Date(Date.now() + 30 * 86400000),
+          batchId: String(v.package_id ?? ''),
+          packageTitle: packageInfo?.title || 'Unknown Package',
+        };
+      });
       setVouchers(mapped);
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Failed to load vouchers');
@@ -161,15 +162,34 @@ export default function VouchersPage() {
   
   // New voucher form
   const [newVoucher, setNewVoucher] = useState({
-    type: 'time' as Voucher['type'],
     category: 'hotspot' as VoucherCategory,
-    value: '1 Hour',
-    duration: '1 Day',
     quantity: 10,
     prefix: 'NET',
-    startDate: new Date(),
-    expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+    packageId: '',
   });
+
+  useEffect(() => {
+    const loadClientPackages = async () => {
+      const clientId = user?.client_id;
+      if (!clientId) return;
+
+      try {
+        const data = await packagesService.getByClient(clientId);
+        const packages = Array.isArray(data) ? data : [];
+        setClientPackages(packages);
+      } catch (err) {
+        toast.error(err instanceof ApiError ? err.message : 'Failed to load client packages');
+      }
+    };
+
+    loadClientPackages();
+  }, [user?.client_id]);
+
+  useEffect(() => {
+    if (!newVoucher.packageId && clientPackages.length > 0) {
+      setNewVoucher((prev) => ({ ...prev, packageId: String(clientPackages[0].id) }));
+    }
+  }, [clientPackages, newVoucher.packageId]);
 
   // Filter vouchers
   const filteredVouchers = useMemo(() => {
@@ -240,23 +260,221 @@ export default function VouchersPage() {
     }
   };
 
-  const handleSelectVoucher = (id: string, checked: boolean) => {
-    if (checked) {
-      setSelectedVouchers([...selectedVouchers, id]);
-    } else {
-      setSelectedVouchers(selectedVouchers.filter((v) => v !== id));
+  const handleExportPrintableCards = () => {
+    if (selectedVouchers.length === 0) {
+      toast.error('Please select vouchers to export');
+      return;
     }
+
+    const selectedVoucherData = filteredVouchers.filter(v => selectedVouchers.includes(v.id));
+
+    // Function to format duration from seconds to human readable
+    const formatDuration = (seconds: number) => {
+      const minutes = seconds / 60;
+      const hours = minutes / 60;
+      const days = hours / 24;
+      const weeks = days / 7;
+      const months = days / 30;
+
+      if (months >= 1) return `${Math.round(months)} month${Math.round(months) > 1 ? 's' : ''}`;
+      if (weeks >= 1) return `${Math.round(weeks)} week${Math.round(weeks) > 1 ? 's' : ''}`;
+      if (days >= 1) return `${Math.round(days)} day${Math.round(days) > 1 ? 's' : ''}`;
+      if (hours >= 1) return `${Math.round(hours)} hour${Math.round(hours) > 1 ? 's' : ''}`;
+      return `${Math.round(minutes)} minute${Math.round(minutes) > 1 ? 's' : ''}`;
+    };
+
+    // Create a hidden print container
+    const printContainer = document.createElement('div');
+    printContainer.id = 'voucher-print-container';
+    printContainer.style.position = 'absolute';
+    printContainer.style.left = '-9999px';
+    printContainer.style.top = '-9999px';
+    printContainer.innerHTML = `
+      <style>
+        @media print {
+          body * { visibility: hidden; }
+          #voucher-print-container,
+          #voucher-print-container * { visibility: visible; }
+          #voucher-print-container {
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 100% !important;
+            background: white !important;
+          }
+        }
+
+        .print-page {
+          page-break-after: always;
+          padding: 0.5in;
+          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .print-page:last-child {
+          page-break-after: avoid;
+        }
+
+        .voucher-grid {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 0.25in;
+          margin: 0.25in 0;
+        }
+
+        .voucher-card {
+          border: 2px solid #e5e7eb;
+          border-radius: 8px;
+          padding: 16px;
+          background: white;
+          position: relative;
+          break-inside: avoid;
+          height: 2.5in;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+        }
+
+        .voucher-card::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 4px;
+          background: linear-gradient(90deg, #FF6A00, #ff8533);
+        }
+
+        .voucher-header {
+          margin-bottom: 12px;
+        }
+
+        .package-title {
+          font-size: 12px;
+          font-weight: bold;
+          color: #374151;
+          margin: 0 0 8px 0;
+          line-height: 1.3;
+        }
+
+        .voucher-code {
+          font-family: 'Courier New', monospace;
+          font-size: 14px;
+          font-weight: bold;
+          background: #f3f4f6;
+          padding: 8px 12px;
+          border-radius: 6px;
+          text-align: center;
+          letter-spacing: 1px;
+          margin: 8px 0;
+          border: 1px solid #e5e7eb;
+        }
+
+        .voucher-details {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          font-size: 10px;
+          color: #6b7280;
+          margin: 4px 0;
+        }
+
+        .price-duration {
+          background: #f8fafc;
+          padding: 6px 10px;
+          border-radius: 4px;
+          border: 1px solid #e5e7eb;
+          font-weight: 500;
+        }
+
+        .voucher-footer {
+          font-size: 8px;
+          color: #9ca3af;
+          text-align: center;
+          margin-top: 8px;
+          padding-top: 8px;
+          border-top: 1px solid #f3f4f6;
+        }
+
+        .company-header {
+          text-align: center;
+          margin-bottom: 0.25in;
+          padding-bottom: 0.1in;
+          border-bottom: 2px solid #FF6A00;
+        }
+
+        .company-name {
+          font-size: 16px;
+          font-weight: bold;
+          color: #FF6A00;
+          margin: 0;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+        }
+      </style>
+
+      <div class="print-page">
+        <div class="company-header">
+          <h1 class="company-name">ZOTA Network</h1>
+        </div>
+
+        <div class="voucher-grid">
+          ${selectedVoucherData.map(voucher => {
+            const packageInfo = clientPackages.find(pkg => String(pkg.id) === String(voucher.batchId));
+            const price = packageInfo?.price || 0;
+            const duration = packageInfo?.period || 0;
+            const formattedDuration = formatDuration(duration);
+
+            return `
+              <div class="voucher-card">
+                <div class="voucher-header">
+                  <h3 class="package-title">${voucher.packageTitle}</h3>
+                </div>
+                <div class="voucher-code">${voucher.code}</div>
+                <div class="voucher-details">
+                  <div class="price-duration">
+                    UGX ${price.toLocaleString()} • ${formattedDuration}
+                  </div>
+                </div>
+                <div class="voucher-footer">
+                  Expires: ${format(voucher.expiresAt, 'MMM dd, yyyy')}
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+    `;
+
+    // Add to document body
+    document.body.appendChild(printContainer);
+
+    // Trigger print
+    window.print();
+
+    // Clean up after printing
+    setTimeout(() => {
+      document.body.removeChild(printContainer);
+    }, 1000);
   };
 
   const handleCreateVouchers = async () => {
     const clientId = user?.client_id;
-    if (!clientId) { toast.error('No client ID'); return; }
+    if (!clientId) {
+      toast.error('No client ID');
+      return;
+    }
+
+    if (!newVoucher.packageId) {
+      toast.error('Please select a package before generating vouchers');
+      return;
+    }
+
     try {
       await vouchersService.create({
         length: 8,
         count: newVoucher.quantity,
         prefix: newVoucher.prefix,
-        package_id: '',
+        package_id: newVoucher.packageId,
         client_id: clientId,
       });
       setCreateDialogOpen(false);
@@ -366,9 +584,16 @@ export default function VouchersPage() {
           </div>
           
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" size="sm" className="h-8 sm:h-9">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="h-8 sm:h-9"
+              onClick={handleExportPrintableCards}
+              disabled={selectedVouchers.length === 0}
+            >
               <Download className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Export</span>
+              <span className="hidden sm:inline">Export Cards</span>
+              <span className="sm:hidden">Cards</span>
             </Button>
             <Button variant="outline" size="sm" className="h-8 sm:h-9">
               <Printer className="h-4 w-4 sm:mr-2" />
@@ -412,110 +637,30 @@ export default function VouchersPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Voucher Type</Label>
-                      <Select
-                        value={newVoucher.type}
-                        onValueChange={(value: Voucher['type']) => setNewVoucher({ ...newVoucher, type: value })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="time">Time-based</SelectItem>
-                          <SelectItem value="data">Data-based</SelectItem>
-                          <SelectItem value="unlimited">Unlimited</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Value</Label>
-                      <Select
-                        value={newVoucher.value}
-                        onValueChange={(value) => setNewVoucher({ ...newVoucher, value })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {newVoucher.type === 'time' ? (
-                            <>
-                              <SelectItem value="1 Hour">1 Hour</SelectItem>
-                              <SelectItem value="3 Hours">3 Hours</SelectItem>
-                              <SelectItem value="1 Day">1 Day</SelectItem>
-                              <SelectItem value="7 Days">7 Days</SelectItem>
-                              <SelectItem value="30 Days">30 Days</SelectItem>
-                            </>
-                          ) : (
-                            <>
-                              <SelectItem value="100MB">100 MB</SelectItem>
-                              <SelectItem value="500MB">500 MB</SelectItem>
-                              <SelectItem value="1GB">1 GB</SelectItem>
-                              <SelectItem value="5GB">5 GB</SelectItem>
-                              <SelectItem value="Unlimited">Unlimited</SelectItem>
-                            </>
-                          )}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  
-                  {/* Validity Period with Calendar */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Start Date</Label>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="outline"
-                            className={cn(
-                              "w-full justify-start text-left font-normal",
-                              !newVoucher.startDate && "text-muted-foreground"
-                            )}
-                          >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {newVoucher.startDate ? format(newVoucher.startDate, "PPP") : "Select date"}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={newVoucher.startDate}
-                            onSelect={(date) => date && setNewVoucher({ ...newVoucher, startDate: date })}
-                            disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
-                            initialFocus
-                          />
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Expiry Date</Label>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="outline"
-                            className={cn(
-                              "w-full justify-start text-left font-normal",
-                              !newVoucher.expiresAt && "text-muted-foreground"
-                            )}
-                          >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {newVoucher.expiresAt ? format(newVoucher.expiresAt, "PPP") : "Select date"}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={newVoucher.expiresAt}
-                            onSelect={(date) => date && setNewVoucher({ ...newVoucher, expiresAt: date })}
-                            disabled={(date) => date <= newVoucher.startDate}
-                            initialFocus
-                          />
-                        </PopoverContent>
-                      </Popover>
-                    </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-sm">Package</Label>
+                    <Select
+                      value={newVoucher.packageId}
+                      onValueChange={(value) => setNewVoucher({ ...newVoucher, packageId: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={clientPackages.length ? 'Select package' : 'No package available'} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {clientPackages.length > 0 ? (
+                          clientPackages.map((pkg) => (
+                            <SelectItem key={pkg.id} value={String(pkg.id)}>
+                              {pkg.title} - {Math.round(pkg.period / 86400)}d • {new Intl.NumberFormat('en-UG', { style: 'currency', currency: 'UGX', maximumFractionDigits: 0 }).format(pkg.price)}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <SelectItem value="" disabled>
+                            No packages found for your client
+                          </SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
                   </div>
                   
                   <div className="grid grid-cols-2 gap-4">
@@ -547,12 +692,11 @@ export default function VouchersPage() {
                       <Badge className={categoryConfig[newVoucher.category].color}>
                         {categoryConfig[newVoucher.category].label}
                       </Badge>
-                      <Badge className={typeConfig[newVoucher.type].color}>
-                        {typeConfig[newVoucher.type].label}
-                      </Badge>
-                      <Badge variant="outline">
-                        {format(newVoucher.startDate, "MMM d")} - {format(newVoucher.expiresAt, "MMM d, yyyy")}
-                      </Badge>
+                      {newVoucher.packageId && clientPackages.find(pkg => String(pkg.id) === newVoucher.packageId) && (
+                        <Badge variant="outline">
+                          {clientPackages.find(pkg => String(pkg.id) === newVoucher.packageId)?.title}
+                        </Badge>
+                      )}
                     </div>
                     <div className="flex items-center gap-3 p-3 bg-background rounded-md border">
                       <div className="flex-1">
@@ -562,8 +706,13 @@ export default function VouchersPage() {
                         </code>
                       </div>
                       <div className="text-right">
-                        <p className="text-xs text-muted-foreground mb-1">Value</p>
-                        <span className="text-sm font-medium">{newVoucher.value}</span>
+                        <p className="text-xs text-muted-foreground mb-1">Package</p>
+                        <span className="text-sm font-medium">
+                          {newVoucher.packageId && clientPackages.find(pkg => String(pkg.id) === newVoucher.packageId)
+                            ? `${clientPackages.find(pkg => String(pkg.id) === newVoucher.packageId)?.title} (${Math.round((clientPackages.find(pkg => String(pkg.id) === newVoucher.packageId)?.period || 0) / 86400)}d)`
+                            : 'Select package'
+                          }
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -821,9 +970,8 @@ export default function VouchersPage() {
                       />
                     </TableHead>
                     <TableHead className="min-w-[120px]">Code</TableHead>
+                    <TableHead className="hidden md:table-cell">Package</TableHead>
                     <TableHead className="hidden md:table-cell">Category</TableHead>
-                    <TableHead className="hidden sm:table-cell">Type</TableHead>
-                    <TableHead>Value</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="hidden lg:table-cell">Start Date</TableHead>
                     <TableHead className="hidden lg:table-cell">Expires</TableHead>
@@ -834,7 +982,6 @@ export default function VouchersPage() {
                   <AnimatePresence mode="popLayout">
                     {filteredVouchers.slice(0, 20).map((voucher) => {
                       const statusInfo = statusConfig[voucher.status];
-                      const typeInfo = typeConfig[voucher.type];
                       const catInfo = categoryConfig[voucher.category];
                       const StatusIcon = statusInfo.icon;
                       
@@ -872,16 +1019,15 @@ export default function VouchersPage() {
                             </div>
                           </TableCell>
                           <TableCell className="hidden md:table-cell p-2 sm:p-4">
+                            <span className="text-xs sm:text-sm font-medium truncate max-w-[120px] sm:max-w-none">
+                              {voucher.packageTitle}
+                            </span>
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell p-2 sm:p-4">
                             <Badge variant="outline" className={cn(catInfo.color, "text-xs")}>
                               {catInfo.label}
                             </Badge>
                           </TableCell>
-                          <TableCell className="hidden sm:table-cell p-2 sm:p-4">
-                            <Badge variant="outline" className={cn(typeInfo.color, "text-xs")}>
-                              {typeInfo.label}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="font-medium text-xs sm:text-sm p-2 sm:p-4">{voucher.value}</TableCell>
                           <TableCell className="p-2 sm:p-4">
                             <Badge variant="outline" className={cn(statusInfo.color, "text-xs")}>
                               <StatusIcon className="h-3 w-3 mr-0.5 sm:mr-1" />

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -49,8 +49,15 @@ function generateParticles() {
 
 // Animated background particles
 function NetworkParticles() {
-  const { nodes, lines } = useMemo(() => generateParticles(), []);
-  
+  const [particles, setParticles] = useState<ReturnType<typeof generateParticles> | null>(null);
+
+  useEffect(() => {
+    setParticles(generateParticles());
+  }, []);
+
+  const nodes = particles?.nodes ?? [];
+  const lines = particles?.lines ?? [];
+
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
       {/* Grid lines */}

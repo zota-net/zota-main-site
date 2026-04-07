@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import dynamic from 'next/dynamic';
@@ -68,7 +68,15 @@ function generateParticles() {
 }
 
 function NetworkParticles() {
-  const { nodes, lines } = useMemo(() => generateParticles(), []);
+  const [particles, setParticles] = useState<ReturnType<typeof generateParticles> | null>(null);
+
+  useEffect(() => {
+    setParticles(generateParticles());
+  }, []);
+
+  const nodes = particles?.nodes ?? [];
+  const lines = particles?.lines ?? [];
+
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
       <svg className="absolute inset-0 w-full h-full opacity-10">

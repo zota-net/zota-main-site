@@ -113,7 +113,7 @@ const mapApiTransaction = (t: ApiTransaction): Payment => ({
   customerEmail: '',
   customerPhone: '',
   amount: Math.abs(t.amount),
-  currency: 'USD',
+  currency: 'UGX',
   status: (t.status === 'completed' ? 'completed' : t.status === 'pending' ? 'pending' : t.status === 'failed' ? 'failed' : 'completed') as Payment['status'],
   method: 'wallet' as Payment['method'],
   type: (t.type === 'purchase' ? 'voucher' : t.type === 'topup' ? 'topup' : 'service') as Payment['type'],
@@ -130,7 +130,7 @@ const mapVoucherSale = (s: VoucherSale): Payment => ({
   customerEmail: '',
   customerPhone: s.phone || '',
   amount: s.amount,
-  currency: 'USD',
+  currency: 'UGX',
   status: 'completed',
   method: 'wallet',
   type: 'voucher',
@@ -479,16 +479,16 @@ export default function PaymentsPage() {
     toast.success('Payment retry initiated');
   };
 
-  const formatCurrency = (amount: number, currency: string = 'USD', compact: boolean = true) => {
+  const formatCurrency = (amount: number, currency: string = 'UGX', compact: boolean = true) => {
     if (compact && amount >= 1000) {
-      return new Intl.NumberFormat('en-US', {
+      return new Intl.NumberFormat('en-UG', {
         style: 'currency',
         currency,
         notation: 'compact',
         maximumFractionDigits: 1,
       }).format(amount);
     }
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-UG', {
       style: 'currency',
       currency,
     }).format(amount);
@@ -1396,7 +1396,7 @@ export default function PaymentsPage() {
             <div className="space-y-4 py-4">
               <div className="p-4 rounded-lg bg-muted/50 border">
                 <p className="text-sm text-muted-foreground">Available Balance</p>
-                <p className="text-2xl font-bold text-green-500">{formatCurrency(stats.totalRevenue, 'USD', false)}</p>
+                <p className="text-2xl font-bold text-green-500">{formatCurrency(stats.totalRevenue, 'UGX', false)}</p>
               </div>
               <div className="space-y-2">
                 <Label>Withdrawal Amount</Label>

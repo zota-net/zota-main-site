@@ -109,6 +109,7 @@ export interface Package {
 }
 
 export interface CreatePackageRequest {
+  clientId: string | number;
   period: number; // seconds
   title: string;
   price: number;

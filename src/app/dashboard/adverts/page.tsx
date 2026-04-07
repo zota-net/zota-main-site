@@ -36,7 +36,7 @@ export default function AdvertsPage() {
 
     try {
       const data = await advertsService.getByClient(user.client_id);
-      setAdverts(data);
+      setAdverts(data || []);
     } catch (error) {
       toast.error('Failed to load adverts');
     } finally {
