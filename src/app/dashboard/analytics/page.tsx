@@ -141,7 +141,10 @@ export default function AnalyticsPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Select value={timeRange} onValueChange={setTimeRange}>
+            <Select 
+              value={timeRange} 
+              onValueChange={(value) => setTimeRange(value as '24h' | '7d' | '30d' | '90d')}
+            >
               <SelectTrigger className="w-32">
                 <Calendar className="h-4 w-4 mr-2" />
                 <SelectValue />

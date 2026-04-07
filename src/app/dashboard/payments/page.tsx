@@ -24,7 +24,7 @@ import {
   Ban,
   RotateCcw,
   FileText,
-  Wallet,
+  Wallet as WalletIcon,
   Building,
   User,
   Phone,
@@ -80,10 +80,11 @@ import { Area, AreaChart, XAxis, YAxis, ResponsiveContainer, Bar, BarChart } fro
 import { PageTransition, AnimatedCounter } from '@/components/common';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import { walletsService, purchasesService } from '@/lib/api/services/wallet';
+import { walletsService, purchasesService, reportsService, withdrawalsService } from '@/lib/api/services/wallet';
 import { useUserStore } from '@/lib/store/user-store';
 import { ApiError } from '@/lib/api/client';
-import type { Transaction as ApiTransaction, VoucherSale } from '@/lib/api/types';
+import type { Transaction as ApiTransaction, VoucherSale, SalesReport, Wallet } from '@/lib/api/types';
+import { format, parseISO } from 'date-fns';
 
 // Payment types
 interface Payment {
@@ -183,14 +184,6 @@ const revenueDataSets = {
 // Annual revenue calculation
 const annualRevenue = revenueDataSets['1y'].reduce((sum, item) => sum + item.revenue, 0);
 
-// Payment method colors for the chart
-const methodColors = {
-  card: '#3B82F6', // blue
-  bank_transfer: '#22C55E', // green
-  wallet: '#A855F7', // purple
-  crypto: '#F59E0B', // amber
-};
-
 const statusConfig = {
   completed: { label: 'Completed', color: 'bg-green-500/10 text-green-500 border-green-500/20', icon: CheckCircle },
   pending: { label: 'Pending', color: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20', icon: Clock },
@@ -202,7 +195,7 @@ const statusConfig = {
 const methodConfig = {
   card: { label: 'Card', icon: CreditCard, color: 'text-blue-500' },
   bank_transfer: { label: 'Bank Transfer', icon: Building, color: 'text-green-500' },
-  wallet: { label: 'Wallet', icon: Wallet, color: 'text-purple-500' },
+  wallet: { label: 'Wallet', icon: WalletIcon, color: 'text-purple-500' },
   crypto: { label: 'Crypto', icon: DollarSign, color: 'text-amber-500' },
 };
 
@@ -215,22 +208,38 @@ export default function PaymentsPage() {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [isLoadingPayments, setIsLoadingPayments] = useState(true);
   const user = useUserStore((s) => s.user);
+  const [salesReport, setSalesReport] = useState<SalesReport | null>(null);
+  const [wallet, setWallet] = useState<Wallet | null>(null);
 
   const fetchPayments = useCallback(async () => {
     if (!user?.client_id) return;
     try {
       setIsLoadingPayments(true);
-      // Fetch voucher sales as the primary payment source
-      const sales = await purchasesService.getVoucherSales(user.client_id);
+      // Fetch voucher sales and sales report
+      const [sales, report] = await Promise.all([
+        purchasesService.getVoucherSales(user.client_id),
+        reportsService.getSalesReport(user.client_id)
+      ]);
+      
       const mapped = sales.map(mapVoucherSale).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
       setPayments(mapped);
+      setSalesReport(report);
+      
+      // Fetch wallet data separately (don't fail if wallet doesn't exist)
+      try {
+        const walletData = await walletsService.getByUser(user.id, 'Client');
+        setWallet(walletData);
+      } catch (walletErr) {
+        console.warn('Wallet not found for user:', walletErr);
+        setWallet(null); // Set wallet to null if not found
+      }
     } catch (err) {
       console.error('Failed to fetch payments:', err);
       toast.error(err instanceof ApiError ? err.message : 'Failed to load payments');
     } finally {
       setIsLoadingPayments(false);
     }
-  }, [user?.client_id]);
+  }, [user?.client_id, user?.id]);
 
   useEffect(() => {
     fetchPayments();
@@ -246,101 +255,49 @@ export default function PaymentsPage() {
   const [transferDialogOpen, setTransferDialogOpen] = useState(false);
   const [withdrawDialogOpen, setWithdrawDialogOpen] = useState(false);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
+  const [withdrawalForm, setWithdrawalForm] = useState({
+    amount: '',
+    phone: '',
+    provider: 'MTN' as 'MTN' | 'Airtel'
+  });
 
   // Get current revenue data based on time range - memoized to ensure proper reactivity
   const revenueData = useMemo(() => {
+    if (!salesReport?.sales) return [];
+
+    // Group sales by date and calculate daily totals
+    const salesByDate = new Map<string, { date: string; revenue: number; transactions: number; iso: string }>();
+
+    salesReport.sales.forEach((sale) => {
+      const iso = format(parseISO(sale.createdAt), 'yyyy-MM-dd');
+      const date = format(parseISO(sale.createdAt), 'MMM dd');
+      const current = salesByDate.get(iso) ?? { date, revenue: 0, transactions: 0, iso };
+      current.revenue += sale.amount;
+      current.transactions += 1;
+      salesByDate.set(iso, current);
+    });
+
+    // Convert to array and sort by date
+    const data = Array.from(salesByDate.values()).sort((a, b) => a.iso.localeCompare(b.iso));
+
+    // Apply time range filtering
     if (chartTimeRange === 'custom' && customDateRange.start && customDateRange.end) {
-      // For custom range, generate data based on selected dates
       const startDate = new Date(customDateRange.start + 'T00:00:00');
       const endDate = new Date(customDateRange.end + 'T00:00:00');
       
-      // Calculate inclusive days difference (+1 to include both start and end dates)
-      const daysDiff = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-      
-      // Generate custom data points for each day in range
-      const customData = [];
-      
-      // If range is small (<=15 days), show every day; otherwise show sampled points
-      const showAllDays = daysDiff <= 15;
-      const numPoints = showAllDays ? daysDiff : Math.min(daysDiff, 12);
-      
-      for (let i = 0; i < numPoints; i++) {
-        const date = new Date(startDate);
-        if (showAllDays) {
-          date.setDate(startDate.getDate() + i);
-        } else {
-          // For larger ranges, distribute points evenly including the last day
-          const dayOffset = Math.round((i / (numPoints - 1)) * (daysDiff - 1));
-          date.setDate(startDate.getDate() + dayOffset);
-        }
-        
-        // Simulate revenue - some days may have 0 revenue
-        const hasRevenue = Math.random() > 0.15; // 15% chance of no revenue
-        customData.push({
-          date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-          revenue: hasRevenue ? Math.floor(15000 + Math.random() * 15000) : 0,
-          transactions: hasRevenue ? Math.floor(150 + Math.random() * 200) : 0,
-        });
-      }
-      return customData;
+      return data.filter(item => {
+        const itemDate = new Date(item.iso + 'T00:00:00');
+        return itemDate >= startDate && itemDate <= endDate;
+      });
     }
-    return revenueDataSets[chartTimeRange];
-  }, [chartTimeRange, customDateRange.start, customDateRange.end]);
 
-  // Calculate payment method statistics from actual payments
-  const paymentMethodStats = useMemo(() => {
-    const methodTotals: Record<string, { amount: number; count: number }> = {
-      card: { amount: 0, count: 0 },
-      bank_transfer: { amount: 0, count: 0 },
-      wallet: { amount: 0, count: 0 },
-      crypto: { amount: 0, count: 0 },
-    };
+    // For predefined ranges, slice the data accordingly
+    const now = new Date();
+    const daysToShow = chartTimeRange === '7d' ? 7 : chartTimeRange === '30d' ? 30 : chartTimeRange === '90d' ? 90 : 365;
+    const cutoffDate = new Date(now.getTime() - (daysToShow * 24 * 60 * 60 * 1000));
 
-    // Aggregate data from payments
-    payments.forEach((payment) => {
-      if (payment.status === 'completed') {
-        methodTotals[payment.method].amount += payment.amount;
-        methodTotals[payment.method].count += 1;
-      }
-    });
-
-    // Calculate totals
-    const totalAmount = Object.values(methodTotals).reduce((sum, m) => sum + m.amount, 0);
-    const totalCount = Object.values(methodTotals).reduce((sum, m) => sum + m.count, 0);
-
-    // Find highest values for highlighting
-    const maxAmount = Math.max(...Object.values(methodTotals).map(m => m.amount));
-    const maxCount = Math.max(...Object.values(methodTotals).map(m => m.count));
-
-    // Create chart data with percentages and highlights
-    const methodLabels: Record<string, string> = {
-      card: 'Card',
-      bank_transfer: 'Bank',
-      wallet: 'Wallet',
-      crypto: 'Crypto',
-    };
-
-    const chartData = Object.entries(methodTotals).map(([method, data]) => ({
-      method: methodLabels[method],
-      methodKey: method,
-      amount: data.amount,
-      count: data.count,
-      amountPercent: totalAmount > 0 ? ((data.amount / totalAmount) * 100).toFixed(1) : '0',
-      countPercent: totalCount > 0 ? ((data.count / totalCount) * 100).toFixed(1) : '0',
-      isHighestAmount: data.amount === maxAmount && maxAmount > 0,
-      isMostUsed: data.count === maxCount && maxCount > 0,
-      color: methodColors[method as keyof typeof methodColors],
-    }));
-
-    // Sort by amount descending
-    chartData.sort((a, b) => b.amount - a.amount);
-
-    return {
-      data: chartData,
-      totalAmount,
-      totalCount,
-    };
-  }, [payments]);
+    return data.filter(item => new Date(item.iso + 'T00:00:00') >= cutoffDate);
+  }, [salesReport, chartTimeRange, customDateRange.start, customDateRange.end]);
 
   // Calculate peak payment times (daily, monthly, annually)
   const peakPaymentTimes = useMemo(() => {
@@ -443,22 +400,13 @@ export default function PaymentsPage() {
   // Stats
   const stats = useMemo(() => {
     const completed = payments.filter((p) => p.status === 'completed');
-    const pending = payments.filter((p) => p.status === 'pending');
-    const failed = payments.filter((p) => p.status === 'failed');
     const totalRevenue = completed.reduce((sum, p) => sum + p.amount, 0);
-    const pendingAmount = pending.reduce((sum, p) => sum + p.amount, 0);
-    const failedAmount = failed.reduce((sum, p) => sum + p.amount, 0);
     
     return {
       totalRevenue,
-      pendingAmount,
-      failedAmount,
-      completedCount: completed.length,
-      pendingCount: pending.length,
-      failedCount: failed.length,
-      annualRevenue,
+      annualRevenue: salesReport?.summary.netRevenue ?? 0,
     };
-  }, [payments]);
+  }, [payments, salesReport]);
 
   const handleViewDetails = (payment: Payment) => {
     setSelectedPayment(payment);
@@ -528,15 +476,16 @@ export default function PaymentsPage() {
               <Send className="h-4 w-4 sm:mr-2" />
               <span className="hidden sm:inline">Transfer Funds</span>
             </Button>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="h-8 sm:h-9"
-              onClick={() => setWithdrawDialogOpen(true)}
-            >
-              <Banknote className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Withdraw</span>
-            </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="h-8 sm:h-9"
+                onClick={() => setWithdrawDialogOpen(true)}
+                disabled={!wallet}
+              >
+                <Banknote className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Withdraw</span>
+              </Button>
             <Button 
               variant="outline" 
               size="sm" 
@@ -566,7 +515,7 @@ export default function PaymentsPage() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-6">
+        <div className="grid grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-2">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -606,83 +555,11 @@ export default function PaymentsPage() {
               </CardContent>
             </Card>
           </motion.div>
-          
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-          >
-            <Card>
-              <CardContent className="p-3 sm:pt-6 sm:p-6">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs sm:text-sm font-medium text-muted-foreground">Pending Amount</p>
-                  <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-yellow-500" />
-                </div>
-                <p className="text-lg sm:text-3xl font-bold mt-1 sm:mt-2 text-yellow-500">
-                  {formatCurrency(stats.pendingAmount)}
-                </p>
-              </CardContent>
-            </Card>
-          </motion.div>
-          
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            <Card>
-              <CardContent className="p-3 sm:pt-6 sm:p-6">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs sm:text-sm font-medium text-muted-foreground">Completed</p>
-                  <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-green-500" />
-                </div>
-                <p className="text-lg sm:text-3xl font-bold mt-1 sm:mt-2">
-                  <AnimatedCounter value={stats.completedCount} />
-                </p>
-              </CardContent>
-            </Card>
-          </motion.div>
-          
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-          >
-            <Card>
-              <CardContent className="p-3 sm:pt-6 sm:p-6">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs sm:text-sm font-medium text-muted-foreground">Pending</p>
-                  <AlertCircle className="h-3 w-3 sm:h-4 sm:w-4 text-yellow-500" />
-                </div>
-                <p className="text-lg sm:text-3xl font-bold mt-1 sm:mt-2">
-                  <AnimatedCounter value={stats.pendingCount} />
-                </p>
-              </CardContent>
-            </Card>
-          </motion.div>
-          
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-          >
-            <Card>
-              <CardContent className="p-3 sm:pt-6 sm:p-6">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs sm:text-sm font-medium text-muted-foreground">Failed</p>
-                  <XCircle className="h-3 w-3 sm:h-4 sm:w-4 text-red-500" />
-                </div>
-                <p className="text-lg sm:text-3xl font-bold mt-1 sm:mt-2 text-red-500">
-                  <AnimatedCounter value={stats.failedCount} />
-                </p>
-              </CardContent>
-            </Card>
-          </motion.div>
         </div>
 
         {/* Charts */}
-        <div className="grid gap-4 lg:grid-cols-3">
-          <Card className="lg:col-span-2">
+        <div className="grid gap-4 lg:grid-cols-1">
+          <Card>
             <CardHeader className="pb-3">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
@@ -779,279 +656,7 @@ export default function PaymentsPage() {
               </ChartContainer>
             </CardContent>
           </Card>
-          
-          <Card>
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Payment Methods</CardTitle>
-                  <CardDescription>Usage & revenue by payment method</CardDescription>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs text-muted-foreground">Total Revenue</p>
-                  <p className="text-lg font-bold text-primary">{formatCurrency(paymentMethodStats.totalAmount)}</p>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Legend - Revenue percentage levels */}
-              <div className="flex flex-wrap items-center justify-center gap-4 text-xs">
-                <div className="flex items-center gap-1.5">
-                  <div className="h-2.5 w-2.5 rounded-full bg-green-500" />
-                  <span className="text-muted-foreground">Most (40%+)</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <div className="h-2.5 w-2.5 rounded-full bg-blue-500" />
-                  <span className="text-muted-foreground">Medium (25-40%)</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <div className="h-2.5 w-2.5 rounded-full bg-amber-500" />
-                  <span className="text-muted-foreground">Low (15-25%)</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <div className="h-2.5 w-2.5 rounded-full bg-gray-400" />
-                  <span className="text-muted-foreground">Less (&lt;15%)</span>
-                </div>
-              </div>
-              
-              {/* Method Breakdown */}
-              <div className="space-y-3">
-                {paymentMethodStats.data.map((item) => {
-                  // Use amount percentage for the bar (revenue-based)
-                  const amountPercent = parseFloat(item.amountPercent);
-                  // Find max percentage to scale bars proportionally
-                  const maxPercent = Math.max(...paymentMethodStats.data.map(d => parseFloat(d.amountPercent)), 1);
-                  // Scale the bar width so the highest percentage fills the bar
-                  const scaledWidth = (amountPercent / maxPercent) * 100;
-                  
-                  // Determine usage level based on amount percentage
-                  let usageColor = 'bg-gray-400'; // Less
-                  let usageLabel = 'Less';
-                  if (amountPercent >= 40) {
-                    usageColor = 'bg-green-500';
-                    usageLabel = 'Most';
-                  } else if (amountPercent >= 25) {
-                    usageColor = 'bg-blue-500';
-                    usageLabel = 'Medium';
-                  } else if (amountPercent >= 15) {
-                    usageColor = 'bg-amber-500';
-                    usageLabel = 'Low';
-                  }
-
-                  return (
-                    <div key={item.methodKey} className="space-y-1.5">
-                      <div className="flex items-center justify-between text-sm">
-                        <div className="flex items-center gap-2">
-                          <div 
-                            className="h-3 w-3 rounded-full" 
-                            style={{ backgroundColor: item.color }}
-                          />
-                          <span className="font-medium">{item.method}</span>
-                          <Badge variant="outline" className={cn(
-                            "h-5 text-[10px] px-1.5",
-                            amountPercent >= 40 && "bg-green-500/10 text-green-500 border-green-500/20",
-                            amountPercent >= 25 && amountPercent < 40 && "bg-blue-500/10 text-blue-500 border-blue-500/20",
-                            amountPercent >= 15 && amountPercent < 25 && "bg-amber-500/10 text-amber-500 border-amber-500/20",
-                            amountPercent < 15 && "bg-gray-500/10 text-gray-500 border-gray-500/20"
-                          )}>
-                            {usageLabel}
-                          </Badge>
-                        </div>
-                        <div className="flex items-center gap-3 text-xs">
-                          <span className="font-semibold text-green-500">
-                            {formatCurrency(item.amount)}
-                          </span>
-                        </div>
-                      </div>
-                      {/* Single Progress bar - width matches amount percentage */}
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 h-3 bg-muted rounded-full overflow-hidden">
-                          <div
-                            className={cn("h-3 rounded-full transition-all duration-500", usageColor)}
-                            style={{ width: `${Math.max(scaledWidth, 2)}%` }}
-                          />
-                        </div>
-                        <span className="text-xs font-medium text-muted-foreground w-12 text-right">{item.amountPercent}%</span>
-                      </div>
-                      {/* Transaction count info */}
-                      <p className="text-[10px] text-muted-foreground pl-5">
-                        {item.count} transactions
-                      </p>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Summary stats */}
-              <div className="grid grid-cols-2 gap-3 pt-3 border-t">
-                <div className="text-center p-2 rounded-lg bg-muted/50">
-                  <p className="text-xs text-muted-foreground">Total Transactions</p>
-                  <p className="text-lg font-bold">{paymentMethodStats.totalCount}</p>
-                </div>
-                <div className="text-center p-2 rounded-lg bg-muted/50">
-                  <p className="text-xs text-muted-foreground">Avg. Transaction</p>
-                  <p className="text-lg font-bold">
-                    {paymentMethodStats.totalCount > 0 
-                      ? formatCurrency(paymentMethodStats.totalAmount / paymentMethodStats.totalCount)
-                      : '$0'}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </div>
-
-        {/* Peak Payment Times */}
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-primary" />
-                  Peak Payment Times
-                </CardTitle>
-                <CardDescription>When customers make the most transactions</CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-3">
-              {/* Daily Peak */}
-              <div className="relative overflow-hidden rounded-lg border bg-gradient-to-br from-blue-500/10 to-blue-500/5 p-4">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Daily Peak</p>
-                    <p className="text-lg font-bold mt-1 text-blue-500">{peakPaymentTimes.daily.time}</p>
-                  </div>
-                  <div className="h-10 w-10 rounded-full bg-blue-500/20 flex items-center justify-center">
-                    <Clock className="h-5 w-5 text-blue-500" />
-                  </div>
-                </div>
-                <div className="mt-3 flex items-center gap-4 text-xs">
-                  <div>
-                    <span className="text-muted-foreground">Transactions: </span>
-                    <span className="font-semibold">{peakPaymentTimes.daily.transactions}</span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Revenue: </span>
-                    <span className="font-semibold text-green-500">{formatCurrency(peakPaymentTimes.daily.amount)}</span>
-                  </div>
-                </div>
-                <div className="absolute -bottom-4 -right-4 h-20 w-20 rounded-full bg-blue-500/10" />
-              </div>
-
-              {/* Weekly Peak */}
-              <div className="relative overflow-hidden rounded-lg border bg-gradient-to-br from-purple-500/10 to-purple-500/5 p-4">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Weekly Peak</p>
-                    <p className="text-lg font-bold mt-1 text-purple-500">{peakPaymentTimes.weekly.day}</p>
-                  </div>
-                  <div className="h-10 w-10 rounded-full bg-purple-500/20 flex items-center justify-center">
-                    <Calendar className="h-5 w-5 text-purple-500" />
-                  </div>
-                </div>
-                <div className="mt-3 flex items-center gap-4 text-xs">
-                  <div>
-                    <span className="text-muted-foreground">Transactions: </span>
-                    <span className="font-semibold">{peakPaymentTimes.weekly.transactions}</span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Revenue: </span>
-                    <span className="font-semibold text-green-500">{formatCurrency(peakPaymentTimes.weekly.amount)}</span>
-                  </div>
-                </div>
-                <div className="absolute -bottom-4 -right-4 h-20 w-20 rounded-full bg-purple-500/10" />
-              </div>
-
-              {/* Monthly Peak */}
-              <div className="relative overflow-hidden rounded-lg border bg-gradient-to-br from-amber-500/10 to-amber-500/5 p-4">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Monthly Peak</p>
-                    <p className="text-lg font-bold mt-1 text-amber-500">{peakPaymentTimes.monthly.month}</p>
-                  </div>
-                  <div className="h-10 w-10 rounded-full bg-amber-500/20 flex items-center justify-center">
-                    <CalendarDays className="h-5 w-5 text-amber-500" />
-                  </div>
-                </div>
-                <div className="mt-3 flex items-center gap-4 text-xs">
-                  <div>
-                    <span className="text-muted-foreground">Transactions: </span>
-                    <span className="font-semibold">{peakPaymentTimes.monthly.transactions}</span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Revenue: </span>
-                    <span className="font-semibold text-green-500">{formatCurrency(peakPaymentTimes.monthly.amount)}</span>
-                  </div>
-                </div>
-                <div className="absolute -bottom-4 -right-4 h-20 w-20 rounded-full bg-amber-500/10" />
-              </div>
-            </div>
-
-            {/* Hourly Activity Chart */}
-            <div className="mt-6">
-              <p className="text-sm font-medium text-muted-foreground mb-3">24-Hour Transaction Distribution</p>
-              <div className="flex items-end gap-0.5 h-24">
-                {peakPaymentTimes.hourlyChart.map((item) => {
-                  const maxCount = Math.max(...peakPaymentTimes.hourlyChart.map(h => h.count), 1);
-                  const heightPercent = (item.count / maxCount) * 100;
-                  const minHeight = item.count > 0 ? 8 : 4; // Minimum visible height
-                  
-                  // Calculate activity level for green gradient
-                  const activityLevel = item.count / maxCount;
-                  const getBarColor = () => {
-                    if (item.isPeak) return "bg-primary"; // Peak hour stays orange
-                    if (item.count === 0) return "bg-green-950/20";
-                    if (activityLevel >= 0.8) return "bg-green-600 group-hover:bg-green-500";
-                    if (activityLevel >= 0.6) return "bg-green-500 group-hover:bg-green-400";
-                    if (activityLevel >= 0.4) return "bg-green-400/70 group-hover:bg-green-400";
-                    if (activityLevel >= 0.2) return "bg-green-300/50 group-hover:bg-green-300/70";
-                    return "bg-green-200/30 group-hover:bg-green-200/50";
-                  };
-                  
-                  return (
-                    <div key={item.hourNum} className="flex-1 flex flex-col items-center group relative h-full">
-                      <div className="flex-1" /> {/* Spacer to push bar to bottom */}
-                      <div
-                        className={cn(
-                          "w-full rounded-t transition-all duration-300 min-h-[4px]",
-                          getBarColor()
-                        )}
-                        style={{ height: `${Math.max(heightPercent, minHeight)}%` }}
-                      />
-                      {/* Tooltip */}
-                      <div className="absolute -top-20 left-1/2 -translate-x-1/2 bg-popover border rounded-lg p-2 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 min-w-[100px] whitespace-nowrap">
-                        <p className="text-xs font-medium">{item.hourNum}:00 - {(item.hourNum + 1) % 24}:00</p>
-                        <p className="text-xs text-muted-foreground">{item.count} transactions</p>
-                        <p className="text-xs text-green-500">{formatCurrency(item.amount)}</p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-              {/* Hour labels */}
-              <div className="flex justify-between mt-2 px-0">
-                <span className="text-[10px] text-muted-foreground">12a</span>
-                <span className="text-[10px] text-muted-foreground">6a</span>
-                <span className="text-[10px] text-muted-foreground">12p</span>
-                <span className="text-[10px] text-muted-foreground">6p</span>
-                <span className="text-[10px] text-muted-foreground">11p</span>
-              </div>
-              {/* Legend */}
-              <div className="flex items-center justify-center gap-4 mt-3 text-xs">
-                <div className="flex items-center gap-1.5">
-                  <div className="h-2.5 w-2.5 rounded bg-primary" />
-                  <span className="text-muted-foreground">Peak Hour</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <div className="h-2.5 w-6 rounded bg-gradient-to-r from-green-200/30 via-green-400 to-green-600" />
-                  <span className="text-muted-foreground">Activity (Low → High)</span>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
         {/* Transactions Table */}
         <Card>
@@ -1254,6 +859,158 @@ export default function PaymentsPage() {
           </CardContent>
         </Card>
 
+        {/* Peak Payment Times */}
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-primary" />
+                  Peak Payment Times
+                </CardTitle>
+                <CardDescription>When customers make the most transactions</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-3">
+              {/* Daily Peak */}
+              <div className="relative overflow-hidden rounded-lg border bg-gradient-to-br from-blue-500/10 to-blue-500/5 p-4">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Daily Peak</p>
+                    <p className="text-lg font-bold mt-1 text-blue-500">{peakPaymentTimes.daily.time}</p>
+                  </div>
+                  <div className="h-10 w-10 rounded-full bg-blue-500/20 flex items-center justify-center">
+                    <Clock className="h-5 w-5 text-blue-500" />
+                  </div>
+                </div>
+                <div className="mt-3 flex items-center gap-4 text-xs">
+                  <div>
+                    <span className="text-muted-foreground">Transactions: </span>
+                    <span className="font-semibold">{peakPaymentTimes.daily.transactions}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Revenue: </span>
+                    <span className="font-semibold text-green-500">{formatCurrency(peakPaymentTimes.daily.amount)}</span>
+                  </div>
+                </div>
+                <div className="absolute -bottom-4 -right-4 h-20 w-20 rounded-full bg-blue-500/10" />
+              </div>
+
+              {/* Weekly Peak */}
+              <div className="relative overflow-hidden rounded-lg border bg-gradient-to-br from-purple-500/10 to-purple-500/5 p-4">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Weekly Peak</p>
+                    <p className="text-lg font-bold mt-1 text-purple-500">{peakPaymentTimes.weekly.day}</p>
+                  </div>
+                  <div className="h-10 w-10 rounded-full bg-purple-500/20 flex items-center justify-center">
+                    <Calendar className="h-5 w-5 text-purple-500" />
+                  </div>
+                </div>
+                <div className="mt-3 flex items-center gap-4 text-xs">
+                  <div>
+                    <span className="text-muted-foreground">Transactions: </span>
+                    <span className="font-semibold">{peakPaymentTimes.weekly.transactions}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Revenue: </span>
+                    <span className="font-semibold text-green-500">{formatCurrency(peakPaymentTimes.weekly.amount)}</span>
+                  </div>
+                </div>
+                <div className="absolute -bottom-4 -right-4 h-20 w-20 rounded-full bg-purple-500/10" />
+              </div>
+
+              {/* Monthly Peak */}
+              <div className="relative overflow-hidden rounded-lg border bg-gradient-to-br from-amber-500/10 to-amber-500/5 p-4">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Monthly Peak</p>
+                    <p className="text-lg font-bold mt-1 text-amber-500">{peakPaymentTimes.monthly.month}</p>
+                  </div>
+                  <div className="h-10 w-10 rounded-full bg-amber-500/20 flex items-center justify-center">
+                    <CalendarDays className="h-5 w-5 text-amber-500" />
+                  </div>
+                </div>
+                <div className="mt-3 flex items-center gap-4 text-xs">
+                  <div>
+                    <span className="text-muted-foreground">Transactions: </span>
+                    <span className="font-semibold">{peakPaymentTimes.monthly.transactions}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Revenue: </span>
+                    <span className="font-semibold text-green-500">{formatCurrency(peakPaymentTimes.monthly.amount)}</span>
+                  </div>
+                </div>
+                <div className="absolute -bottom-4 -right-4 h-20 w-20 rounded-full bg-amber-500/10" />
+              </div>
+            </div>
+
+            {/* Hourly Activity Chart */}
+            <div className="mt-6">
+              <p className="text-sm font-medium text-muted-foreground mb-3">24-Hour Transaction Distribution</p>
+              <div className="flex items-end gap-0.5 h-24">
+                {peakPaymentTimes.hourlyChart.map((item) => {
+                  const maxCount = Math.max(...peakPaymentTimes.hourlyChart.map(h => h.count), 1);
+                  const heightPercent = (item.count / maxCount) * 100;
+                  const minHeight = item.count > 0 ? 8 : 4; // Minimum visible height
+                  
+                  // Calculate activity level for green gradient
+                  const activityLevel = item.count / maxCount;
+                  const getBarColor = () => {
+                    if (item.isPeak) return "bg-primary"; // Peak hour stays orange
+                    if (item.count === 0) return "bg-green-950/20";
+                    if (activityLevel >= 0.8) return "bg-green-600 group-hover:bg-green-500";
+                    if (activityLevel >= 0.6) return "bg-green-500 group-hover:bg-green-400";
+                    if (activityLevel >= 0.4) return "bg-green-400/70 group-hover:bg-green-400";
+                    if (activityLevel >= 0.2) return "bg-green-300/50 group-hover:bg-green-300/70";
+                    return "bg-green-200/30 group-hover:bg-green-200/50";
+                  };
+                  
+                  return (
+                    <div key={item.hourNum} className="flex-1 flex flex-col items-center group relative h-full">
+                      <div className="flex-1" /> {/* Spacer to push bar to bottom */}
+                      <div
+                        className={cn(
+                          "w-full rounded-t transition-all duration-300 min-h-[4px]",
+                          getBarColor()
+                        )}
+                        style={{ height: `${Math.max(heightPercent, minHeight)}%` }}
+                      />
+                      {/* Tooltip */}
+                      <div className="absolute -top-20 left-1/2 -translate-x-1/2 bg-popover border rounded-lg p-2 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 min-w-[100px] whitespace-nowrap">
+                        <p className="text-xs font-medium">{item.hourNum}:00 - {(item.hourNum + 1) % 24}:00</p>
+                        <p className="text-xs text-muted-foreground">{item.count} transactions</p>
+                        <p className="text-xs text-green-500">{formatCurrency(item.amount)}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              {/* Hour labels */}
+              <div className="flex justify-between mt-2 px-0">
+                <span className="text-[10px] text-muted-foreground">12a</span>
+                <span className="text-[10px] text-muted-foreground">6a</span>
+                <span className="text-[10px] text-muted-foreground">12p</span>
+                <span className="text-[10px] text-muted-foreground">6p</span>
+                <span className="text-[10px] text-muted-foreground">11p</span>
+              </div>
+              {/* Legend */}
+              <div className="flex items-center justify-center gap-4 mt-3 text-xs">
+                <div className="flex items-center gap-1.5">
+                  <div className="h-2.5 w-2.5 rounded bg-primary" />
+                  <span className="text-muted-foreground">Peak Hour</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="h-2.5 w-6 rounded bg-gradient-to-r from-green-200/30 via-green-400 to-green-600" />
+                  <span className="text-muted-foreground">Activity (Low → High)</span>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Payment Details Dialog */}
         <Dialog open={detailsDialogOpen} onOpenChange={setDetailsDialogOpen}>
           <DialogContent className="sm:max-w-[500px]">
@@ -1390,62 +1147,130 @@ export default function PaymentsPage() {
                 Withdraw Funds
               </DialogTitle>
               <DialogDescription>
-                Withdraw money to your linked bank account
+                Withdraw money to your mobile money account
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
-              <div className="p-4 rounded-lg bg-muted/50 border">
-                <p className="text-sm text-muted-foreground">Available Balance</p>
-                <p className="text-2xl font-bold text-green-500">{formatCurrency(stats.totalRevenue, 'UGX', false)}</p>
-              </div>
-              <div className="space-y-2">
-                <Label>Withdrawal Amount</Label>
-                <div className="relative">
-                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input type="number" placeholder="0.00" className="pl-9" />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Bank Account</Label>
-                <Select defaultValue="primary">
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select bank account" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="primary">Primary Account (****4532)</SelectItem>
-                    <SelectItem value="secondary">Savings Account (****7891)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              {/* Withdrawal Fees Notice */}
-              <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
-                <div className="flex items-start gap-2">
-                  <AlertCircle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
-                  <div className="text-sm">
-                    <p className="font-medium text-amber-500">Withdrawal Fees Apply</p>
-                    <ul className="text-muted-foreground mt-1 space-y-0.5 text-xs">
-                      <li>• Standard withdrawal: <span className="text-foreground font-medium">$2.50</span> per transaction</li>
-                      <li>• Express withdrawal (same day): <span className="text-foreground font-medium">$5.00</span> per transaction</li>
-                      <li>• Minimum withdrawal amount: <span className="text-foreground font-medium">$10.00</span></li>
-                    </ul>
+              {!wallet ? (
+                <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+                    <div className="text-sm">
+                      <p className="font-medium text-amber-500">Wallet Not Found</p>
+                      <p className="text-muted-foreground mt-1">
+                        You need to set up a wallet before you can withdraw funds. Please contact support to create your wallet.
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
+              ) : (
+                <>
+                  <div className="p-4 rounded-lg bg-muted/50 border">
+                    <p className="text-sm text-muted-foreground">Available Balance</p>
+                    <p className="text-2xl font-bold text-green-500">{formatCurrency(wallet.balance || 0, 'UGX', false)}</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Withdrawal Amount</Label>
+                    <div className="relative">
+                      <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input 
+                        type="number" 
+                        placeholder="0.00" 
+                        className="pl-9"
+                        value={withdrawalForm.amount}
+                        onChange={(e) => setWithdrawalForm(prev => ({ ...prev, amount: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Mobile Money Number</Label>
+                    <div className="relative">
+                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input 
+                        type="tel" 
+                        placeholder="+256 XXX XXX XXX" 
+                        className="pl-9"
+                        value={withdrawalForm.phone}
+                        onChange={(e) => setWithdrawalForm(prev => ({ ...prev, phone: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Mobile Money Provider</Label>
+                    <Select 
+                      value={withdrawalForm.provider} 
+                      onValueChange={(value: 'MTN' | 'Airtel') => setWithdrawalForm(prev => ({ ...prev, provider: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select provider" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="MTN">MTN Mobile Money</SelectItem>
+                        <SelectItem value="Airtel">Airtel Money</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {/* Withdrawal Fees Notice */}
+                  <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                    <div className="flex items-start gap-2">
+                      <AlertCircle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+                      <div className="text-sm">
+                        <p className="font-medium text-amber-500">Withdrawal Fees Apply</p>
+                        <ul className="text-muted-foreground mt-1 space-y-0.5 text-xs">
+                          <li>• Standard withdrawal: <span className="text-foreground font-medium">UGX 2,500</span> per transaction</li>
+                          <li>• Express withdrawal (same day): <span className="text-foreground font-medium">UGX 5,000</span> per transaction</li>
+                          <li>• Minimum withdrawal amount: <span className="text-foreground font-medium">UGX 10,000</span></li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setWithdrawDialogOpen(false)}>
-                Cancel
+                {wallet ? 'Cancel' : 'Close'}
               </Button>
-              <Button 
-                className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/25 font-semibold"
-                onClick={() => {
-                  toast.success('Withdrawal request submitted!');
-                  setWithdrawDialogOpen(false);
-                }}
-              >
-                <Banknote className="h-4 w-4 mr-2" />
-                Withdraw Funds
-              </Button>
+              {wallet && (
+                <Button 
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/25 font-semibold"
+                  onClick={async () => {
+                    const amount = parseFloat(withdrawalForm.amount);
+                    if (!amount || amount < 10000) {
+                      toast.error('Minimum withdrawal amount is UGX 10,000');
+                      return;
+                    }
+                    
+                    if (!withdrawalForm.phone) {
+                      toast.error('Please enter a mobile money number');
+                      return;
+                    }
+                    
+                    try {
+                      await withdrawalsService.initiate({
+                        walletId: wallet.id,
+                        amount,
+                        phone: withdrawalForm.phone,
+                        provider: withdrawalForm.provider
+                      });
+                      
+                      toast.success('Withdrawal request submitted successfully!');
+                      setWithdrawDialogOpen(false);
+                      setWithdrawalForm({ amount: '', phone: '', provider: 'MTN' });
+                      
+                      // Refresh wallet balance
+                      const updatedWallet = await walletsService.getByUser(user!.id, 'Client');
+                      setWallet(updatedWallet);
+                    } catch (err) {
+                      console.error('Withdrawal failed:', err);
+                      toast.error(err instanceof ApiError ? err.message : 'Withdrawal failed');
+                    }
+                  }}
+                >
+                  <Banknote className="h-4 w-4 mr-2" />
+                  Withdraw Funds
+                </Button>
+              )}
             </DialogFooter>
           </DialogContent>
         </Dialog>

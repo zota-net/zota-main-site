@@ -568,6 +568,14 @@ export default function VouchersPage() {
     }
   };
 
+  const handleSelectVoucher = (id: string, checked: boolean) => {
+    setSelectedVouchers(prev => 
+      checked 
+        ? [...prev, id] 
+        : prev.filter(voucherId => voucherId !== id)
+    );
+  };
+
   return (
     <PageTransition>
       <div className="space-y-4 sm:space-y-6">
