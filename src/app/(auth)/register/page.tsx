@@ -9,7 +9,7 @@ import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import {
   Eye, EyeOff, ArrowRight, Shield, Zap,
-  Globe, Activity, Check, User, Mail, Lock, Building2,
+  Globe, Activity, Check, User, Mail, Lock, Building2, Phone, Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,7 +17,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Logo } from '@/components/common';
-import { useUserStore } from '@/lib/store/user-store';
+import { clientsService } from '@/lib/api/services/base-operations';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -30,14 +30,15 @@ const OrbitalScene = dynamic(() => import('@/components/three/OrbitalScene'), {
 
 const registerSchema = z
   .object({
-    fullName: z.string().min(2, 'Name must be at least 2 characters'),
-    email: z.string().email('Please enter a valid email address'),
-    company: z.string().optional(),
-    password: z.string().min(8, 'Password must be at least 8 characters'),
+    adminFullName: z.string().min(2, 'Name must be at least 2 characters'),
+    adminEmail: z.string().email('Please enter a valid email address'),
+    contact: z.string().min(7, 'Please enter a valid contact number'),
+    businessName: z.string().min(2, 'Business name must be at least 2 characters'),
+    adminPassword: z.string().min(8, 'Password must be at least 8 characters'),
     confirmPassword: z.string(),
     agreeTerms: z.boolean().refine((v) => v, 'You must agree to the terms'),
   })
-  .refine((data) => data.password === data.confirmPassword, {
+  .refine((data) => data.adminPassword === data.confirmPassword, {
     message: 'Passwords do not match',
     path: ['confirmPassword'],
   });
@@ -134,28 +135,47 @@ export default function RegisterPage() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const { register: registerUser, isLoading, error } = useUserStore();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const form = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
-      fullName: '',
-      email: '',
-      company: '',
-      password: '',
+      adminFullName: '',
+      adminEmail: '',
+      contact: '',
+      businessName: '',
+      adminPassword: '',
       confirmPassword: '',
       agreeTerms: false,
     },
   });
 
-  const watchPassword = form.watch('password');
+  const watchPassword = form.watch('adminPassword');
   const strength = getPasswordStrength(watchPassword || '');
 
   const onSubmit = async (data: RegisterFormData) => {
-    const success = await registerUser(data.fullName, data.email, data.password, data.company);
-    if (success) {
-      toast.success('Account created! Please check your email to verify your account.');
-      router.push('/login');
+    setIsLoading(true);
+    setError(null);
+    try {
+      await clientsService.create({
+        adminFullName: data.adminFullName,
+        adminEmail: data.adminEmail,
+        adminPassword: data.adminPassword,
+        contact: data.contact,
+        businessName: data.businessName,
+      });
+      
+      toast.success('Account created successfully! Redirecting to login...');
+      setTimeout(() => {
+        router.push('/login');
+      }, 1500);
+    } catch (err: any) {
+      const message = err?.response?.data?.message || err?.message || 'Registration failed. Please try again.';
+      setError(message);
+      toast.error(message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -264,74 +284,97 @@ export default function RegisterPage() {
 
             <CardContent>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                {/* Full Name */}
+                {/* Admin Full Name */}
                 <div className="space-y-2">
-                  <Label htmlFor="fullName" className="text-sm font-medium">
-                    Full Name
+                  <Label htmlFor="adminFullName" className="text-sm font-medium">
+                    Admin Full Name
                   </Label>
                   <div className="relative">
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
-                      id="fullName"
+                      id="adminFullName"
                       placeholder="John Doe"
                       className="pl-10"
-                      {...form.register('fullName')}
+                      {...form.register('adminFullName')}
                     />
                   </div>
-                  {form.formState.errors.fullName && (
-                    <p className="text-xs text-destructive">{form.formState.errors.fullName.message}</p>
+                  {form.formState.errors.adminFullName && (
+                    <p className="text-xs text-destructive">{form.formState.errors.adminFullName.message}</p>
                   )}
                 </div>
 
-                {/* Email */}
+                {/* Admin Email */}
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="text-sm font-medium">
-                    Work Email
+                  <Label htmlFor="adminEmail" className="text-sm font-medium">
+                    Admin Email
                   </Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
-                      id="email"
+                      id="adminEmail"
                       type="email"
                       placeholder="john@company.com"
                       className="pl-10"
-                      {...form.register('email')}
+                      {...form.register('adminEmail')}
                     />
                   </div>
-                  {form.formState.errors.email && (
-                    <p className="text-xs text-destructive">{form.formState.errors.email.message}</p>
+                  {form.formState.errors.adminEmail && (
+                    <p className="text-xs text-destructive">{form.formState.errors.adminEmail.message}</p>
                   )}
                 </div>
 
-                {/* Company */}
+                {/* Contact */}
                 <div className="space-y-2">
-                  <Label htmlFor="company" className="text-sm font-medium">
-                    Company <span className="text-muted-foreground">(optional)</span>
+                  <Label htmlFor="contact" className="text-sm font-medium">
+                    Contact Number
+                  </Label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      id="contact"
+                      type="tel"
+                      placeholder="+1 (555) 000-0000"
+                      className="pl-10"
+                      {...form.register('contact')}
+                    />
+                  </div>
+                  {form.formState.errors.contact && (
+                    <p className="text-xs text-destructive">{form.formState.errors.contact.message}</p>
+                  )}
+                </div>
+
+                {/* Business Name */}
+                <div className="space-y-2">
+                  <Label htmlFor="businessName" className="text-sm font-medium">
+                    Business Name
                   </Label>
                   <div className="relative">
                     <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
-                      id="company"
+                      id="businessName"
                       placeholder="Acme Telecom"
                       className="pl-10"
-                      {...form.register('company')}
+                      {...form.register('businessName')}
                     />
                   </div>
+                  {form.formState.errors.businessName && (
+                    <p className="text-xs text-destructive">{form.formState.errors.businessName.message}</p>
+                  )}
                 </div>
 
-                {/* Password */}
+                {/* Admin Password */}
                 <div className="space-y-2">
-                  <Label htmlFor="password" className="text-sm font-medium">
+                  <Label htmlFor="adminPassword" className="text-sm font-medium">
                     Password
                   </Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
-                      id="password"
+                      id="adminPassword"
                       type={showPassword ? 'text' : 'password'}
                       placeholder="Min. 8 characters"
                       className="pl-10 pr-10"
-                      {...form.register('password')}
+                      {...form.register('adminPassword')}
                     />
                     <button
                       type="button"
@@ -363,8 +406,8 @@ export default function RegisterPage() {
                       </span>
                     </div>
                   )}
-                  {form.formState.errors.password && (
-                    <p className="text-xs text-destructive">{form.formState.errors.password.message}</p>
+                  {form.formState.errors.adminPassword && (
+                    <p className="text-xs text-destructive">{form.formState.errors.adminPassword.message}</p>
                   )}
                 </div>
 
@@ -428,11 +471,10 @@ export default function RegisterPage() {
                   disabled={isLoading}
                 >
                   {isLoading ? (
-                    <motion.div
-                      className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full"
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                    />
+                    <span className="flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Creating account...
+                    </span>
                   ) : (
                     <span className="flex items-center gap-2">
                       Create Account

@@ -23,6 +23,7 @@ import {
   UserCheck,
   Package,
   Activity,
+  Megaphone,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -61,6 +62,7 @@ const navGroups: NavGroup[] = [
     items: [
       { title: 'Vouchers', href: '/dashboard/vouchers', icon: Ticket },
       { title: 'Packages', href: '/dashboard/packages', icon: Package },
+      { title: 'Adverts', href: '/dashboard/adverts', icon: Megaphone },
       { title: 'Agents', href: '/dashboard/agents', icon: UserCheck },
       { title: 'Devices', href: '/dashboard/devices', icon: Smartphone },
       { title: 'Users', href: '/dashboard/users', icon: Users },

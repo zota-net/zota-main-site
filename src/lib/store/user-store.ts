@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { authService } from '@/lib/api/services/auth';
+import { clientsService } from '@/lib/api/services/base-operations';
 import { ApiError } from '@/lib/api/client';
 
 export interface User {
@@ -10,6 +11,7 @@ export interface User {
   avatar?: string;
   role: 'admin' | 'operator' | 'viewer';
   client_id: string;
+  client?: any; // Client details
   permissions: string[];
   lastLogin: number;
   preferences: UserPreferences;
@@ -40,7 +42,7 @@ export interface UserState {
   
   // Actions
   login: (email: string, password: string) => Promise<boolean>;
-  register: (fullname: string, email: string, password: string, company?: string) => Promise<boolean>;
+  register: (fullname: string, email: string, password: string, company?: string, contact?: string) => Promise<boolean>;
   logout: () => void;
   updateUser: (updates: Partial<User>) => void;
   updatePreferences: (preferences: Partial<UserPreferences>) => void;
@@ -79,12 +81,23 @@ export const useUserStore = create<UserState>()(
             expiresAt: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
           };
           
+          // Fetch client details
+          let clientData = null;
+          try {
+            if (result.user.client_id) {
+              clientData = await clientsService.getById(result.user.client_id);
+            }
+          } catch (clientError) {
+            console.warn('Failed to fetch client details:', clientError);
+          }
+          
           const user: User = {
             id: result.user.id,
             email: result.user.email,
             name: result.user.fullname,
             role: result.user.role as User['role'],
             client_id: result.user.client_id,
+            client: clientData,
             permissions: result.user.role === 'admin' ? ['*'] : [],
             lastLogin: Date.now(),
             preferences: defaultPreferences,
@@ -109,7 +122,7 @@ export const useUserStore = create<UserState>()(
         }
       },
 
-      register: async (fullname: string, email: string, password: string, company?: string) => {
+      register: async (fullname: string, email: string, password: string, company?: string, contact?: string) => {
         set({ isLoading: true, error: null });
 
         try {
@@ -118,6 +131,7 @@ export const useUserStore = create<UserState>()(
             fullname,
             email,
             password,
+            contact,
             role: 'admin',
             client_id: clientId || undefined,
           });

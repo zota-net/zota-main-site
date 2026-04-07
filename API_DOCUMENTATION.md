@@ -93,7 +93,7 @@ For local development without Nginx, access services directly on their ports:
 **Key Entities:**
 - `User`: fullname, email, password, emailVerified, role (Admin/Agent), client_id, verificationCode, resetToken, verificationCodeExpiry, resetTokenExpiry
 - `Client`: businessName, adminFullName, adminEmail, adminPassword, contact, status (Active/Pending/InActive/Suspended)
-- `Package`: period (seconds), title, price, agentComissionPercentage
+- `Package`: client_id, period (seconds), title, price, agentComissionPercentage
 - `Voucher`: code, package_id, status (used/active/expired), usedAt, client_id
 - `Advert`: description, media, client_id, duration (seconds), endsIn
 - `RouterDevice`: name, macAddress, ipAddress, client_id
@@ -195,7 +195,7 @@ curl -X POST http://localhost:3001/auth/verify-email \
 
 **Key Entities:**
 - `Client`: businessName, adminEmail, adminPassword, status
-- `Package`: period (seconds), title, price, agentComissionPercentage
+- `Package`: client_id, period (seconds), title, price, agentComissionPercentage
 - `Voucher`: code, clientId, packageId, status, usedAt
 - `Advert`: description, media, clientId, duration (seconds), endsIn
 - `RouterDevice`: name, macAddress, ipAddress, clientId
@@ -210,6 +210,7 @@ curl -X POST http://localhost:3001/auth/verify-email \
 | POST | `/clients` | Create new client |
 | GET | `/clients` | Get all clients |
 | GET | `/clients/:id` | Get client details |
+| GET | `/clients/:id/packages` | Get client packages |
 | PUT | `/clients/:id/status` | Update client status |
 | GET | `/clients/:id/report` | Get client stats report |
 | POST | `/packages` | Create package |
@@ -272,7 +273,8 @@ curl -X POST https://yourdomain.com/bop/packages \
     "period": 2592000,
     "title": "Monthly Plan",
     "price": 29.99,
-    "agentComissionPercentage": 10.5
+    "agentComissionPercentage": 10.5,
+    "clientId": 1
   }'
 ```
 
@@ -284,8 +286,19 @@ curl -X POST http://localhost:3000/packages \
     "period": 2592000,
     "title": "Monthly Plan",
     "price": 29.99,
-    "agentComissionPercentage": 10.5
+    "agentComissionPercentage": 10.5,
+    "clientId": 1
   }'
+```
+
+**Get Client Packages (via Nginx):**
+```bash
+curl -X GET https://yourdomain.com/bop/clients/1/packages
+```
+
+**Get Client Packages (Direct):**
+```bash
+curl -X GET http://localhost:3000/clients/1/packages
 ```
 
 **Create Voucher (via Nginx):**

@@ -144,11 +144,11 @@ async function createClient(clientData) {
   return response.data;
 }
 
-// // Admin: Get all clients
-// async function getClients() {
-//   const response = await apiClient.get('/bop/clients');
-//   return response.data;
-// }
+// Admin: Get all clients
+async function getClients() {
+  const response = await apiClient.get('/bop/clients');
+  return response.data;
+}
 
 // Admin: Update client status
 async function updateClientStatus(clientId, status) {
@@ -191,7 +191,8 @@ async function createPackage(packageData) {
     period: packageData.period, // in seconds
     title: packageData.title,
     price: packageData.price,
-    agentComissionPercentage: packageData.commission
+    agentComissionPercentage: packageData.commission,
+    clientId: packageData.clientId
   });
 
   return response.data;
@@ -200,6 +201,12 @@ async function createPackage(packageData) {
 // Admin: Get all packages
 async function getPackages() {
   const response = await apiClient.get('/bop/packages');
+  return response.data;
+}
+
+// Client: Get my packages
+async function getClientPackages(clientId) {
+  const response = await apiClient.get(`/bop/clients/${clientId}/packages`);
   return response.data;
 }
 ```
@@ -375,14 +382,14 @@ async function initiateWithdrawal(withdrawalData) {
 ```
 AdminDashboard/
 ├── Sidebar/
-<!-- │   ├── Clients -->
+│   ├── Clients
 │   ├── Agents
 │   ├── Packages
 │   ├── Vouchers
 │   ├── Routers
 │   └── Reports
 ├── MainContent/
-<!-- │   ├── ClientList/ -->
+│   ├── ClientList/
 │   ├── AgentList/
 │   ├── PackageManager/
 │   ├── VoucherGenerator/
@@ -464,6 +471,10 @@ function useClients() {
 
 function usePackages() {
   return useQuery('packages', () => axios.get('/packages').then(res => res.data));
+}
+
+function useClientPackages(clientId) {
+  return useQuery(['clientPackages', clientId], () => axios.get(`/clients/${clientId}/packages`).then(res => res.data));
 }
 ```
 

@@ -41,6 +41,8 @@ import {
   Settings,
   PanelLeftClose,
   PanelLeft,
+  FileText,
+  HelpCircle,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -258,6 +260,7 @@ export default function SupportPage() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [activeTab, setActiveTab] = useState('tickets');
+  const [mainTab, setMainTab] = useState('support');
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [isMobile, setIsMobile] = useState(false);
@@ -540,9 +543,17 @@ export default function SupportPage() {
           </div>
         </div>
 
-        {/* Stats Cards - Admin Only */}
-        {isAdmin && (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        {/* Main Tabs */}
+        <Tabs value={mainTab} onValueChange={setMainTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="support">Support Tickets</TabsTrigger>
+            <TabsTrigger value="help">Help & Videos</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="support" className="space-y-4">
+            {/* Stats Cards - Admin Only */}
+            {isAdmin && (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
@@ -1084,6 +1095,175 @@ export default function SupportPage() {
             </CardContent>
           </Card>
         )}
+          </TabsContent>
+
+          <TabsContent value="help" className="space-y-6">
+            <div className="grid gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Settings className="h-5 w-5" />
+                    Help & Educational Videos
+                  </CardTitle>
+                  <CardDescription>
+                    Learn how to configure and integrate the Zota system with step-by-step video tutorials
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {/* Video 1 */}
+                    <div className="space-y-3">
+                      <div className="aspect-video bg-muted rounded-lg overflow-hidden">
+                        <iframe
+                          src="https://www.youtube.com/embed/dQw4w9WgXcQ"
+                          title="Getting Started with Zota"
+                          className="w-full h-full"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        />
+                      </div>
+                      <div>
+                        <h4 className="font-medium">Getting Started with Zota</h4>
+                        <p className="text-sm text-muted-foreground">
+                          Complete setup guide for new installations
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Video 2 */}
+                    <div className="space-y-3">
+                      <div className="aspect-video bg-muted rounded-lg overflow-hidden">
+                        <iframe
+                          src="https://www.youtube.com/embed/dQw4w9WgXcQ"
+                          title="Router Configuration"
+                          className="w-full h-full"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        />
+                      </div>
+                      <div>
+                        <h4 className="font-medium">Router Configuration</h4>
+                        <p className="text-sm text-muted-foreground">
+                          How to configure MikroTik routers for hotspot management
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Video 3 */}
+                    <div className="space-y-3">
+                      <div className="aspect-video bg-muted rounded-lg overflow-hidden">
+                        <iframe
+                          src="https://www.youtube.com/embed/dQw4w9WgXcQ"
+                          title="Payment Integration"
+                          className="w-full h-full"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        />
+                      </div>
+                      <div>
+                        <h4 className="font-medium">Payment Integration</h4>
+                        <p className="text-sm text-muted-foreground">
+                          Setting up mobile money payments and wallet management
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Video 4 */}
+                    <div className="space-y-3">
+                      <div className="aspect-video bg-muted rounded-lg overflow-hidden">
+                        <iframe
+                          src="https://www.youtube.com/embed/dQw4w9WgXcQ"
+                          title="Voucher Management"
+                          className="w-full h-full"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        />
+                      </div>
+                      <div>
+                        <h4 className="font-medium">Voucher Management</h4>
+                        <p className="text-sm text-muted-foreground">
+                          Creating and managing voucher codes for your customers
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Video 5 */}
+                    <div className="space-y-3">
+                      <div className="aspect-video bg-muted rounded-lg overflow-hidden">
+                        <iframe
+                          src="https://www.youtube.com/embed/dQw4w9WgXcQ"
+                          title="Analytics & Reporting"
+                          className="w-full h-full"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        />
+                      </div>
+                      <div>
+                        <h4 className="font-medium">Analytics & Reporting</h4>
+                        <p className="text-sm text-muted-foreground">
+                          Understanding your network performance and revenue metrics
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Video 6 */}
+                    <div className="space-y-3">
+                      <div className="aspect-video bg-muted rounded-lg overflow-hidden">
+                        <iframe
+                          src="https://www.youtube.com/embed/dQw4w9WgXcQ"
+                          title="Troubleshooting Common Issues"
+                          className="w-full h-full"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        />
+                      </div>
+                      <div>
+                        <h4 className="font-medium">Troubleshooting Common Issues</h4>
+                        <p className="text-sm text-muted-foreground">
+                          Solutions for the most frequently encountered problems
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Quick Links */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Quick Links</CardTitle>
+                  <CardDescription>
+                    Additional resources and documentation
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <a
+                      href="/api-documentation"
+                      className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+                    >
+                      <FileText className="h-5 w-5 text-primary" />
+                      <div>
+                        <p className="font-medium">API Documentation</p>
+                        <p className="text-sm text-muted-foreground">Complete API reference</p>
+                      </div>
+                    </a>
+                    <a
+                      href="/faq"
+                      className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+                    >
+                      <HelpCircle className="h-5 w-5 text-primary" />
+                      <div>
+                        <p className="font-medium">FAQ</p>
+                        <p className="text-sm text-muted-foreground">Frequently asked questions</p>
+                      </div>
+                    </a>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </PageTransition>
   );

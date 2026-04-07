@@ -24,6 +24,7 @@ export interface RegisterRequest {
   fullname: string;
   email: string;
   password: string;
+  contact?: string;
   role?: string;
   client_id?: string;
 }
@@ -161,7 +162,6 @@ export interface CreateAdvertRequest {
   media: string;
   client_id: string;
   duration: number;
-  endsIn: string;
 }
 
 // ─── Device Types (Base Operations) ──────────────────────────────────────────
