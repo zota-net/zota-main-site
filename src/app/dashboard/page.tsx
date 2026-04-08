@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PageTransition, StaggerContainer, StaggerItem } from '@/components/common';
-import { StatsCard, AlertsCard, NodesCard } from '@/components/dashboard/cards';
+import { StatsCard, NodesCard } from '@/components/dashboard/cards';
 import { useNetworkStore } from '@/lib/store/network-store';
 import { useUserStore } from '@/lib/store/user-store';
 import { clientsService } from '@/lib/api/services/base-operations';
@@ -44,22 +44,75 @@ export default function DashboardOverviewPage() {
   useEffect(() => {
     const clientId = user?.client_id;
     if (!clientId) return;
+    let cancelled = false;
 
-    Promise.all([
-      clientsService.getReport(clientId),
-      walletsService.getByUser(user.id, 'Client'),
-      reportsService.getSalesReport(clientId),
-    ])
-      .then(([clientReport, wallet, salesData]) => {
-        setReport(clientReport);
-        setWalletBalance(wallet.balance ?? 0);
-        setSalesReport(salesData);
-      })
-      .catch(() => {});
+    const loadDashboardData = async () => {
+      try {
+        // Load sales report (don't let getReport failure affect it)
+        try {
+          const salesData = await reportsService.getSalesReport(clientId);
+          if (!cancelled) {
+            setSalesReport(salesData);
+            console.debug('Sales report loaded:', salesData);
+          }
+        } catch (salesErr) {
+          console.error('Sales report load failed:', salesErr);
+          if (!cancelled) {
+            setSalesReport(null);
+          }
+        }
+
+        // Load client report (independently)
+        try {
+          const clientReport = await clientsService.getReport(clientId);
+          if (!cancelled) {
+            setReport(clientReport);
+            console.debug('Client report loaded:', clientReport);
+          }
+        } catch (reportErr) {
+          console.error('Client report load failed:', reportErr);
+          if (!cancelled) {
+            setReport(null);
+          }
+        }
+      } catch (error) {
+        console.error('Dashboard data loading error:', error);
+      }
+
+      try {
+        const wallet = await walletsService.getByUser(user.id, 'Client');
+        if (!cancelled) {
+          setWalletBalance(wallet.balance ?? 0);
+        }
+      } catch (walletError) {
+        console.warn('Wallet load failed', walletError);
+        if (!cancelled) {
+          setWalletBalance(0);
+        }
+      }
+    };
+
+    loadDashboardData();
+    return () => { cancelled = true; };
   }, [user?.client_id, user?.id]);
 
+  const recentVoucherSales = useMemo(() => {
+    if (!salesReport?.sales) {
+      console.debug('recentVoucherSales: no sales data', { salesReport });
+      return [];
+    }
+    const sorted = [...salesReport.sales]
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 5);
+    console.debug('recentVoucherSales computed:', { count: sorted.length, items: sorted });
+    return sorted;
+  }, [salesReport]);
+
   const salesByDate = useMemo(() => {
-    if (!salesReport?.sales) return [];
+    if (!salesReport?.sales) {
+      console.debug('salesByDate: no sales data', { salesReport });
+      return [];
+    }
 
     const map = new Map<string, { date: string; amount: number; count: number; iso: string }>();
 
@@ -72,7 +125,9 @@ export default function DashboardOverviewPage() {
       map.set(iso, current);
     });
 
-    return Array.from(map.values()).sort((a, b) => a.iso.localeCompare(b.iso));
+    const result = Array.from(map.values()).sort((a, b) => a.iso.localeCompare(b.iso));
+    console.debug('salesByDate computed:', { count: result.length, items: result });
+    return result;
   }, [salesReport]);
 
   const greeting = () => {
@@ -81,6 +136,16 @@ export default function DashboardOverviewPage() {
     if (hour < 18) return 'Good afternoon';
     return 'Good evening';
   };
+
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat('en-UG', {
+      style: 'currency',
+      currency: 'UGX',
+      maximumFractionDigits: 0,
+    }).format(amount);
+
+  const formatTransactionDate = (date: string) =>
+    format(parseISO(date), 'MMM d, h:mm a');
 
   return (
     <PageTransition>
@@ -105,8 +170,8 @@ export default function DashboardOverviewPage() {
           <StaggerItem>
             <StatsCard
               title="Net Sales"
-              value={report?.totalRevenue ?? 0}
-              description={`Total Revenue`}
+              value={salesReport?.summary.totalRevenue ?? salesReport?.summary.netRevenue ?? report?.totalRevenue ?? 0}
+              description="Total revenue from sales"
               icon={Server}
               variant="primary"
             />
@@ -114,10 +179,10 @@ export default function DashboardOverviewPage() {
           <StaggerItem>
             <StatsCard
               title="Voucher Sales"
-              value={report?.totalVouchers ?? 0}
+              value={salesReport?.summary.totalSales ?? salesReport?.sales.length ?? report?.totalVouchers ?? 0}
               suffix=""
               decimals={0}
-              description="Total Vouchers Created"
+              description="Total vouchers sold"
               icon={Activity}
               variant="success"
             />
@@ -128,7 +193,7 @@ export default function DashboardOverviewPage() {
               value={walletBalance}
               prefix="UGX "
               decimals={0}
-              description="Current Account Balance"
+              description="Current account balance"
               icon={Clock}
             />
           </StaggerItem>
@@ -191,8 +256,36 @@ export default function DashboardOverviewPage() {
             </CardContent>
           </Card>
 
-          {/* Alerts */}
-          <AlertsCard className="lg:col-span-1" maxItems={5} />
+          {/* Recent Voucher Sales */}
+          <Card className="lg:col-span-1">
+            <CardHeader className="flex items-center justify-between pb-2">
+              <CardTitle className="text-base font-semibold">Recent Voucher Sales</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {recentVoucherSales.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+                  <p className="text-sm">No recent voucher sales available</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {recentVoucherSales.map((sale) => (
+                    <div key={`${sale.id}-${sale.createdAt}`} className="rounded-lg border p-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold truncate">{sale.voucherCode || sale.id}</p>
+                          <p className="text-xs text-muted-foreground truncate">{sale.provider || 'Voucher sale'}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-semibold text-foreground">{formatCurrency(sale.amount)}</p>
+                          <p className="text-xs text-muted-foreground">{formatTransactionDate(sale.createdAt)}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
 
         {/* Quick Stats */}

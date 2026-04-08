@@ -124,7 +124,7 @@ export default function AnalyticsPage() {
 
   const totalSales = filteredSales.length;
   const totalRevenue = filteredSales.reduce((sum, sale) => sum + sale.amount, 0);
-  const totalNetRevenue = salesReport?.summary.netRevenue ?? 0;
+  const totalNetRevenue = salesReport?.summary.netRevenue ?? salesReport?.summary.totalRevenue ?? 0;
   const averageSale = totalSales > 0 ? totalRevenue / totalSales : 0;
 
   return (

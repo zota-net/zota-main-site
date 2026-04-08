@@ -54,7 +54,7 @@ const navGroups: NavGroup[] = [
       { title: 'Overview', href: '/dashboard', icon: LayoutDashboard },
       { title: 'My Activities', href: '/dashboard/agent-dashboard', icon: Activity },
       // { title: 'Network', href: '/dashboard/network', icon: Network },
-      { title: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 }
+      // { title: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 }
     ],
   },
   {
@@ -72,8 +72,8 @@ const navGroups: NavGroup[] = [
   {
     title: 'Operations',
     items: [
-      { title: 'Support', href: '/dashboard/support', icon: Headphones },
-      { title: 'Alerts', href: '/dashboard/alerts', icon: AlertTriangle },
+      { title: 'Support & Help', href: '/dashboard/support', icon: Headphones },
+      // { title: 'Alerts', href: '/dashboard/alerts', icon: AlertTriangle },
       { title: 'Security', href: '/dashboard/security', icon: Shield },
     ],
   },
@@ -82,7 +82,7 @@ const navGroups: NavGroup[] = [
     items: [
       { title: 'Reports', href: '/dashboard/reports', icon: FileText },
       { title: 'Settings', href: '/dashboard/settings', icon: Settings },
-      { title: 'Help', href: '/dashboard/help', icon: HelpCircle },
+      // { title: 'Help', href: '/dashboard/help', icon: HelpCircle },
     ],
   },
 ];

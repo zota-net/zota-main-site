@@ -93,7 +93,8 @@ async function apiFetch<T = unknown>(endpoint: string, options: RequestOptions =
     data = await response.text();
   }
 
-  if (!response.ok) {
+  const isSuccessStatus = response.ok || response.status === 304;
+  if (!isSuccessStatus) {
     const message = (data as { message?: string })?.message || response.statusText || 'Request failed';
     throw new ApiError(message, response.status, data);
   }

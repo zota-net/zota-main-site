@@ -208,7 +208,7 @@ export interface CreateDeviceRequest {
 
 export interface Wallet {
   id: string;
-  userId: string;
+  userId: string | null;
   ownerType: 'Client' | 'Agent' | 'Admin';
   clientId: string;
   phone: string;
@@ -321,8 +321,8 @@ export interface ReportParams {
 export interface TransactionReport {
   transactions: Transaction[];
   summary: {
-    total: number;
-    count: number;
+    total?: number;
+    count?: number;
   };
 }
 
@@ -332,6 +332,9 @@ export interface SalesReport {
     totalSales: number;
     totalFees: number;
     netRevenue: number;
+    totalRevenue?: number;
+    totalServiceFees?: number;
+    byPaymentMethod?: Record<string, number>;
   };
 }
 

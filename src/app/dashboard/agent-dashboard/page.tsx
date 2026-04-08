@@ -122,10 +122,10 @@ export default function AgentDashboardPage() {
       purchasesService.getVoucherSales(clientId),
     ])
       .then(([agents, sales]) => {
-        setAgentAccounts(agents);
-        setVoucherSales(sales || []);
+        setAgentAccounts(agents ?? []);
+        setVoucherSales(sales ?? []);
 
-        const mappedActivities: Activity[] = (sales || []).slice(0, 12).map((sale) => ({
+        const mappedActivities: Activity[] = (sales ?? []).slice(0, 12).map((sale) => ({
           id: sale.id,
           type: 'voucher_created',
           title: 'Voucher Sale Recorded',

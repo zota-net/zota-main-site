@@ -32,7 +32,9 @@ export const clientsService = {
     api.put<ApiResponse>(`/bop/clients/${id}/status`, { status }),
 
   getReport: (id: string) =>
-    api.get<ClientReport>(`/bop/clients/${id}/report`),
+    api
+      .get<ApiResponse<ClientReport>>(`/bop/clients/${id}/report`)
+      .then((response) => response.data ?? (response as unknown as ClientReport)),
 };
 
 // ─── Packages ────────────────────────────────────────────────────────────────

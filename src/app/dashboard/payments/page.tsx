@@ -107,8 +107,8 @@ interface Payment {
 
 // Map API transaction to local Payment interface
 const mapApiTransaction = (t: ApiTransaction): Payment => ({
-  id: t.id,
-  transactionId: t.reference || t.id,
+  id: String(t.id),
+  transactionId: String(t.reference ?? t.id),
   customerId: t.walletId,
   customerName: t.description || 'Unknown',
   customerEmail: '',
@@ -124,9 +124,9 @@ const mapApiTransaction = (t: ApiTransaction): Payment => ({
 });
 
 const mapVoucherSale = (s: VoucherSale): Payment => ({
-  id: s.id,
-  transactionId: s.voucherCode,
-  customerId: s.clientId,
+  id: String(s.id),
+  transactionId: String(s.voucherCode),
+  customerId: String(s.clientId),
   customerName: s.phone || 'Voucher Sale',
   customerEmail: '',
   customerPhone: s.phone || '',
@@ -215,24 +215,35 @@ export default function PaymentsPage() {
     if (!user?.client_id) return;
     try {
       setIsLoadingPayments(true);
-      // Fetch voucher sales and sales report
+
       const [sales, report] = await Promise.all([
         purchasesService.getVoucherSales(user.client_id),
-        reportsService.getSalesReport(user.client_id)
+        reportsService.getSalesReport(user.client_id),
       ]);
-      
-      const mapped = sales.map(mapVoucherSale).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-      setPayments(mapped);
-      setSalesReport(report);
-      
-      // Fetch wallet data separately (don't fail if wallet doesn't exist)
+
+      const mappedSales = sales
+        .map(mapVoucherSale)
+        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+      let walletData: Wallet | null = null;
+      let mappedTransactions: Payment[] = [];
+
       try {
-        const walletData = await walletsService.getByUser(user.id, 'Client');
+        walletData = await walletsService.getByUser(user.id, 'Client');
         setWallet(walletData);
+
+        // Load wallet transactions if wallet exists
+        const walletTxns = await walletsService.getTransactions(walletData.id, 50);
+        mappedTransactions = walletTxns
+          .map(mapApiTransaction)
+          .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
       } catch (walletErr) {
-        console.warn('Wallet not found for user:', walletErr);
-        setWallet(null); // Set wallet to null if not found
+        console.warn('Wallet not found or no transactions available:', walletErr);
+        setWallet(null);
       }
+
+      setPayments([...mappedSales, ...mappedTransactions].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()));
+      setSalesReport(report);
     } catch (err) {
       console.error('Failed to fetch payments:', err);
       toast.error(err instanceof ApiError ? err.message : 'Failed to load payments');
@@ -387,9 +398,13 @@ export default function PaymentsPage() {
   // Filter payments
   const filteredPayments = useMemo(() => {
     return payments.filter((p) => {
-      const matchesSearch = p.transactionId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.customerEmail.toLowerCase().includes(searchQuery.toLowerCase());
+      const transactionId = String(p.transactionId || '');
+      const customerName = String(p.customerName || '');
+      const customerEmail = String(p.customerEmail || '');
+      const searchLower = searchQuery.toLowerCase();
+      const matchesSearch = transactionId.toLowerCase().includes(searchLower) ||
+        customerName.toLowerCase().includes(searchLower) ||
+        customerEmail.toLowerCase().includes(searchLower);
       const matchesStatus = statusFilter === 'all' || p.status === statusFilter;
       const matchesMethod = methodFilter === 'all' || p.method === methodFilter;
       const matchesType = typeFilter === 'all' || p.type === typeFilter;
@@ -401,12 +416,12 @@ export default function PaymentsPage() {
   const stats = useMemo(() => {
     const completed = payments.filter((p) => p.status === 'completed');
     const totalRevenue = completed.reduce((sum, p) => sum + p.amount, 0);
-    
+
     return {
-      totalRevenue,
-      annualRevenue: salesReport?.summary.netRevenue ?? 0,
+      accountBalance: wallet?.balance ?? 0,
+      netSales: salesReport?.summary.netRevenue ?? totalRevenue,
     };
-  }, [payments, salesReport]);
+  }, [payments, salesReport, wallet?.balance]);
 
   const handleViewDetails = (payment: Payment) => {
     setSelectedPayment(payment);
@@ -523,14 +538,14 @@ export default function PaymentsPage() {
             <Card>
               <CardContent className="p-3 sm:pt-6 sm:p-6">
                 <div className="flex items-center justify-between">
-                  <p className="text-xs sm:text-sm font-medium text-muted-foreground">Total Revenue</p>
+                  <p className="text-xs sm:text-sm font-medium text-muted-foreground">Account Balance</p>
                   <div className="flex items-center text-green-500">
-                    <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 mr-0.5 sm:mr-1" />
-                    <span className="text-[10px] sm:text-xs">+12.5%</span>
+                    <WalletIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-0.5 sm:mr-1" />
+                    <span className="text-[10px] sm:text-xs">Live</span>
                   </div>
                 </div>
                 <p className="text-lg sm:text-3xl font-bold mt-1 sm:mt-2 text-green-500">
-                  {formatCurrency(stats.totalRevenue)}
+                  {formatCurrency(stats.accountBalance)}
                 </p>
               </CardContent>
             </Card>
@@ -544,13 +559,13 @@ export default function PaymentsPage() {
             <Card>
               <CardContent className="p-3 sm:pt-6 sm:p-6">
                 <div className="flex items-center justify-between">
-                  <p className="text-xs sm:text-sm font-medium text-muted-foreground">Annual Revenue</p>
+                  <p className="text-xs sm:text-sm font-medium text-muted-foreground">Net Sales</p>
                   <div className="flex items-center text-primary">
-                    <CalendarDays className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4" />
                   </div>
                 </div>
                 <p className="text-lg sm:text-3xl font-bold mt-1 sm:mt-2 text-primary">
-                  {formatCurrency(stats.annualRevenue)}
+                  {formatCurrency(stats.netSales)}
                 </p>
               </CardContent>
             </Card>
@@ -740,7 +755,7 @@ export default function PaymentsPage() {
                       
                       return (
                         <motion.tr
-                          key={payment.id}
+                          key={`${payment.type}-${payment.id}-${payment.createdAt.getTime()}`}
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
                           exit={{ opacity: 0 }}
