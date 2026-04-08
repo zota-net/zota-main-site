@@ -231,6 +231,8 @@ export default function DevicesPage() {
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
   const [showSecrets, setShowSecrets] = useState(false);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [portalDialogOpen, setPortalDialogOpen] = useState(false);
+  const [portalIP, setPortalIP] = useState('');
   
   // New device form
   const [newDevice, setNewDevice] = useState({
@@ -329,6 +331,27 @@ export default function DevicesPage() {
         d.id === id ? { ...d, status: 'online' as const } : d
       ));
     }, 3000);
+  };
+
+  const handleDownloadPortal = () => {
+    if (!user?.client_id || !portalIP.trim()) {
+      toast.error('Client ID or Router IP is missing');
+      return;
+    }
+
+    const url = `https://zota.xylepayments.com/mikrotik/portal/download-login?client_id=${user.client_id}&router_id=${portalIP.trim()}`;
+
+    // Create a temporary anchor element to trigger download
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `portal-${portalIP}.html`; // Suggest filename
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    setPortalDialogOpen(false);
+    setPortalIP('');
+    toast.success('Portal download initiated');
   };
 
   return (
@@ -670,6 +693,17 @@ export default function DevicesPage() {
                           <Settings className="h-4 w-4 mr-2" />
                           Edit
                         </Button>
+                        {template.type === 'router' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1"
+                            onClick={() => setPortalDialogOpen(true)}
+                          >
+                            <Download className="h-4 w-4 mr-2" />
+                            Portal
+                          </Button>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
@@ -725,6 +759,38 @@ export default function DevicesPage() {
               <Button>
                 <Download className="h-4 w-4 mr-2" />
                 Download Config
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Portal Download Dialog */}
+        <Dialog open={portalDialogOpen} onOpenChange={setPortalDialogOpen}>
+          <DialogContent className="w-[95vw] max-w-md p-4 sm:p-6">
+            <DialogHeader>
+              <DialogTitle>Download HTML Portal</DialogTitle>
+              <DialogDescription>
+                Enter the router IP address to download the configured portal
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="space-y-2">
+                <Label>Router IP Address</Label>
+                <Input
+                  value={portalIP}
+                  onChange={(e) => setPortalIP(e.target.value)}
+                  placeholder="192.168.1.1"
+                  type="text"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setPortalDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleDownloadPortal}>
+                <Download className="h-4 w-4 mr-2" />
+                Download Portal
               </Button>
             </DialogFooter>
           </DialogContent>
