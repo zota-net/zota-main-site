@@ -291,13 +291,14 @@ export default function DevicesPage() {
   };
 
   const handleDownloadLoginConfig = async (routerId: string) => {
+    console.log('Downloading login config for router:', routerId);
     if (!user?.client_id) {
       toast.error('Missing client ID');
       return;
     }
 
     try {
-      const urlx = `https://zota.xylepayments.com/mikrotik/portal/download-login?client_id=${user.client_id}&router_id=${routerId.trim()}`;
+      const urlx = `https://zota.xylepayments.com/mikrotik/portal/download-login?client_id=${user.client_id}&router_id=${routerId}`;
       const response = await fetch(
         urlx,
         {
@@ -730,7 +731,7 @@ export default function DevicesPage() {
                           onClick={() => handleDownloadLoginConfig(router.id)}
                         >
                           <Download className="h-3 w-3 mr-1" />
-                          Config
+                          Download Config
                         </Button>
                         <Button 
                           variant="outline" 
