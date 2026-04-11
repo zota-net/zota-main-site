@@ -589,7 +589,7 @@ export default function DevicesPage() {
           ))}
         </div>
 
-        <Tabs defaultValue="devices" className="space-y-4 sm:space-y-6">
+        <Tabs defaultValue="routers" className="space-y-4 sm:space-y-6">
           <TabsList className="w-full sm:w-auto grid grid-cols-3 sm:flex">
             {/* <TabsTrigger value="devices" className="text-xs sm:text-sm">Devices</TabsTrigger> */}
             <TabsTrigger value="routers" className="text-xs sm:text-sm">Router Devices</TabsTrigger>
