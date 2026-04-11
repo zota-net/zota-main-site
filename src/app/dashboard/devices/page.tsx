@@ -437,13 +437,13 @@ export default function DevicesPage() {
     }, 3000);
   };
 
-  const handleDownloadPortal = () => {
-    if (!user?.client_id || !portalIP.trim()) {
-      toast.error('Client ID or Router IP is missing');
+  const handleDownloadPortal = (routerId: string) => {
+    if (!user?.client_id || !routerId.trim()) {
+      toast.error('Client ID or Router ID is missing');
       return;
     }
 
-    const url = `https://zota.xylepayments.com/mikrotik/portal/download-login?client_id=${user.client_id}&router_id=${portalIP.trim()}`;
+    const url = `https://zota.xylepayments.com/mikrotik/portal/download-login?client_id=${user.client_id}&router_id=${routerId.trim()}`;
 
     // Create a temporary anchor element to trigger download
     const link = document.createElement('a');
@@ -726,7 +726,7 @@ export default function DevicesPage() {
                           variant="outline" 
                           size="sm" 
                           className="flex-1 h-8 text-xs"
-                          onClick={() => handleDownloadLoginConfig(router.id)}
+                          onClick={() => handleDownloadPortal(router.id)}
                         >
                           <Download className="h-3 w-3 mr-1" />
                           Config
