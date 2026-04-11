@@ -135,7 +135,7 @@ export const routerDevicesService = {
     api.post<ApiResponse>('/bop/router-devices', data),
 
   getByClient: (clientId: string) =>
-    api.get<ApiResponse>(`/bop/router-devices/client/${clientId}`).then((response) => response.data),
+    api.get<ApiResponse>(`/mikrotik/routes/client/${clientId}`).then((response) => response.data),
 
   getById: (id: string) =>
     api.get<ApiResponse>(`/bop/router-devices/${id}`).then((response) => response.data),
