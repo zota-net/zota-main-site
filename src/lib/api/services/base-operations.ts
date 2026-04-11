@@ -123,4 +123,26 @@ export const bopDevicesService = {
 
   getByMac: (macAddress: string) =>
     api.get<BopDevice>(`/bop/devices/mac/${macAddress}`),
+
+  getByClient: (clientId: string) =>
+    api.get<BopDevice[]>(`/bop/devices/client/${clientId}`),
+};
+
+// ─── Router Devices ──────────────────────────────────────────────────────────
+
+export const routerDevicesService = {
+  create: (data: unknown) =>
+    api.post<ApiResponse>('/bop/router-devices', data),
+
+  getByClient: (clientId: string) =>
+    api.get<ApiResponse>(`/bop/router-devices/client/${clientId}`).then((response) => response.data),
+
+  getById: (id: string) =>
+    api.get<ApiResponse>(`/bop/router-devices/${id}`).then((response) => response.data),
+
+  update: (id: string, data: Partial<unknown>) =>
+    api.put<ApiResponse>(`/bop/router-devices/${id}`, data),
+
+  delete: (id: string) =>
+    api.delete<ApiResponse>(`/bop/router-devices/${id}`),
 };

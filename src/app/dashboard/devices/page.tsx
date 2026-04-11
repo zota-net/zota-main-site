@@ -63,9 +63,15 @@ import { PageTransition, AnimatedCounter } from '@/components/common';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { devicesService } from '@/lib/api/services/devices';
+import { 
+  routersService, 
+  routerStatsService, 
+  sessionsService
+} from '@/lib/api/services/mikrotik';
+import { routerDevicesService } from '@/lib/api/services/base-operations';
 import { useUserStore } from '@/lib/store/user-store';
 import { ApiError } from '@/lib/api/client';
-import type { Device as ApiDevice } from '@/lib/api/types';
+import type { Device as ApiDevice, RouterDevice } from '@/lib/api/types';
 
 // Device types
 interface Device {
@@ -203,6 +209,18 @@ const typeConfig = {
 export default function DevicesPage() {
   const [devices, setDevices] = useState<Device[]>([]);
   const [isLoadingDevices, setIsLoadingDevices] = useState(true);
+  const [routerDevices, setRouterDevices] = useState<RouterDevice[]>([]);
+  const [isLoadingRouters, setIsLoadingRouters] = useState(false);
+  const [selectedRouter, setSelectedRouter] = useState<RouterDevice | null>(null);
+  const [routerDetailsOpen, setRouterDetailsOpen] = useState(false);
+  const [addRouterDialogOpen, setAddRouterDialogOpen] = useState(false);
+  const [newRouter, setNewRouter] = useState({
+    name: '',
+    ipAddress: '',
+    apiPort: 8728,
+    apiUser: '',
+    apiPassword: '',
+  });
   const user = useUserStore((s) => s.user);
 
   const fetchDevices = useCallback(async () => {
@@ -221,7 +239,93 @@ export default function DevicesPage() {
 
   useEffect(() => {
     fetchDevices();
-  }, [fetchDevices]);
+    fetchRouterDevices();
+  }, [user?.client_id]);
+
+  const fetchRouterDevices = useCallback(async () => {
+    if (!user?.client_id) return;
+    try {
+      setIsLoadingRouters(true);
+      const data = await routerDevicesService.getByClient(user.client_id);
+      setRouterDevices(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Failed to fetch routers:', err);
+      toast.error(err instanceof ApiError ? err.message : 'Failed to load routers');
+    } finally {
+      setIsLoadingRouters(false);
+    }
+  }, [user?.client_id]);
+
+  const handleAddRouter = async () => {
+    if (!user?.client_id || !newRouter.name.trim()) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    try {
+      await routersService.create({
+        name: newRouter.name,
+        ipAddress: newRouter.ipAddress,
+        apiPort: newRouter.apiPort,
+        apiUser: newRouter.apiUser,
+        apiPassword: newRouter.apiPassword,
+        client_id: user.client_id,
+      });
+      toast.success('Router registered successfully');
+      setAddRouterDialogOpen(false);
+      setNewRouter({ name: '', ipAddress: '', apiPort: 8728, apiUser: '', apiPassword: '' });
+      fetchRouterDevices();
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Failed to register router');
+    }
+  };
+
+  const handleDeleteRouter = async (routerId: string) => {
+    try {
+      await routersService.delete(routerId);
+      toast.success('Router deleted successfully');
+      fetchRouterDevices();
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Failed to delete router');
+    }
+  };
+
+  const handleDownloadLoginConfig = async (routerId: string) => {
+    if (!user?.client_id) {
+      toast.error('Missing client ID');
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `/api/mikrotik/routers/${routerId}/config/login?client_id=${user.client_id}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${useUserStore.getState().session?.token || ''}`,
+            'client_id': user.client_id,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to download configuration');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `login-config-${routerId}.html`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      toast.success('Login configuration downloaded');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to download configuration');
+    }
+  };
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
@@ -486,8 +590,9 @@ export default function DevicesPage() {
         </div>
 
         <Tabs defaultValue="devices" className="space-y-4 sm:space-y-6">
-          <TabsList className="w-full sm:w-auto grid grid-cols-2 sm:flex">
+          <TabsList className="w-full sm:w-auto grid grid-cols-3 sm:flex">
             <TabsTrigger value="devices" className="text-xs sm:text-sm">Devices</TabsTrigger>
+            <TabsTrigger value="routers" className="text-xs sm:text-sm">Router Devices</TabsTrigger>
             <TabsTrigger value="templates" className="text-xs sm:text-sm">Config Templates</TabsTrigger>
           </TabsList>
 
@@ -655,6 +760,156 @@ export default function DevicesPage() {
             {filteredDevices.length > 12 && (
               <div className="text-center text-sm text-muted-foreground">
                 Showing 12 of {filteredDevices.length} devices
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Router Devices Tab */}
+          <TabsContent value="routers" className="space-y-4">
+            <div className="flex flex-wrap items-center gap-2">
+              <Dialog open={addRouterDialogOpen} onOpenChange={setAddRouterDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button className="h-8 sm:h-9">
+                    <Plus className="h-4 w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Add Router</span>
+                    <span className="sm:hidden">Add</span>
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="w-[95vw] max-w-md p-4 sm:p-6">
+                  <DialogHeader>
+                    <DialogTitle>Register MikroTik Router</DialogTitle>
+                    <DialogDescription>
+                      Add a new MikroTik router to your network
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="space-y-2">
+                      <Label>Router Name</Label>
+                      <Input
+                        value={newRouter.name}
+                        onChange={(e) => setNewRouter({ ...newRouter, name: e.target.value })}
+                        placeholder="Main Router"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>IP Address</Label>
+                      <Input
+                        value={newRouter.ipAddress}
+                        onChange={(e) => setNewRouter({ ...newRouter, ipAddress: e.target.value })}
+                        placeholder="192.168.1.1"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>API Port</Label>
+                        <Input
+                          type="number"
+                          value={newRouter.apiPort}
+                          onChange={(e) => setNewRouter({ ...newRouter, apiPort: parseInt(e.target.value) })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>API User</Label>
+                        <Input
+                          value={newRouter.apiUser}
+                          onChange={(e) => setNewRouter({ ...newRouter, apiUser: e.target.value })}
+                          placeholder="api_user"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>API Password</Label>
+                      <Input
+                        type="password"
+                        value={newRouter.apiPassword}
+                        onChange={(e) => setNewRouter({ ...newRouter, apiPassword: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setAddRouterDialogOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleAddRouter}>Register Router</Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
+
+            {isLoadingRouters ? (
+              <Card>
+                <CardContent className="pt-6 text-center">
+                  Loading router devices...
+                </CardContent>
+              </Card>
+            ) : routerDevices.length === 0 ? (
+              <Card>
+                <CardContent className="pt-6 text-center text-muted-foreground">
+                  No router devices registered yet. Add one to get started.
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {routerDevices.map((router) => (
+                  <Card key={router.id} className="group hover:border-primary/50 transition-colors">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-lg bg-blue-500/10">
+                            <Router className="h-5 w-5 text-blue-500" />
+                          </div>
+                          <div>
+                            <CardTitle className="text-base">{router.name}</CardTitle>
+                            <CardDescription className="text-xs">{router.ipAddress}</CardDescription>
+                          </div>
+                        </div>
+                        <Badge 
+                          variant="outline" 
+                          className={router.isConnected ? 'bg-green-500/10 text-green-500' : 'bg-gray-500/10 text-gray-500'}
+                        >
+                          <Wifi className="h-3 w-3 mr-1" />
+                          {router.isConnected ? 'Online' : 'Offline'}
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="text-sm text-muted-foreground">
+                        {router.connectedDevices ? `${router.connectedDevices} connected devices` : 'No active connections'}
+                      </div>
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="flex-1 h-8 text-xs"
+                          onClick={() => {
+                            setSelectedRouter(router);
+                            setRouterDetailsOpen(true);
+                          }}
+                        >
+                          <Eye className="h-3 w-3 mr-1" />
+                          Details
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="flex-1 h-8 text-xs"
+                          onClick={() => handleDownloadLoginConfig(router.id)}
+                        >
+                          <Download className="h-3 w-3 mr-1" />
+                          Config
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="flex-1 h-8 text-xs text-destructive hover:text-destructive"
+                          onClick={() => handleDeleteRouter(router.id)}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
             )}
           </TabsContent>

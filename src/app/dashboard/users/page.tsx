@@ -3,34 +3,19 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Users,
-  Plus,
+  Wifi,
   Search,
   Download,
   Trash2,
-  Edit,
   MoreHorizontal,
-  Mail,
-  Phone,
-  Shield,
-  ShieldCheck,
-  ShieldAlert,
-  UserCheck,
-  UserX,
-  Key,
-  History,
-  Ban,
   CheckCircle,
   XCircle,
-  Clock,
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Select,
   SelectContent,
@@ -39,19 +24,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
@@ -72,237 +47,147 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PageTransition, AnimatedCounter } from '@/components/common';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import { authService } from '@/lib/api/services/auth';
-import { clientsService } from '@/lib/api/services/base-operations';
+import { bopDevicesService } from '@/lib/api/services/base-operations';
 import { useUserStore } from '@/lib/store/user-store';
 import { ApiError } from '@/lib/api/client';
+import type { BopDevice } from '@/lib/api/types';
 
-// User types
-interface User {
+// Connected User types
+interface ConnectedUser {
   id: string;
-  name: string;
-  email: string;
-  phone?: string;
-  role: 'admin' | 'operator' | 'viewer' | 'customer';
-  status: 'active' | 'inactive' | 'suspended' | 'pending';
-  avatar?: string;
+  macAddress: string;
+  voucherId: string;
+  expiresAt: Date;
   createdAt: Date;
-  lastLogin?: Date;
-  department?: string;
-  permissions: string[];
+  status: 'active' | 'expired';
 }
-
-const roleConfig = {
-  admin: { label: 'Admin', color: 'bg-red-500/10 text-red-500 border-red-500/20', icon: ShieldAlert },
-  operator: { label: 'Operator', color: 'bg-blue-500/10 text-blue-500 border-blue-500/20', icon: ShieldCheck },
-  viewer: { label: 'Viewer', color: 'bg-gray-500/10 text-gray-500 border-gray-500/20', icon: Shield },
-  customer: { label: 'Customer', color: 'bg-green-500/10 text-green-500 border-green-500/20', icon: Users },
-};
 
 const statusConfig = {
   active: { label: 'Active', color: 'bg-green-500/10 text-green-500 border-green-500/20', icon: CheckCircle },
-  inactive: { label: 'Inactive', color: 'bg-gray-500/10 text-gray-500 border-gray-500/20', icon: XCircle },
-  suspended: { label: 'Suspended', color: 'bg-red-500/10 text-red-500 border-red-500/20', icon: Ban },
-  pending: { label: 'Pending', color: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20', icon: Clock },
+  expired: { label: 'Expired', color: 'bg-red-500/10 text-red-500 border-red-500/20', icon: XCircle },
 };
 
-export default function UsersPage() {
-  const [users, setUsers] = useState<User[]>([]);
-  const [isLoadingUsers, setIsLoadingUsers] = useState(true);
+export default function ConnectedUsersPage() {
+  const [connectedUsers, setConnectedUsers] = useState<ConnectedUser[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [selectedDevices, setSelectedDevices] = useState<string[]>([]);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedDevice, setSelectedDevice] = useState<ConnectedUser | null>(null);
   const currentUser = useUserStore((s) => s.user);
 
-  const fetchUsers = useCallback(async () => {
+  const fetchConnectedUsers = useCallback(async () => {
     if (!currentUser?.client_id) return;
     try {
-      setIsLoadingUsers(true);
-      const clients = await clientsService.getAll();
-      const mapped: User[] = clients.map((c) => ({
-        id: c.id,
-        name: c.adminFullName || c.businessName,
-        email: c.adminEmail,
-        phone: c.contact,
-        role: 'admin' as const,
-        status: (c.status === 'active' ? 'active' : c.status === 'suspended' ? 'suspended' : 'inactive') as User['status'],
-        createdAt: new Date(c.createdAt),
-        department: c.businessName,
-        permissions: ['all'],
-      }));
-      setUsers(mapped);
+      setIsLoading(true);
+      const devices = await bopDevicesService.getByClient(currentUser.client_id);
+      const mapped: ConnectedUser[] = (Array.isArray(devices) ? devices : []).map((d: BopDevice) => {
+        const expiresAt = d.expiresAt ? new Date(d.expiresAt) : new Date();
+        const isExpired = expiresAt < new Date();
+        return {
+          id: d.id,
+          macAddress: d.macAddress,
+          voucherId: d.voucher_id,
+          expiresAt,
+          createdAt: new Date(d.createdAt),
+          status: isExpired ? 'expired' : 'active',
+        };
+      });
+      setConnectedUsers(mapped);
     } catch (err) {
-      console.error('Failed to fetch users:', err);
-      toast.error(err instanceof ApiError ? err.message : 'Failed to load users');
+      console.error('Failed to fetch connected users:', err);
+      toast.error(err instanceof ApiError ? err.message : 'Failed to load connected users');
     } finally {
-      setIsLoadingUsers(false);
+      setIsLoading(false);
     }
   }, [currentUser?.client_id]);
 
   useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [roleFilter, setRoleFilter] = useState<string>('all');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  
-  // New/Edit user form
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    role: 'viewer' as User['role'],
-    department: '',
-    status: 'active' as User['status'],
-  });
+    fetchConnectedUsers();
+  }, [fetchConnectedUsers]);
 
-  // Filter users
-  const filteredUsers = useMemo(() => {
-    return users.filter((u) => {
-      const matchesSearch = u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        u.email.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesRole = roleFilter === 'all' || u.role === roleFilter;
-      const matchesStatus = statusFilter === 'all' || u.status === statusFilter;
-      return matchesSearch && matchesRole && matchesStatus;
+  // Filter devices
+  const filteredDevices = useMemo(() => {
+    return connectedUsers.filter((d) => {
+      const matchesSearch =
+        d.macAddress.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        d.voucherId.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesStatus = statusFilter === 'all' || d.status === statusFilter;
+      return matchesSearch && matchesStatus;
     });
-  }, [users, searchQuery, roleFilter, statusFilter]);
+  }, [connectedUsers, searchQuery, statusFilter]);
 
   // Stats
-  const stats = useMemo(() => ({
-    total: users.length,
-    active: users.filter((u) => u.status === 'active').length,
-    admins: users.filter((u) => u.role === 'admin').length,
-    pending: users.filter((u) => u.status === 'pending').length,
-  }), [users]);
+  const stats = useMemo(
+    () => ({
+      total: connectedUsers.length,
+      active: connectedUsers.filter((d) => d.status === 'active').length,
+      expired: connectedUsers.filter((d) => d.status === 'expired').length,
+    }),
+    [connectedUsers]
+  );
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedUsers(filteredUsers.map((u) => u.id));
+      setSelectedDevices(filteredDevices.map((d) => d.id));
     } else {
-      setSelectedUsers([]);
+      setSelectedDevices([]);
     }
   };
 
-  const handleSelectUser = (id: string, checked: boolean) => {
+  const handleSelectDevice = (id: string, checked: boolean) => {
     if (checked) {
-      setSelectedUsers([...selectedUsers, id]);
+      setSelectedDevices([...selectedDevices, id]);
     } else {
-      setSelectedUsers(selectedUsers.filter((u) => u !== id));
+      setSelectedDevices(selectedDevices.filter((d) => d !== id));
     }
   };
 
-  const handleCreateUser = async () => {
-    if (!currentUser?.client_id) return;
+  const handleDeleteDevice = async () => {
+    if (!selectedDevice) return;
+    
     try {
-      await authService.register({
-        fullname: formData.name,
-        email: formData.email,
-        password: 'TempPassword123!',
-        role: formData.role,
-        client_id: currentUser.client_id,
-      });
-      setCreateDialogOpen(false);
-      resetForm();
-      toast.success('User created successfully');
-      fetchUsers();
+      // Device deletion would be handled by the API if needed
+      // For now, just remove from local state
+      setConnectedUsers(connectedUsers.filter((d) => d.id !== selectedDevice.id));
+      setDeleteDialogOpen(false);
+      setSelectedDevice(null);
+      toast.success('Device removed');
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : 'Failed to create user');
+      toast.error(err instanceof ApiError ? err.message : 'Failed to delete device');
     }
-  };
-
-  const handleEditUser = () => {
-    if (!selectedUser) return;
-    
-    setUsers(users.map((u) => 
-      u.id === selectedUser.id 
-        ? { ...u, ...formData }
-        : u
-    ));
-    setEditDialogOpen(false);
-    setSelectedUser(null);
-    resetForm();
-    toast.success('User updated successfully');
-  };
-
-  const handleDeleteUser = () => {
-    if (!selectedUser) return;
-    
-    setUsers(users.filter((u) => u.id !== selectedUser.id));
-    setDeleteDialogOpen(false);
-    setSelectedUser(null);
-    toast.success('User deleted successfully');
   };
 
   const handleDeleteSelected = () => {
-    setUsers(users.filter((u) => !selectedUsers.includes(u.id)));
-    toast.success(`${selectedUsers.length} users deleted`);
-    setSelectedUsers([]);
+    setConnectedUsers(connectedUsers.filter((d) => !selectedDevices.includes(d.id)));
+    toast.success(`${selectedDevices.length} devices removed`);
+    setSelectedDevices([]);
   };
 
-  const handleSuspendUser = (id: string) => {
-    setUsers(users.map((u) => 
-      u.id === id ? { ...u, status: 'suspended' as const } : u
-    ));
-    toast.success('User suspended');
-  };
-
-  const handleActivateUser = (id: string) => {
-    setUsers(users.map((u) => 
-      u.id === id ? { ...u, status: 'active' as const } : u
-    ));
-    toast.success('User activated');
-  };
-
-  const openEditDialog = (user: User) => {
-    setSelectedUser(user);
-    setFormData({
-      name: user.name,
-      email: user.email,
-      phone: user.phone || '',
-      role: user.role,
-      department: user.department || '',
-      status: user.status,
-    });
-    setEditDialogOpen(true);
-  };
-
-  const openDeleteDialog = (user: User) => {
-    setSelectedUser(user);
+  const openDeleteDialog = (device: ConnectedUser) => {
+    setSelectedDevice(device);
     setDeleteDialogOpen(true);
   };
 
-  const resetForm = () => {
-    setFormData({
-      name: '',
-      email: '',
-      phone: '',
-      role: 'viewer',
-      department: '',
-      status: 'active',
-    });
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  const getInitials = (name: string) => {
-    return name.split(' ').map((n) => n[0]).join('').toUpperCase();
-  };
-
-  const formatLastLogin = (date?: Date) => {
-    if (!date) return 'Never';
+  const getTimeUntilExpiry = (expiresAt: Date) => {
     const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    const days = Math.floor(hours / 24);
+    const diff = expiresAt.getTime() - now.getTime();
     
-    if (hours < 1) return 'Just now';
-    if (hours < 24) return `${hours}h ago`;
-    if (days < 7) return `${days}d ago`;
-    return date.toLocaleDateString();
+    if (diff < 0) return 'Expired';
+    
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    
+    if (days > 0) return `${days}d ${hours}h`;
+    return `${hours}h`;
   };
 
   return (
@@ -312,11 +197,11 @@ export default function UsersPage() {
         <div className="flex flex-col gap-3 sm:gap-4">
           <div>
             <h1 className="text-xl sm:text-2xl font-bold tracking-tight flex items-center gap-2">
-              <Users className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
-              User Management
+              <Wifi className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
+              Connected Users
             </h1>
             <p className="text-sm sm:text-base text-muted-foreground">
-              Manage user accounts, roles, and permissions
+              View devices connected to your network via vouchers
             </p>
           </div>
           
@@ -325,115 +210,15 @@ export default function UsersPage() {
               <Download className="h-4 w-4 sm:mr-2" />
               <span className="hidden sm:inline">Export</span>
             </Button>
-            <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="h-8 sm:h-9">
-                  <Plus className="h-4 w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Add User</span>
-                  <span className="sm:hidden">Add</span>
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="w-[95vw] max-w-md p-4 sm:p-6">
-                <DialogHeader>
-                  <DialogTitle className="text-lg sm:text-xl">Create New User</DialogTitle>
-                  <DialogDescription className="text-sm">
-                    Add a new user to the system
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-3 sm:gap-4 py-3 sm:py-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                    <div className="space-y-2">
-                      <Label className="text-sm">Full Name</Label>
-                      <Input
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        placeholder="John Doe"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-sm">Email</Label>
-                      <Input
-                        type="email"
-                        value={formData.email}
-                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        placeholder="john@company.com"
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Phone</Label>
-                      <Input
-                        value={formData.phone}
-                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                        placeholder="+1 555-555-5555"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Department</Label>
-                      <Input
-                        value={formData.department}
-                        onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                        placeholder="Engineering"
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Role</Label>
-                      <Select
-                        value={formData.role}
-                        onValueChange={(value: User['role']) => setFormData({ ...formData, role: value })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="admin">Admin</SelectItem>
-                          <SelectItem value="operator">Operator</SelectItem>
-                          <SelectItem value="viewer">Viewer</SelectItem>
-                          <SelectItem value="customer">Customer</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Status</Label>
-                      <Select
-                        value={formData.status}
-                        onValueChange={(value: User['status']) => setFormData({ ...formData, status: value })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="active">Active</SelectItem>
-                          <SelectItem value="pending">Pending</SelectItem>
-                          <SelectItem value="inactive">Inactive</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => { setCreateDialogOpen(false); resetForm(); }}>
-                    Cancel
-                  </Button>
-                  <Button onClick={handleCreateUser} disabled={!formData.name || !formData.email}>
-                    Create User
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
           </div>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-3">
           {[
-            { label: 'Total Users', value: stats.total, color: 'text-primary', icon: Users },
-            { label: 'Active', value: stats.active, color: 'text-green-500', icon: UserCheck },
-            { label: 'Admins', value: stats.admins, color: 'text-red-500', icon: ShieldAlert },
-            { label: 'Pending', value: stats.pending, color: 'text-yellow-500', icon: Clock },
+            { label: 'Total Devices', value: stats.total, color: 'text-primary', icon: Wifi },
+            { label: 'Active', value: stats.active, color: 'text-green-500', icon: CheckCircle },
+            { label: 'Expired', value: stats.expired, color: 'text-red-500', icon: XCircle },
           ].map((stat, i) => (
             <motion.div
               key={stat.label}
@@ -456,292 +241,169 @@ export default function UsersPage() {
           ))}
         </div>
 
-        {/* Users Table */}
+        {/* Devices Table */}
         <Card>
-          <CardHeader>
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div className="flex items-center gap-2 flex-wrap">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search users..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-9 w-[200px]"
-                  />
+          <CardContent className="pt-6">
+            <div className="space-y-4">
+              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search by MAC or voucher..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-9 w-[250px]"
+                    />
+                  </div>
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="w-[120px]">
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Status</SelectItem>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="expired">Expired</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-                <Select value={roleFilter} onValueChange={setRoleFilter}>
-                  <SelectTrigger className="w-[120px]">
-                    <SelectValue placeholder="Role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Roles</SelectItem>
-                    <SelectItem value="admin">Admin</SelectItem>
-                    <SelectItem value="operator">Operator</SelectItem>
-                    <SelectItem value="viewer">Viewer</SelectItem>
-                    <SelectItem value="customer">Customer</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-[120px]">
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
-                    <SelectItem value="suspended">Suspended</SelectItem>
-                    <SelectItem value="pending">Pending</SelectItem>
-                  </SelectContent>
-                </Select>
+                
+                {selectedDevices.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">
+                      {selectedDevices.length} selected
+                    </span>
+                    <Button variant="destructive" size="sm" onClick={handleDeleteSelected}>
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete Selected
+                    </Button>
+                  </div>
+                )}
               </div>
-              
-              {selectedUsers.length > 0 && (
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">
-                    {selectedUsers.length} selected
-                  </span>
-                  <Button variant="destructive" size="sm" onClick={handleDeleteSelected}>
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Delete Selected
-                  </Button>
+
+              {isLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <p className="text-muted-foreground">Loading connected devices...</p>
+                </div>
+              ) : (
+                <div className="rounded-lg border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-12">
+                          <Checkbox
+                            checked={selectedDevices.length === filteredDevices.length && filteredDevices.length > 0}
+                            onCheckedChange={handleSelectAll}
+                          />
+                        </TableHead>
+                        <TableHead>MAC Address</TableHead>
+                        <TableHead>Voucher ID</TableHead>
+                        <TableHead>Connected</TableHead>
+                        <TableHead>Expires In</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="w-12"></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      <AnimatePresence mode="popLayout">
+                        {filteredDevices.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={7} className="text-center py-8">
+                              <p className="text-muted-foreground">No connected devices found</p>
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          filteredDevices.map((device) => {
+                            const statusInfo = statusConfig[device.status];
+                            const StatusIcon = statusInfo.icon;
+                            
+                            return (
+                              <motion.tr
+                                key={device.id}
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                className="group"
+                              >
+                                <TableCell>
+                                  <Checkbox
+                                    checked={selectedDevices.includes(device.id)}
+                                    onCheckedChange={(checked) =>
+                                      handleSelectDevice(device.id, checked as boolean)
+                                    }
+                                  />
+                                </TableCell>
+                                <TableCell className="font-mono text-sm">{device.macAddress}</TableCell>
+                                <TableCell className="font-mono text-sm">{device.voucherId}</TableCell>
+                                <TableCell className="text-sm">
+                                  {formatDate(device.createdAt)}
+                                </TableCell>
+                                <TableCell className="text-sm">
+                                  {device.status === 'active' ? (
+                                    getTimeUntilExpiry(device.expiresAt)
+                                  ) : (
+                                    <span className="text-red-500">Expired</span>
+                                  )}
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant="outline" className={statusInfo.color}>
+                                    <StatusIcon className="h-3 w-3 mr-1" />
+                                    {statusInfo.label}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                                        <MoreHorizontal className="h-4 w-4" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                      <DropdownMenuItem
+                                        className="text-destructive"
+                                        onClick={() => openDeleteDialog(device)}
+                                      >
+                                        <Trash2 className="h-4 w-4 mr-2" />
+                                        Remove
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </TableCell>
+                              </motion.tr>
+                            );
+                          })
+                        )}
+                      </AnimatePresence>
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+
+              {filteredDevices.length > 0 && (
+                <div className="mt-4 text-sm text-muted-foreground">
+                  Showing {filteredDevices.length} of {connectedUsers.length} devices
                 </div>
               )}
             </div>
-          </CardHeader>
-          <CardContent>
-            <div className="rounded-lg border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-12">
-                      <Checkbox
-                        checked={selectedUsers.length === filteredUsers.length && filteredUsers.length > 0}
-                        onCheckedChange={handleSelectAll}
-                      />
-                    </TableHead>
-                    <TableHead>User</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Department</TableHead>
-                    <TableHead>Last Login</TableHead>
-                    <TableHead className="w-12"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  <AnimatePresence mode="popLayout">
-                    {filteredUsers.slice(0, 15).map((user) => {
-                      const roleInfo = roleConfig[user.role];
-                      const statusInfo = statusConfig[user.status];
-                      const RoleIcon = roleInfo.icon;
-                      const StatusIcon = statusInfo.icon;
-                      
-                      return (
-                        <motion.tr
-                          key={user.id}
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          className="group"
-                        >
-                          <TableCell>
-                            <Checkbox
-                              checked={selectedUsers.includes(user.id)}
-                              onCheckedChange={(checked) => handleSelectUser(user.id, checked as boolean)}
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-3">
-                              <Avatar className="h-9 w-9">
-                                <AvatarImage src={user.avatar} />
-                                <AvatarFallback className="text-xs">
-                                  {getInitials(user.name)}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div>
-                                <p className="font-medium">{user.name}</p>
-                                <p className="text-sm text-muted-foreground">{user.email}</p>
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className={roleInfo.color}>
-                              <RoleIcon className="h-3 w-3 mr-1" />
-                              {roleInfo.label}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className={statusInfo.color}>
-                              <StatusIcon className="h-3 w-3 mr-1" />
-                              {statusInfo.label}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {user.department || '-'}
-                          </TableCell>
-                          <TableCell className="text-muted-foreground text-sm">
-                            {formatLastLogin(user.lastLogin)}
-                          </TableCell>
-                          <TableCell>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => openEditDialog(user)}>
-                                  <Edit className="h-4 w-4 mr-2" />
-                                  Edit
-                                </DropdownMenuItem>
-                                <DropdownMenuItem>
-                                  <Key className="h-4 w-4 mr-2" />
-                                  Reset Password
-                                </DropdownMenuItem>
-                                <DropdownMenuItem>
-                                  <History className="h-4 w-4 mr-2" />
-                                  Activity Log
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                {user.status === 'active' ? (
-                                  <DropdownMenuItem onClick={() => handleSuspendUser(user.id)}>
-                                    <Ban className="h-4 w-4 mr-2" />
-                                    Suspend
-                                  </DropdownMenuItem>
-                                ) : (
-                                  <DropdownMenuItem onClick={() => handleActivateUser(user.id)}>
-                                    <UserCheck className="h-4 w-4 mr-2" />
-                                    Activate
-                                  </DropdownMenuItem>
-                                )}
-                                <DropdownMenuItem
-                                  className="text-destructive"
-                                  onClick={() => openDeleteDialog(user)}
-                                >
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </motion.tr>
-                      );
-                    })}
-                  </AnimatePresence>
-                </TableBody>
-              </Table>
-            </div>
-            
-            {filteredUsers.length > 15 && (
-              <div className="mt-4 text-center text-sm text-muted-foreground">
-                Showing 15 of {filteredUsers.length} users
-              </div>
-            )}
           </CardContent>
         </Card>
-
-        {/* Edit Dialog */}
-        <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Edit User</DialogTitle>
-              <DialogDescription>
-                Update user information
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Full Name</Label>
-                  <Input
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Email</Label>
-                  <Input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Phone</Label>
-                  <Input
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Department</Label>
-                  <Input
-                    value={formData.department}
-                    onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Role</Label>
-                  <Select
-                    value={formData.role}
-                    onValueChange={(value: User['role']) => setFormData({ ...formData, role: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="operator">Operator</SelectItem>
-                      <SelectItem value="viewer">Viewer</SelectItem>
-                      <SelectItem value="customer">Customer</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Status</Label>
-                  <Select
-                    value={formData.status}
-                    onValueChange={(value: User['status']) => setFormData({ ...formData, status: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="inactive">Inactive</SelectItem>
-                      <SelectItem value="suspended">Suspended</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => { setEditDialogOpen(false); resetForm(); }}>
-                Cancel
-              </Button>
-              <Button onClick={handleEditUser}>Save Changes</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
 
         {/* Delete Confirmation Dialog */}
         <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Delete User</AlertDialogTitle>
+              <AlertDialogTitle>Remove Device</AlertDialogTitle>
               <AlertDialogDescription>
-                Are you sure you want to delete {selectedUser?.name}? This action cannot be undone.
+                Are you sure you want to remove {selectedDevice?.macAddress}? This action cannot be undone.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleDeleteUser} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                Delete
+              <AlertDialogAction
+                onClick={handleDeleteDevice}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Remove
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

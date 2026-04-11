@@ -153,6 +153,7 @@ export default function PackagesPage() {
     name: string;
     description: string;
     duration: number;
+    durationUnit: 'minutes' | 'hours' | 'days';
     price: number;
     agentCommission: number;
     dataLimit: string;
@@ -163,6 +164,7 @@ export default function PackagesPage() {
     name: '',
     description: '',
     duration: 30,
+    durationUnit: 'days',
     price: 0,
     agentCommission: 10,
     dataLimit: 'Unlimited',
@@ -193,6 +195,7 @@ export default function PackagesPage() {
       name: '',
       description: '',
       duration: 30,
+      durationUnit: 'days',
       price: 0,
       agentCommission: 10,
       dataLimit: 'Unlimited',
@@ -200,6 +203,19 @@ export default function PackagesPage() {
       status: 'active',
       featured: false,
     });
+  };
+
+  const convertDurationToSeconds = (duration: number, unit: 'minutes' | 'hours' | 'days'): number => {
+    switch (unit) {
+      case 'minutes':
+        return duration * 60;
+      case 'hours':
+        return duration * 3600;
+      case 'days':
+        return duration * 86400;
+      default:
+        return duration * 86400;
+    }
   };
 
   const handleSelectAll = (checked: boolean) => {
@@ -224,11 +240,17 @@ export default function PackagesPage() {
       return;
     }
 
+    if (formData.price < 500) {
+      toast.error('Minimum price is 500');
+      return;
+    }
+
     try {
+      const periodInSeconds = convertDurationToSeconds(formData.duration, formData.durationUnit);
       await packagesService.create({
         clientId: user.client_id,
         title: formData.name,
-        period: formData.duration * 86400,
+        period: periodInSeconds,
         price: formData.price,
         agentComissionPercentage: formData.agentCommission,
       });
@@ -244,10 +266,16 @@ export default function PackagesPage() {
   const handleEditPackage = async () => {
     if (!selectedPackage) return;
 
+    if (formData.price < 500) {
+      toast.error('Minimum price is 500');
+      return;
+    }
+
     try {
+      const periodInSeconds = convertDurationToSeconds(formData.duration, formData.durationUnit);
       await packagesService.update(selectedPackage.id, {
         title: formData.name,
-        period: formData.duration * 86400,
+        period: periodInSeconds,
         price: formData.price,
         agentComissionPercentage: formData.agentCommission,
       });
@@ -292,6 +320,7 @@ export default function PackagesPage() {
       name: pkg.name,
       description: pkg.description,
       duration: pkg.duration,
+      durationUnit: 'days',
       price: pkg.price,
       agentCommission: pkg.agentCommission,
       dataLimit: pkg.dataLimit,
@@ -437,22 +466,41 @@ export default function PackagesPage() {
                         placeholder="Package description"
                       />
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-3 gap-4">
                       <div className="space-y-2">
-                        <Label>Duration (days)</Label>
+                        <Label>Duration</Label>
                         <Input
                           type="number"
+                          min="1"
                           value={formData.duration}
                           onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) })}
                         />
                       </div>
                       <div className="space-y-2">
+                        <Label>Unit</Label>
+                        <Select
+                          value={formData.durationUnit}
+                          onValueChange={(value: any) => setFormData({ ...formData, durationUnit: value })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="minutes">Minutes</SelectItem>
+                            <SelectItem value="hours">Hours</SelectItem>
+                            <SelectItem value="days">Days</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
                         <Label>Price (UGX)</Label>
                         <Input
                           type="number"
+                          min="500"
                           value={formData.price}
                           onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
                         />
+                        <p className="text-xs text-muted-foreground">Minimum: 500</p>
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
@@ -663,22 +711,41 @@ export default function PackagesPage() {
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label>Duration (days)</Label>
+                  <Label>Duration</Label>
                   <Input
                     type="number"
+                    min="1"
                     value={formData.duration}
                     onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) })}
                   />
                 </div>
                 <div className="space-y-2">
+                  <Label>Unit</Label>
+                  <Select
+                    value={formData.durationUnit}
+                    onValueChange={(value: any) => setFormData({ ...formData, durationUnit: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="minutes">Minutes</SelectItem>
+                      <SelectItem value="hours">Hours</SelectItem>
+                      <SelectItem value="days">Days</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
                   <Label>Price (UGX)</Label>
                   <Input
                     type="number"
+                    min="500"
                     value={formData.price}
                     onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
                   />
+                  <p className="text-xs text-muted-foreground">Minimum: 500</p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">

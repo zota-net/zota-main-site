@@ -416,6 +416,21 @@ export interface DhcpLease {
   expiresAfter: string;
 }
 
+// ─── Router Device Types (Base Operations) ──────────────────────────────────
+
+export interface RouterDevice {
+  id: string;
+  name: string;
+  macAddress: string;
+  ipAddress: string;
+  client_id: string;
+  createdAt: string;
+  updatedAt: string;
+  isConnected?: boolean;
+  uptime?: string;
+  connectedDevices?: number;
+}
+
 // ─── Generic API Response ────────────────────────────────────────────────────
 
 export interface ApiResponse<T = unknown> {

@@ -62,7 +62,7 @@ export function AppHeader({ className }: HeaderProps) {
   const router = useRouter();
   const { theme, setTheme } = useTheme();
   const { user, logout } = useUserStore();
-  const { settings, setSetting } = useAppStore();
+  const { settings, setSetting, setMobileMenuOpen, mobileMenuOpen } = useAppStore();
   const { alerts, acknowledgeAlert } = useNetworkStore();
   
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -86,7 +86,11 @@ export function AppHeader({ className }: HeaderProps) {
   };
 
   const toggleSidebar = () => {
-    setSetting('sidebarCollapsed', !settings.sidebarCollapsed);
+    if (isMobile) {
+      setMobileMenuOpen(!mobileMenuOpen);
+    } else {
+      setSetting('sidebarCollapsed', !settings.sidebarCollapsed);
+    }
   };
 
   const formatTime = (timestamp: number) => {

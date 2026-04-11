@@ -114,3 +114,10 @@ export const profilesService = {
   setQos: (routerId: string, data: unknown) =>
     api.post<ApiResponse>(`/mikrotik/routers/${routerId}/hotspot/profiles/qos`, data),
 };
+
+// ─── Login Configuration ──────────────────────────────────────────────────────
+
+export const loginConfigService = {
+  download: (routerId: string, clientId: string) =>
+    api.get<Blob>(`/mikrotik/routers/${routerId}/config/login?client_id=${clientId}`),
+};

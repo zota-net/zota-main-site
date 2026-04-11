@@ -3,7 +3,7 @@
     "name": "Zota Backend Full API Collection",
     "description": "Complete Postman collection for Zota Backend APIs. Includes all microservices with pre-configured variables for both production (via Nginx) and development (direct service) access.\n\nTo use this collection:\n1. Import this file into Postman\n2. Edit collection variables:\n   - For Production: Set 'domain' to your actual domain (e.g., api.yourdomain.com) and 'protocol' to https\n   - For Development: Use the 'local*BaseUrl' variables which point directly to services on localhost\n3. The nginx paths (/auth/, /bop/, /wallet/, etc.) are automatically appended to the domain\n4. All requests are pre-configured to use the appropriate base URLs",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "_postman_id": "zota-full-collection"
   },
   "variable": [
@@ -253,26 +253,46 @@
           "name": "Router Management",
           "item": [
             { "name": "Register Router", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"name\": \"Main Router\",\n  \"ipAddress\": \"192.168.1.1\",\n  \"apiPort\": 8728,\n  \"apiUser\": \"api_user\",\n  \"apiPassword\": \"api_password\",\n  \"client_id\": {{clientId}}\n}" }, "url": { "raw": "{{mikrotikBaseUrl}}/routers", "host": ["{{mikrotikBaseUrl}}"], "path": ["routers"] } } },
+            { "name": "Get All Routers", "request": { "method": "GET", "url": { "raw": "{{mikrotikBaseUrl}}/routers", "host": ["{{mikrotikBaseUrl}}"], "path": ["routers"] } } },
             { "name": "Get Router", "request": { "method": "GET", "url": { "raw": "{{mikrotikBaseUrl}}/routers/{{routerId}}", "host": ["{{mikrotikBaseUrl}}"], "path": ["routers", "{{routerId}}"] } } },
-            { "name": "Test Connection", "request": { "method": "POST", "url": { "raw": "{{mikrotikBaseUrl}}/routers/{{routerId}}/test", "host": ["{{mikrotikBaseUrl}}"], "path": ["routers", "{{routerId}}", "test"] } } },
-            { "name": "Get Client Routers", "request": { "method": "GET", "url": { "raw": "{{mikrotikBaseUrl}}/routers/client/{{clientId}}", "host": ["{{mikrotikBaseUrl}}"], "path": ["routers", "client", "{{clientId}}"] } } }
+            { "name": "Get Client Routers", "request": { "method": "GET", "url": { "raw": "{{mikrotikBaseUrl}}/routers/client/{{clientId}}", "host": ["{{mikrotikBaseUrl}}"], "path": ["routers", "client", "{{clientId}}"] } } },
+            { "name": "Delete Router", "request": { "method": "DELETE", "url": { "raw": "{{mikrotikBaseUrl}}/routers/{{routerId}}", "host": ["{{mikrotikBaseUrl}}"], "path": ["routers", "{{routerId}}"] } } },
+            { "name": "Test Connection", "request": { "method": "POST", "url": { "raw": "{{mikrotikBaseUrl}}/routers/{{routerId}}/connect", "host": ["{{mikrotikBaseUrl}}"], "path": ["routers", "{{routerId}}", "connect"] } } },
+            { "name": "Disconnect Router", "request": { "method": "POST", "url": { "raw": "{{mikrotikBaseUrl}}/routers/{{routerId}}/disconnect", "host": ["{{mikrotikBaseUrl}}"], "path": ["routers", "{{routerId}}", "disconnect"] } } },
+            { "name": "Get Connection Status", "request": { "method": "GET", "url": { "raw": "{{mikrotikBaseUrl}}/routers/{{routerId}}/connection", "host": ["{{mikrotikBaseUrl}}"], "path": ["routers", "{{routerId}}", "connection"] } } },
+            { "name": "Get Router Status", "request": { "method": "GET", "url": { "raw": "{{mikrotikBaseUrl}}/routers/{{routerId}}/status", "host": ["{{mikrotikBaseUrl}}"], "path": ["routers", "{{routerId}}", "status"] } } },
+            { "name": "Get System Stats", "request": { "method": "GET", "url": { "raw": "{{mikrotikBaseUrl}}/routers/{{routerId}}/stats/system", "host": ["{{mikrotikBaseUrl}}"], "path": ["routers", "{{routerId}}", "stats", "system"] } } },
+            { "name": "Get Interface Stats", "request": { "method": "GET", "url": { "raw": "{{mikrotikBaseUrl}}/routers/{{routerId}}/stats/interfaces", "host": ["{{mikrotikBaseUrl}}"], "path": ["routers", "{{routerId}}", "stats", "interfaces"] } } },
+            { "name": "Get DHCP Leases", "request": { "method": "GET", "url": { "raw": "{{mikrotikBaseUrl}}/routers/{{routerId}}/dhcp", "host": ["{{mikrotikBaseUrl}}"], "path": ["routers", "{{routerId}}", "dhcp"] } } }
           ]
         },
         {
           "name": "Hotspot Users",
           "item": [
-            { "name": "Create Hotspot User", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"voucherCode\": \"VOUCHER123ABC\",\n  \"client_id\": {{clientId}},\n  \"router_id\": {{routerId}},\n  \"expiresAt\": \"2026-03-22T00:00:00Z\"\n}" }, "url": { "raw": "{{mikrotikBaseUrl}}/hotspot/users", "host": ["{{mikrotikBaseUrl}}"], "path": ["hotspot", "users"] } } },
-            { "name": "Get Hotspot User", "request": { "method": "GET", "url": { "raw": "{{mikrotikBaseUrl}}/hotspot/users/{{userId}}", "host": ["{{mikrotikBaseUrl}}"], "path": ["hotspot", "users", "{{userId}}"] } } },
-            { "name": "Get User by Voucher", "request": { "method": "GET", "url": { "raw": "{{mikrotikBaseUrl}}/hotspot/users/voucher/VOUCHER123ABC", "host": ["{{mikrotikBaseUrl}}"], "path": ["hotspot", "users", "voucher", "VOUCHER123ABC"] } } },
-            { "name": "Disable User", "request": { "method": "POST", "url": { "raw": "{{mikrotikBaseUrl}}/hotspot/users/{{userId}}/disable", "host": ["{{mikrotikBaseUrl}}"], "path": ["hotspot", "users", "{{userId}}", "disable"] } } }
+            { "name": "Create Hotspot User", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"voucherCode\": \"VOUCHER123ABC\",\n  \"client_id\": {{clientId}},\n  \"expiresAt\": \"2026-03-22T00:00:00Z\"\n}" }, "url": { "raw": "{{mikrotikBaseUrl}}/routers/{{routerId}}/hotspot/users", "host": ["{{mikrotikBaseUrl}}"], "path": ["routers", "{{routerId}}", "hotspot", "users"] } } },
+            { "name": "Get All Hotspot Users", "request": { "method": "GET", "url": { "raw": "{{mikrotikBaseUrl}}/routers/{{routerId}}/hotspot/users", "host": ["{{mikrotikBaseUrl}}"], "path": ["routers", "{{routerId}}", "hotspot", "users"] } } },
+            { "name": "Get Hotspot User", "request": { "method": "GET", "url": { "raw": "{{mikrotikBaseUrl}}/routers/{{routerId}}/hotspot/users/user1", "host": ["{{mikrotikBaseUrl}}"], "path": ["routers", "{{routerId}}", "hotspot", "users", "user1"] } } },
+            { "name": "Update Hotspot User", "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"expiresAt\": \"2026-03-22T00:00:00Z\"\n}" }, "url": { "raw": "{{mikrotikBaseUrl}}/routers/{{routerId}}/hotspot/users/user1", "host": ["{{mikrotikBaseUrl}}"], "path": ["routers", "{{routerId}}", "hotspot", "users", "user1"] } } },
+            { "name": "Remove Hotspot User", "request": { "method": "DELETE", "url": { "raw": "{{mikrotikBaseUrl}}/routers/{{routerId}}/hotspot/users/user1", "host": ["{{mikrotikBaseUrl}}"], "path": ["routers", "{{routerId}}", "hotspot", "users", "user1"] } } },
+            { "name": "Enable Hotspot User", "request": { "method": "POST", "url": { "raw": "{{mikrotikBaseUrl}}/routers/{{routerId}}/hotspot/users/user1/enable", "host": ["{{mikrotikBaseUrl}}"], "path": ["routers", "{{routerId}}", "hotspot", "users", "user1", "enable"] } } },
+            { "name": "Disable Hotspot User", "request": { "method": "POST", "url": { "raw": "{{mikrotikBaseUrl}}/routers/{{routerId}}/hotspot/users/user1/disable", "host": ["{{mikrotikBaseUrl}}"], "path": ["routers", "{{routerId}}", "hotspot", "users", "user1", "disable"] } } }
           ]
         },
         {
           "name": "Sessions",
           "item": [
-            { "name": "Record Session", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"hotspotUser_id\": {{userId}},\n  \"router_id\": {{routerId}},\n  \"ipAddress\": \"192.168.1.100\",\n  \"macAddress\": \"AA:BB:CC:DD:EE:FF\",\n  \"uploadBytes\": 0,\n  \"downloadBytes\": 0\n}" }, "url": { "raw": "{{mikrotikBaseUrl}}/sessions", "host": ["{{mikrotikBaseUrl}}"], "path": ["sessions"] } } },
-            { "name": "End Session", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"uploadBytes\": 1000000,\n  \"downloadBytes\": 5000000\n}" }, "url": { "raw": "{{mikrotikBaseUrl}}/sessions/1/end", "host": ["{{mikrotikBaseUrl}}"], "path": ["sessions", "1", "end"] } } },
-            { "name": "Get Active Sessions", "request": { "method": "GET", "url": { "raw": "{{mikrotikBaseUrl}}/sessions/router/{{routerId}}/active", "host": ["{{mikrotikBaseUrl}}"], "path": ["sessions", "router", "{{routerId}}", "active"] } } }
+            { "name": "Get Active Sessions", "request": { "method": "GET", "url": { "raw": "{{mikrotikBaseUrl}}/routers/{{routerId}}/sessions", "host": ["{{mikrotikBaseUrl}}"], "path": ["routers", "{{routerId}}", "sessions"] } } },
+            { "name": "Get Session By MAC", "request": { "method": "GET", "url": { "raw": "{{mikrotikBaseUrl}}/routers/{{routerId}}/sessions/mac/AA:BB:CC:DD:EE:FF", "host": ["{{mikrotikBaseUrl}}"], "path": ["routers", "{{routerId}}", "sessions", "mac", "AA:BB:CC:DD:EE:FF"] } } },
+            { "name": "Get Session By User", "request": { "method": "GET", "url": { "raw": "{{mikrotikBaseUrl}}/routers/{{routerId}}/sessions/user/user1", "host": ["{{mikrotikBaseUrl}}"], "path": ["routers", "{{routerId}}", "sessions", "user", "user1"] } } },
+            { "name": "Kick Session", "request": { "method": "DELETE", "url": { "raw": "{{mikrotikBaseUrl}}/routers/{{routerId}}/sessions/user/user1", "host": ["{{mikrotikBaseUrl}}"], "path": ["routers", "{{routerId}}", "sessions", "user", "user1"] } } },
+            { "name": "Kick Session By MAC", "request": { "method": "DELETE", "url": { "raw": "{{mikrotikBaseUrl}}/routers/{{routerId}}/sessions/mac/AA:BB:CC:DD:EE:FF", "host": ["{{mikrotikBaseUrl}}"], "path": ["routers", "{{routerId}}", "sessions", "mac", "AA:BB:CC:DD:EE:FF"] } } }
+          ]
+        },
+        {
+          "name": "Profiles",
+          "item": [
+            { "name": "Get Profiles", "request": { "method": "GET", "url": { "raw": "{{mikrotikBaseUrl}}/routers/{{routerId}}/hotspot/profiles", "host": ["{{mikrotikBaseUrl}}"], "path": ["routers", "{{routerId}}", "hotspot", "profiles"] } } },
+            { "name": "Set QoS Profile", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"profileName\": \"default\",\n  \"rateLimit\": \"1M/1M\"\n}" }, "url": { "raw": "{{mikrotikBaseUrl}}/routers/{{routerId}}/hotspot/profiles/qos", "host": ["{{mikrotikBaseUrl}}"], "path": ["routers", "{{routerId}}", "hotspot", "profiles", "qos"] } } }
           ]
         },
         {
@@ -329,6 +349,31 @@
             { "name": "Wallet Statement", "request": { "method": "GET", "url": { "raw": "{{walletBaseUrl}}/reports/statement/{{walletId}}?startDate=2026-01-01&endDate=2026-12-31", "host": ["{{walletBaseUrl}}"], "path": ["reports", "statement", "{{walletId}}"], "query": [{ "key": "startDate", "value": "2026-01-01" }, { "key": "endDate", "value": "2026-12-31" }] } } }
           ]
         }
+      ]
+    },
+    {
+      "name": "Devices Service",
+      "item": [
+        { "name": "Add Device", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"name\": \"Router 1\",\n  \"client_id\": {{clientId}},\n  \"status\": \"active\",\n  \"type\": \"router\",\n  \"location\": \"Main Office\"\n}" }, "url": { "raw": "{{devicesBaseUrl}}/addDevice", "host": ["{{devicesBaseUrl}}"], "path": ["addDevice"] } } },
+        { "name": "Get All Devices", "request": { "method": "GET", "url": { "raw": "{{devicesBaseUrl}}/devices", "host": ["{{devicesBaseUrl}}"], "path": ["devices"] } } },
+        { "name": "Get Devices by Client", "request": { "method": "GET", "url": { "raw": "{{devicesBaseUrl}}/devices/client/{{clientId}}", "host": ["{{devicesBaseUrl}}"], "path": ["devices", "client", "{{clientId}}"] } } },
+        { "name": "Get Devices by Status", "request": { "method": "GET", "url": { "raw": "{{devicesBaseUrl}}/devices/status/active", "host": ["{{devicesBaseUrl}}"], "path": ["devices", "status", "active"] } } },
+        { "name": "Get Devices by Type", "request": { "method": "GET", "url": { "raw": "{{devicesBaseUrl}}/devices/type/router", "host": ["{{devicesBaseUrl}}"], "path": ["devices", "type", "router"] } } },
+        { "name": "Get Devices by Location", "request": { "method": "GET", "url": { "raw": "{{devicesBaseUrl}}/devices/location/Main%20Office", "host": ["{{devicesBaseUrl}}"], "path": ["devices", "location", "Main%20Office"] } } },
+        { "name": "Get Device by ID", "request": { "method": "GET", "url": { "raw": "{{devicesBaseUrl}}/devices/{{deviceId}}", "host": ["{{devicesBaseUrl}}"], "path": ["devices", "{{deviceId}}"] } } },
+        { "name": "Update Device", "request": { "method": "PUT", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"name\": \"Updated Router\",\n  \"status\": \"inactive\"\n}" }, "url": { "raw": "{{devicesBaseUrl}}/devices/{{deviceId}}", "host": ["{{devicesBaseUrl}}"], "path": ["devices", "{{deviceId}}"] } } },
+        { "name": "Delete Device", "request": { "method": "DELETE", "url": { "raw": "{{devicesBaseUrl}}/devices/{{deviceId}}", "host": ["{{devicesBaseUrl}}"], "path": ["devices", "{{deviceId}}"] } } }
+      ]
+    },
+    {
+      "name": "Radius Server Service",
+      "item": [
+        { "name": "Health", "request": { "method": "GET", "url": { "raw": "{{radiusBaseUrl}}/health", "host": ["{{radiusBaseUrl}}"], "path": ["health"] } } },
+        { "name": "Metrics", "request": { "method": "GET", "url": { "raw": "{{radiusBaseUrl}}/metrics", "host": ["{{radiusBaseUrl}}"], "path": ["metrics"] } } },
+        { "name": "Ready", "request": { "method": "GET", "url": { "raw": "{{radiusBaseUrl}}/ready", "host": ["{{radiusBaseUrl}}"], "path": ["ready"] } } },
+        { "name": "Portal TP-Link", "request": { "method": "GET", "url": { "raw": "{{radiusBaseUrl}}/portal/tplink/{{clientId}}", "host": ["{{radiusBaseUrl}}"], "path": ["portal", "tplink", "{{clientId}}"] } } },
+        { "name": "Portal Ruiji", "request": { "method": "GET", "url": { "raw": "{{radiusBaseUrl}}/portal/ruiji/{{clientId}}", "host": ["{{radiusBaseUrl}}"], "path": ["portal", "ruiji", "{{clientId}}"] } } },
+        { "name": "Portal Unifi", "request": { "method": "GET", "url": { "raw": "{{radiusBaseUrl}}/portal/unifi/{{clientId}}", "host": ["{{radiusBaseUrl}}"], "path": ["portal", "unifi", "{{clientId}}"] } } }
       ]
     }
   ]

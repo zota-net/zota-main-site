@@ -65,7 +65,7 @@ const navGroups: NavGroup[] = [
       { title: 'Adverts', href: '/dashboard/adverts', icon: Megaphone },
       { title: 'Agents', href: '/dashboard/agents', icon: UserCheck },
       { title: 'Devices', href: '/dashboard/devices', icon: Smartphone },
-      { title: 'Users', href: '/dashboard/users', icon: Users },
+      { title: 'Connected Users', href: '/dashboard/users', icon: Users },
       { title: 'Payments', href: '/dashboard/payments', icon: CreditCard },
     ],
   },
@@ -93,11 +93,10 @@ interface SidebarProps {
 
 export function AppSidebar({ className }: SidebarProps) {
   const pathname = usePathname();
-  const { settings, setSetting } = useAppStore();
+  const { settings, setSetting, setMobileMenuOpen, mobileMenuOpen } = useAppStore();
   const { alerts } = useNetworkStore();
   const collapsed = settings.sidebarCollapsed;
   const [isMobile, setIsMobile] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
   
   // Count unacknowledged alerts
   const unacknowledgedAlerts = alerts.filter((a) => !a.acknowledged).length;
@@ -106,41 +105,41 @@ export function AppSidebar({ className }: SidebarProps) {
     const checkMobile = () => {
       const mobile = window.innerWidth < 1024;
       setIsMobile(mobile);
-      if (!mobile) setMobileOpen(false);
+      if (!mobile) setMobileMenuOpen(false);
     };
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
-  }, []);
+  }, [setSetting]);
 
   // Close mobile sidebar on route change
   useEffect(() => {
-    setMobileOpen(false);
-  }, [pathname]);
+    setMobileMenuOpen(false);
+  }, [pathname, setSetting]);
 
   const toggleCollapse = () => {
     if (isMobile) {
-      setMobileOpen(!mobileOpen);
+      setMobileMenuOpen(!mobileMenuOpen);
     } else {
       setSetting('sidebarCollapsed', !collapsed);
     }
   };
 
-  // For mobile: show/hide based on mobileOpen state
+  // For mobile: show/hide based on mobileMenuOpen state
   // For desktop: always visible
-  const isVisible = isMobile ? mobileOpen : true;
+  const isVisible = isMobile ? mobileMenuOpen : true;
   const sidebarWidth = isMobile ? 280 : (collapsed ? 72 : 280);
 
   return (
     <TooltipProvider delayDuration={0}>
       {/* Mobile Overlay */}
       <AnimatePresence>
-        {isMobile && mobileOpen && (
+        {isMobile && mobileMenuOpen && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={() => setMobileOpen(false)}
+            onClick={() => setMobileMenuOpen(false)}
             className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm lg:hidden cursor-pointer"
             aria-label="Close menu"
           />
@@ -150,13 +149,13 @@ export function AppSidebar({ className }: SidebarProps) {
       <motion.aside
         initial={false}
         animate={{ 
-          x: isMobile ? (mobileOpen ? 0 : -280) : 0,
+          x: isMobile ? (mobileMenuOpen ? 0 : -280) : 0,
           width: sidebarWidth 
         }}
         transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
         className={cn(
           'fixed left-0 top-0 z-50 h-screen border-r border-border bg-card/95 backdrop-blur-xl',
-          isMobile && !mobileOpen && '-translate-x-full',
+          isMobile && !mobileMenuOpen && '-translate-x-full',
           className
         )}
       >

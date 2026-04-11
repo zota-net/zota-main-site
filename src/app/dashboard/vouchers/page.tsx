@@ -85,10 +85,8 @@ interface Voucher {
   duration: string;
   status: 'active' | 'used' | 'expired' | 'revoked';
   createdAt: Date;
-  startDate: Date;
   usedAt?: Date;
   usedBy?: string;
-  expiresAt: Date;
   batchId?: string;
   packageTitle?: string;
 }
@@ -132,9 +130,7 @@ export default function VouchersPage() {
           duration: '',
           status: (v.status as Voucher['status']) ?? 'active',
           createdAt: new Date(String(v.createdAt ?? '')),
-          startDate: new Date(String(v.createdAt ?? '')),
           usedAt: v.usedAt ? new Date(String(v.usedAt)) : undefined,
-          expiresAt: v.expiresAt ? new Date(String(v.expiresAt)) : new Date(Date.now() + 30 * 86400000),
           batchId: String(v.package_id ?? ''),
           packageTitle: v.package.title || 'Unknown Package',
         };
@@ -436,7 +432,7 @@ export default function VouchersPage() {
                   </div>
                 </div>
                 <div class="voucher-footer">
-                  Expires: ${format(voucher.expiresAt, 'MMM dd, yyyy')}
+                  Created: ${format(voucher.createdAt, 'MMM dd, yyyy')}
                 </div>
               </div>
             `;
@@ -981,8 +977,8 @@ export default function VouchersPage() {
                     <TableHead className="hidden md:table-cell">Package</TableHead>
                     <TableHead className="hidden md:table-cell">Category</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead className="hidden lg:table-cell">Start Date</TableHead>
-                    <TableHead className="hidden lg:table-cell">Expires</TableHead>
+                    <TableHead className="hidden lg:table-cell">Created Date</TableHead>
+                    <TableHead className="hidden lg:table-cell">Used Date</TableHead>
                     <TableHead className="w-10 sm:w-12"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -1043,10 +1039,10 @@ export default function VouchersPage() {
                             </Badge>
                           </TableCell>
                           <TableCell className="hidden lg:table-cell text-muted-foreground text-xs sm:text-sm p-2 sm:p-4">
-                            {voucher.startDate.toLocaleDateString()}
+                            {voucher.createdAt.toLocaleDateString()}
                           </TableCell>
                           <TableCell className="hidden lg:table-cell text-muted-foreground text-xs sm:text-sm p-2 sm:p-4">
-                            {voucher.expiresAt.toLocaleDateString()}
+                            {voucher.usedAt ? voucher.usedAt.toLocaleDateString() : '--'}
                           </TableCell>
                           <TableCell className="p-2 sm:p-4">
                             <DropdownMenu>

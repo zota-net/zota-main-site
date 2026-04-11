@@ -19,6 +19,7 @@ export interface AppState {
   isLoading: boolean;
   currentPage: string;
   breadcrumbs: { label: string; href: string }[];
+  mobileMenuOpen: boolean;
   
   // Actions
   setSetting: <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => void;
@@ -26,6 +27,7 @@ export interface AppState {
   setLoading: (loading: boolean) => void;
   setCurrentPage: (page: string) => void;
   setBreadcrumbs: (breadcrumbs: { label: string; href: string }[]) => void;
+  setMobileMenuOpen: (open: boolean) => void;
   resetSettings: () => void;
 }
 
@@ -46,6 +48,7 @@ export const useAppStore = create<AppState>()(
       isLoading: false,
       currentPage: 'overview',
       breadcrumbs: [],
+      mobileMenuOpen: false,
 
       setSetting: (key, value) =>
         set((state) => ({
@@ -62,6 +65,8 @@ export const useAppStore = create<AppState>()(
       setCurrentPage: (page) => set({ currentPage: page }),
 
       setBreadcrumbs: (breadcrumbs) => set({ breadcrumbs }),
+
+      setMobileMenuOpen: (open) => set({ mobileMenuOpen: open }),
 
       resetSettings: () => set({ settings: defaultSettings }),
     }),
