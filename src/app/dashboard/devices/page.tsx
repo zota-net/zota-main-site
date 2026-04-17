@@ -362,6 +362,7 @@ export default function DevicesPage() {
       toast.error(err instanceof Error ? err.message : 'Failed to download configuration');
     }
   };
+
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
@@ -382,10 +383,10 @@ export default function DevicesPage() {
     ip: '',
     location: '',
   });
-
+ 
   // Generated config
   const [generatedConfig, setGeneratedConfig] = useState('');
-
+ 
   // Filter devices
   const filteredDevices = useMemo(() => {
     return devices.filter((d) => {
@@ -397,7 +398,7 @@ export default function DevicesPage() {
       return matchesSearch && matchesStatus && matchesType;
     });
   }, [devices, searchQuery, statusFilter, typeFilter]);
-
+ 
   // Stats
   const stats = useMemo(() => ({
     total: devices.length,
@@ -405,14 +406,14 @@ export default function DevicesPage() {
     offline: devices.filter((d) => d.status === 'offline').length,
     provisioning: devices.filter((d) => d.status === 'provisioning').length,
   }), [devices]);
-
+ 
   const handleCopyCode = (code: string) => {
     navigator.clipboard.writeText(code);
     setCopiedCode(code);
     toast.success('Configuration code copied');
     setTimeout(() => setCopiedCode(null), 2000);
   };
-
+ 
   const handleAddDevice = async () => {
     if (!user?.client_id) return;
     try {
@@ -432,7 +433,7 @@ export default function DevicesPage() {
       toast.error(err instanceof ApiError ? err.message : 'Failed to add device');
     }
   };
-
+ 
   const handleGenerateConfig = (device: Device) => {
     const template = configTemplates.find((t) => t.type === device.type) || configTemplates[0];
     const config = template.config
@@ -448,7 +449,7 @@ export default function DevicesPage() {
     setSelectedDevice(device);
     setConfigDialogOpen(true);
   };
-
+ 
   const handleDeleteDevice = async (id: string) => {
     try {
       await devicesService.delete(id);
@@ -458,42 +459,38 @@ export default function DevicesPage() {
       toast.error(err instanceof ApiError ? err.message : 'Failed to delete device');
     }
   };
-
+ 
   const handleRebootDevice = (id: string) => {
     setDevices(devices.map((d) => 
       d.id === id ? { ...d, status: 'provisioning' as const } : d
     ));
     toast.success('Device reboot initiated');
     
-    // Simulate coming back online
     setTimeout(() => {
       setDevices((prev) => prev.map((d) => 
         d.id === id ? { ...d, status: 'online' as const } : d
       ));
     }, 3000);
   };
-
+ 
   const handleDownloadPortal = () => {
     if (!user?.client_id || !portalIP.trim()) {
       toast.error('Client ID or Router IP is missing');
       return;
     }
-
-    const url = `https://zota.xylepayments.com/mikrotik/portal/download-login?client_id=${user.client_id}&router_id=${portalIP.trim()}`;
-
-    // Create a temporary anchor element to trigger download
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `portal-${portalIP}.html`; // Suggest filename
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
+ 
+    const params = new URLSearchParams({
+      client_id:      user.client_id,
+      router_id:      portalIP.trim(),
+      vps_public_key: process.env.NEXT_PUBLIC_VPS_PUBLIC_KEY || '',
+    });
+ 
+    window.location.href = `https://zota.xylepayments.com/mikrotik/portal/download-login?${params}`;
     setPortalDialogOpen(false);
     setPortalIP('');
     toast.success('Portal download initiated');
   };
-
+ 
   return (
     <PageTransition>
       <div className="space-y-4 sm:space-y-6">
@@ -595,7 +592,7 @@ export default function DevicesPage() {
             </Dialog>
           </div>
         </div>
-
+ 
         {/* Stats Cards */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[
@@ -624,15 +621,13 @@ export default function DevicesPage() {
             </motion.div>
           ))}
         </div>
-
+ 
         <Tabs defaultValue="routers" className="space-y-4 sm:space-y-6">
           <TabsList className="w-full sm:w-auto grid grid-cols-3 sm:flex">
-            {/* <TabsTrigger value="devices" className="text-xs sm:text-sm">Devices</TabsTrigger> */}
             <TabsTrigger value="routers" className="text-xs sm:text-sm">Router Devices</TabsTrigger>
             <TabsTrigger value="templates" className="text-xs sm:text-sm">Config Templates</TabsTrigger>
           </TabsList>
-
-
+ 
           {/* Router Devices Tab */}
           <TabsContent value="routers" className="space-y-4">
             <div className="flex flex-wrap items-center gap-2">
@@ -704,7 +699,7 @@ export default function DevicesPage() {
                 </DialogContent>
               </Dialog>
             </div>
-
+ 
             {isLoadingRouters ? (
               <Card>
                 <CardContent className="pt-6 text-center">
@@ -750,11 +745,7 @@ export default function DevicesPage() {
                           variant="outline" 
                           size="sm" 
                           className="flex-1 h-8 text-xs"
-                          onClick={() => {
-                            handleViewRouterConfig(router)
-                            // setSelectedRouter(router);
-                            // setRouterDetailsOpen(true);
-                          }}
+                          onClick={() => handleViewRouterConfig(router)}
                         >
                           <Eye className="h-3 w-3 mr-1" />
                           Configurations
@@ -783,7 +774,7 @@ export default function DevicesPage() {
               </div>
             )}
           </TabsContent>
-
+ 
           <TabsContent value="templates" className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {configTemplates.map((template) => {
@@ -837,7 +828,7 @@ export default function DevicesPage() {
             </div>
           </TabsContent>
         </Tabs>
-
+ 
         {/* Config Generation Dialog */}
         <Dialog open={configDialogOpen} onOpenChange={setConfigDialogOpen}>
           <DialogContent className="sm:max-w-[700px]">
@@ -888,7 +879,7 @@ export default function DevicesPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-
+ 
         {/* Portal Download Dialog */}
         <Dialog open={portalDialogOpen} onOpenChange={setPortalDialogOpen}>
           <DialogContent className="w-[95vw] max-w-md p-4 sm:p-6">
@@ -920,6 +911,75 @@ export default function DevicesPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+ 
+        {/* WireGuard Config Dialog */}
+        <Dialog open={configDrawerOpen} onOpenChange={setConfigDrawerOpen}>
+          <DialogContent className="w-[95vw] max-w-2xl p-4 sm:p-6">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Terminal className="h-5 w-5" />
+                MikroTik WireGuard Setup
+              </DialogTitle>
+              <DialogDescription>
+                Run these commands in your MikroTik terminal for{' '}
+                <span className="font-medium text-foreground">{selectedRouter?.name}</span>
+              </DialogDescription>
+            </DialogHeader>
+ 
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-muted-foreground">
+                  Copy and paste into your MikroTik terminal
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    navigator.clipboard.writeText(routerConfig);
+                    toast.success('Configuration copied to clipboard');
+                  }}
+                >
+                  <Copy className="h-4 w-4 mr-2" />
+                  Copy All
+                </Button>
+              </div>
+ 
+              <ScrollArea className="h-[300px] rounded border bg-zinc-950 p-4">
+                <pre className="text-sm font-mono text-green-400 whitespace-pre-wrap break-all">
+                  {routerConfig}
+                </pre>
+              </ScrollArea>
+ 
+              <div className="grid grid-cols-2 gap-3 text-xs text-muted-foreground border rounded-lg p-3 bg-muted/30">
+                <div>
+                  <span className="font-medium text-foreground block mb-0.5">Router Name</span>
+                  <p>{selectedRouter?.name}</p>
+                </div>
+                <div>
+                  <span className="font-medium text-foreground block mb-0.5">Router IP</span>
+                  <p>{selectedRouter?.ipAddress}</p>
+                </div>
+                <div>
+                  <span className="font-medium text-foreground block mb-0.5">API Port</span>
+                  <p>{selectedRouter?.apiPort || 8728}</p>
+                </div>
+                <div>
+                  <span className="font-medium text-foreground block mb-0.5">Status</span>
+                  <p className={selectedRouter?.isConnected ? 'text-green-500' : 'text-gray-500'}>
+                    {selectedRouter?.isConnected ? 'Connected' : 'Not connected'}
+                  </p>
+                </div>
+              </div>
+            </div>
+ 
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setConfigDrawerOpen(false)}>
+                Close
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+ 
       </div>
     </PageTransition>
   );
