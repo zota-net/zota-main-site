@@ -380,7 +380,7 @@ export default function DevicesPage() {
     name: '',
     type: 'router' as Device['type'],
     mac: '',
-    ip: '',
+    publicKey: '',
     location: '',
   });
  
@@ -421,12 +421,12 @@ export default function DevicesPage() {
         name: newDevice.name || `DEVICE-${Date.now()}`,
         type: newDevice.type,
         macAddress: newDevice.mac,
-        ipAddress: newDevice.ip || '0.0.0.0',
+        publicKey: newDevice.publicKey || '',
         location: newDevice.location,
         client_id: user.client_id,
       });
       setAddDialogOpen(false);
-      setNewDevice({ name: '', type: 'router', mac: '', ip: '', location: '' });
+      setNewDevice({ name: '', type: 'router', mac: '', publicKey: '', location: '' });
       toast.success('Device added successfully');
       fetchDevices();
     } catch (err) {
@@ -573,11 +573,11 @@ export default function DevicesPage() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>IP Address</Label>
+                      <Label>Public key</Label>
                       <Input
-                        value={newDevice.ip}
-                        onChange={(e) => setNewDevice({ ...newDevice, ip: e.target.value })}
-                        placeholder="192.168.1.1"
+                        value={newDevice.publicKey}
+                        onChange={(e) => setNewDevice({ ...newDevice, publicKey: e.target.value })}
+                        placeholder="public-key-here"
                       />
                     </div>
                   </div>

@@ -198,7 +198,7 @@ export interface CreateDeviceRequest {
   name: string;
   type: string;
   macAddress: string;
-  ipAddress: string;
+  publicKey: string;
   model?: string;
   location?: string;
   client_id: string;
