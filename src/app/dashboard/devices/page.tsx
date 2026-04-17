@@ -214,6 +214,8 @@ export default function DevicesPage() {
   const [selectedRouter, setSelectedRouter] = useState<RouterDevice | null>(null);
   const [routerDetailsOpen, setRouterDetailsOpen] = useState(false);
   const [addRouterDialogOpen, setAddRouterDialogOpen] = useState(false);
+  const [configDrawerOpen, setConfigDrawerOpen] = useState(false);
+  const [routerConfig, setRouterConfig] = useState('');
   const [newRouter, setNewRouter] = useState({
     name: '',
     ipAddress: '',
@@ -289,6 +291,38 @@ export default function DevicesPage() {
       toast.error(err instanceof ApiError ? err.message : 'Failed to delete router');
     }
   };
+
+
+
+  const handleViewRouterConfig = (router: RouterDevice) => {
+    const vpsPublicKey = process.env.NEXT_PUBLIC_VPS_PUBLIC_KEY || '<VPS_PUBLIC_KEY>';
+    const vpsIp        = process.env.NEXT_PUBLIC_VPS_IP         || '<VPS_IP>';
+
+    const config = `# Run on MikroTik terminal after receiving from dashboard
+      /interface wireguard add name=wg0 listen-port=51820
+      /ip address add address=${router.ipAddress || '<ASSIGNED_IP>'}/24 interface=wg0
+      /interface wireguard peers add \\
+        interface=wg0 \\
+        public-key="${vpsPublicKey}" \\
+        endpoint-address=${vpsIp} \\
+        endpoint-port=51820 \\
+        allowed-address=10.0.0.1/32 \\
+        persistent-keepalive=25
+      /ip firewall filter add \\
+        chain=input \\
+        src-address=10.0.0.0/24 \\
+        protocol=tcp \\
+        dst-port=${router.apiPort || 8728} \\
+        action=accept \\
+        comment="Allow API over WireGuard"
+      /ip firewall filter move [find comment="Allow API over WireGuard"] destination=0`;
+
+          setRouterConfig(config);
+          setSelectedRouter(router);
+          setConfigDrawerOpen(true);
+    };
+
+
 
   const handleDownloadLoginConfig = async (routerId: string) => {
     console.log('Downloading login config for router:', routerId);
@@ -717,12 +751,13 @@ export default function DevicesPage() {
                           size="sm" 
                           className="flex-1 h-8 text-xs"
                           onClick={() => {
-                            setSelectedRouter(router);
-                            setRouterDetailsOpen(true);
+                            handleViewRouterConfig(router)
+                            // setSelectedRouter(router);
+                            // setRouterDetailsOpen(true);
                           }}
                         >
                           <Eye className="h-3 w-3 mr-1" />
-                          Details
+                          Configurations
                         </Button>
                         <Button 
                           variant="outline" 
@@ -731,7 +766,7 @@ export default function DevicesPage() {
                           onClick={() => handleDownloadLoginConfig(router.id)}
                         >
                           <Download className="h-3 w-3 mr-1" />
-                          Download Config
+                          Download Portal
                         </Button>
                         <Button 
                           variant="outline" 

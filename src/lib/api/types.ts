@@ -423,6 +423,7 @@ export interface RouterDevice {
   name: string;
   macAddress: string;
   ipAddress: string;
+  apiPort: number;
   client_id: string;
   createdAt: string;
   updatedAt: string;
