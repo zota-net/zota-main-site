@@ -584,7 +584,7 @@ export default function PackagesPage() {
                     <TableHead>Duration</TableHead>
                     <TableHead>Price</TableHead>
                     <TableHead>Commission</TableHead>
-                    <TableHead>Data Limit</TableHead>
+                    <TableHead>Speed Limit</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="w-12"></TableHead>
                   </TableRow>
@@ -758,7 +758,7 @@ export default function PackagesPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Data Limit</Label>
+                  <Label>Speed Limit</Label>
                   <Input
                     value={formData.dataLimit}
                     onChange={(e) => setFormData({ ...formData, dataLimit: e.target.value })}
