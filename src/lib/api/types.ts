@@ -170,11 +170,13 @@ export interface CreateAdvertRequest {
 
 export interface BopDevice {
   id: string;
+  status?: string;
   macAddress: string;
-  voucher_id: string;
+  voucher_id: string | number;
+  JoinedAt?: string;
   expiresAt: string;
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 // ─── Device Types (Devices Service) ──────────────────────────────────────────
