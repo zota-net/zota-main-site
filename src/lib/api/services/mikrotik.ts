@@ -68,7 +68,7 @@ export const hotspotUsersService = {
     api.post<ApiResponse>(`/mikrotik/routers/${routerId}/hotspot/users`, data),
 
   getAll: (routerId: string) =>
-    api.get<HotspotUser[]>(`/mikrotik/routers/${routerId}/hotspot/users`),
+    api.get<ApiResponse<HotspotUser[]>>(`/mikrotik/routers/${routerId}/hotspot/users`),
 
   getByUsername: (routerId: string, username: string) =>
     api.get<HotspotUser>(`/mikrotik/routers/${routerId}/hotspot/users/${username}`),

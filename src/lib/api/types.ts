@@ -367,13 +367,20 @@ export interface CreateRouterRequest {
 }
 
 export interface HotspotUser {
-  username: string;
+  '.id': string;
+  name: string;
   password?: string;
   profile?: string;
   uptime?: string;
-  bytesIn?: number;
-  bytesOut?: number;
-  disabled?: boolean;
+  'bytes-in': string;
+  'bytes-out': string;
+  'packets-in': string;
+  'packets-out': string;
+  'limit-uptime'?: string;
+  disabled: string;
+  dynamic: string;
+  default?: string;
+  comment?: string;
 }
 
 export interface RouterSession {
