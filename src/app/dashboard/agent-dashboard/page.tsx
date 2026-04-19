@@ -462,12 +462,12 @@ export default function AgentDashboardPage() {
                         <div className="text-right space-y-1">
                           <div>
                             <p className="text-xs text-muted-foreground">Price</p>
-                            <p className="text-lg font-bold">${voucher.price.toFixed(2)}</p>
+                            <p className="text-lg font-bold">Ush {voucher.price.toFixed(2)}</p>
                           </div>
                           <div>
                             <p className="text-xs text-muted-foreground">Commission</p>
                             <p className="text-sm font-semibold text-green-500">
-                              +${voucher.commission.toFixed(2)}
+                              +Ush {voucher.commission.toFixed(2)}
                             </p>
                           </div>
                         </div>
