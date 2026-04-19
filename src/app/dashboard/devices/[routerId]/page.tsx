@@ -68,11 +68,12 @@ import {
   hotspotUsersService,
   sessionsService,
   routersService,
+  routerConnectionService,
 } from '@/lib/api/services/mikrotik';
 import { routerDevicesService } from '@/lib/api/services/base-operations';
 import { useUserStore } from '@/lib/store/user-store';
 import { ApiError } from '@/lib/api/client';
-import type { HotspotUser, RouterSession, RouterDevice } from '@/lib/api/types';
+import type { HotspotUser, RouterSession, RouterDevice, Router as RouterType } from '@/lib/api/types';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -117,7 +118,7 @@ export default function RouterDetailPage() {
   const router = useRouter();
   const routerId = params.routerId as string;
 
-  const [routerInfo, setRouterInfo] = useState<RouterDevice | null>(null);
+  const [routerInfo, setRouterInfo] = useState<(RouterDevice & { isConnected?: boolean }) | null>(null);
   const [users, setUsers] = useState<HotspotUser[]>([]);
   const [sessions, setSessions] = useState<RouterSession[]>([]);
   const [isLoadingRouter, setIsLoadingRouter] = useState(true);
@@ -143,13 +144,37 @@ export default function RouterDetailPage() {
   const fetchRouter = useCallback(async () => {
     try {
       setIsLoadingRouter(true);
-      const data = await routerDevicesService.getById(routerId);
-      setRouterInfo(data as RouterDevice);
-    } catch {
-      // Fallback: try the mikrotik routers service
+      // Primary: fetch from mikrotik routers service (has name, ip, etc.)
+      const data = await routersService.getById(routerId);
+      const routerData = (data as unknown as { data?: RouterType })?.data ?? data;
+      
+      // Check actual connection status
+      let connected = (routerData as RouterType).isConnected ?? false;
       try {
-        const data = await routersService.getById(routerId);
-        setRouterInfo(data as unknown as RouterDevice);
+        const status = await routerConnectionService.getStatus(routerId);
+        connected = (status as unknown as { data?: { connected: boolean } })?.data?.connected 
+          ?? (status as { connected: boolean }).connected 
+          ?? connected;
+      } catch {
+        // Connection check failed, use isConnected from router data
+      }
+
+      setRouterInfo({
+        id: (routerData as RouterType).id || routerId,
+        name: (routerData as RouterType).name || '',
+        ipAddress: (routerData as RouterType).ipAddress || '',
+        apiPort: (routerData as RouterType).apiPort || 8728,
+        client_id: (routerData as RouterType).client_id || '',
+        macAddress: '',
+        createdAt: (routerData as RouterType).createdAt || '',
+        updatedAt: (routerData as RouterType).updatedAt || '',
+        isConnected: connected,
+      });
+    } catch {
+      // Fallback: try the bop router-devices service
+      try {
+        const data = await routerDevicesService.getById(routerId);
+        setRouterInfo(data as RouterDevice);
       } catch {
         toast.error('Failed to load router info');
       }
