@@ -573,7 +573,7 @@ export default function VouchersPage() {
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+          {/* <div className="flex flex-wrap items-center gap-2">
             <Button
               variant="outline"
               size="sm"
@@ -585,10 +585,10 @@ export default function VouchersPage() {
               <span className="hidden sm:inline">Export Cards</span>
               <span className="sm:hidden">Cards</span>
             </Button>
-            <Button variant="outline" size="sm" className="h-8 sm:h-9">
+            <Button variant="outline" size="sm" className="h-8 sm:h-9" onClick={handleExportPrintableCards}>
               <Printer className="h-4 w-4 sm:mr-2" />
               <span className="hidden sm:inline">Print</span>
-            </Button>
+            </Button> */}
 
             {/* ── Create Dialog ─────────────────────────────────────────── */}
             <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
