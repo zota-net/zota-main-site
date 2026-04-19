@@ -143,6 +143,7 @@ export interface CreateVoucherRequest {
   prefix: string;
   package_id: string;
   client_id: string;
+  charset: string;
 }
 
 // ─── Advert Types ────────────────────────────────────────────────────────────
