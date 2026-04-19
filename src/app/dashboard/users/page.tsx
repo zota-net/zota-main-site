@@ -85,6 +85,7 @@ export default function ConnectedUsersPage() {
     try {
       setIsLoading(true);
       const devices = await bopDevicesService.getByClient(currentUser.client_id);
+      console.log('Fetched devices:', devices);
       const mapped: ConnectedUser[] = (Array.isArray(devices) ? devices : []).map((d: BopDevice) => {
         const expiresAt = d.expiresAt ? new Date(d.expiresAt) : new Date();
         const isExpired = expiresAt < new Date();
