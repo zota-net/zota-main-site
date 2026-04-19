@@ -125,7 +125,7 @@ export const bopDevicesService = {
     api.get<BopDevice>(`/bop/devices/mac/${macAddress}`),
 
   getByClient: (clientId: string) =>
-    api.get<BopDevice[]>(`/bop/devices/client/${clientId}`),
+    api.get<BopDevice[]>(`/bop/devices/${clientId}`),
 };
 
 // ─── Router Devices ──────────────────────────────────────────────────────────
