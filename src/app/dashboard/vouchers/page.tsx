@@ -194,7 +194,7 @@ function triggerVoucherCardPrint(
           </div>
           <div class="card-footer">
             <span>Help: +256770415425 &bull; +256704371231</span>
-            <span class="footer-brand">XetiHub.net</span>
+            <span class="footer-brand">XetiHub.com</span>
           </div>
         </div>
       </div>`;
