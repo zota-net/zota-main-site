@@ -485,54 +485,7 @@ export default function AgentDashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Activity Summary Stats */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {[
-            {
-              label: 'Best Hour',
-              value: '11:00 AM - 12:00 PM',
-              description: '15 vouchers created',
-              icon: TrendingUp,
-              color: 'bg-blue-500/10 text-blue-500',
-            },
-            {
-              label: 'Avg Voucher Value',
-              value: '$45.50',
-              description: 'Per transaction',
-              icon: DollarSign,
-              color: 'bg-green-500/10 text-green-500',
-            },
-            {
-              label: 'Redemption Rate',
-              value: '28.75%',
-              description: 'Of created vouchers',
-              icon: CheckCircle,
-              color: 'bg-purple-500/10 text-purple-500',
-            },
-          ].map((stat, i) => (
-            <motion.div
-              key={stat.label}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 + i * 0.1 }}
-            >
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">{stat.label}</p>
-                      <p className="text-2xl font-bold mt-2">{stat.value}</p>
-                      <p className="text-xs text-muted-foreground mt-1">{stat.description}</p>
-                    </div>
-                    <div className={cn('p-2 rounded-lg', stat.color)}>
-                      <stat.icon className="h-5 w-5" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
-        </div>
+        
       </div>
     </PageTransition>
   );
