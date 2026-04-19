@@ -110,10 +110,10 @@ export const bopDevicesService = {
     api.post<ApiResponse>('/bop/devices/connect-mkt', data),
 
   getByVoucher: (voucherId: string) =>
-    api.get<BopDevice[]>(`/bop/devices/voucher/${voucherId}`),
+    api.get<ApiResponse<BopDevice[]>>(`/bop/devices/voucher/${voucherId}`).then((response) => response.data ?? response as unknown as BopDevice[]),
 
   getById: (id: string) =>
-    api.get<BopDevice>(`/bop/devices/${id}`),
+    api.get<ApiResponse<BopDevice>>(`/bop/devices/${id}`).then((response) => response.data ?? response as unknown as BopDevice),
 
   updateExpiry: (id: string, expiresAt: string) =>
     api.put<ApiResponse>(`/bop/devices/${id}/expiry`, { expiresAt }),
@@ -122,10 +122,10 @@ export const bopDevicesService = {
     api.delete<ApiResponse>(`/bop/devices/${id}`),
 
   getByMac: (macAddress: string) =>
-    api.get<BopDevice>(`/bop/devices/mac/${macAddress}`),
+    api.get<ApiResponse<BopDevice>>(`/bop/devices/mac/${macAddress}`).then((response) => response.data ?? response as unknown as BopDevice),
 
   getByClient: (clientId: string) =>
-    api.get<BopDevice[]>(`/bop/devices/${clientId}`),
+    api.get<ApiResponse<BopDevice[]>>(`/bop/devices/${clientId}`).then((response) => response.data ?? response as unknown as BopDevice[]),
 };
 
 // ─── Router Devices ──────────────────────────────────────────────────────────

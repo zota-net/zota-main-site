@@ -84,17 +84,18 @@ export default function ConnectedUsersPage() {
     if (!currentUser?.client_id) return;
     try {
       setIsLoading(true);
-      const devices = await bopDevicesService.getByClient(currentUser.client_id);
-      console.log('Fetched devices:', devices);
-      const mapped: ConnectedUser[] = (Array.isArray(devices) ? devices : []).map((d: BopDevice) => {
+      const raw = await bopDevicesService.getByClient(currentUser.client_id);
+      console.log('Fetched devices:', raw);
+      const devicesArr: BopDevice[] = Array.isArray(raw) ? raw : (raw ? [raw as BopDevice] : []);
+      const mapped: ConnectedUser[] = devicesArr.map((d: BopDevice) => {
         const expiresAt = d.expiresAt ? new Date(d.expiresAt) : new Date();
         const isExpired = expiresAt < new Date();
         return {
-          id: d.id,
+          id: String(d.id),
           macAddress: d.macAddress,
-          voucherId: d.voucher_id,
+          voucherId: String(d.voucher_id),
           expiresAt,
-          createdAt: new Date(d.createdAt),
+          createdAt: new Date(d.JoinedAt || d.createdAt || new Date()),
           status: isExpired ? 'expired' : 'active',
         };
       });
