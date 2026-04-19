@@ -439,6 +439,21 @@ export default function VouchersPage() {
     expired: vouchers.filter((v) => v.status === 'expired').length,
   }), [vouchers]);
 
+  // ── Pagination state ───────────────────────────────────────────────────────
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter, typeFilter, dateFrom, dateTo]);
+
+  const paginatedVouchers = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredVouchers.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredVouchers, currentPage]);
+
+  const totalPages = Math.ceil(filteredVouchers.length / itemsPerPage);
+
   // ── Handlers ───────────────────────────────────────────────────────────────
   const handleCopyCode = (code: string) => {
     navigator.clipboard.writeText(code);
@@ -453,11 +468,11 @@ export default function VouchersPage() {
   const handleExportPrintableCards = () => {
     if (selectedVouchers.length === 0) { toast.error('Please select vouchers to export'); return; }
     const data = filteredVouchers.filter((v) => selectedVouchers.includes(v.id));
-    const clientName = user?.name ?? 'Network';
+    const clientName = user?.client?.name ?? user?.name ?? 'Network';
     triggerVoucherCardPrint(data, clientPackages, clientName);
   };
 
-  const handleCreateVouchers = async () => {
+  const handleCreateVouchers = async (printAfter: boolean = false) => {
     const clientId = user?.client_id;
     if (!clientId) { toast.error('No client ID'); return; }
     if (!newVoucher.packageId) { toast.error('Please select a package before generating vouchers'); return; }
@@ -466,7 +481,7 @@ export default function VouchersPage() {
       ?? CHARSET_OPTIONS[0].charset;
 
     try {
-      await vouchersService.create({
+      const data = await vouchersService.create({
         length:     newVoucher.length,
         count:      newVoucher.quantity,
         prefix:     newVoucher.prefix,
@@ -474,9 +489,30 @@ export default function VouchersPage() {
         client_id:  clientId,
         charset:    selectedCharset,
       });
+      
+      const createdVouchers = Array.isArray(data) ? data : [];
+      const mappedVouchers: Voucher[] = createdVouchers.map((v: any) => ({
+        id:           String(v.id),
+        code:         String(v.code ?? ''),
+        type:         'time' as const,
+        category:     newVoucher.category,
+        value:        '',
+        duration:     '',
+        status:       (v.status as Voucher['status']) ?? 'active',
+        createdAt:    new Date(String(v.createdAt ?? '')),
+        usedAt:       v.usedAt ? new Date(String(v.usedAt)) : undefined,
+        batchId:      String(v.package_id ?? ''),
+        packageTitle: v.package?.title || 'Unknown Package',
+      }));
+
       setCreateDialogOpen(false);
       toast.success(`${newVoucher.quantity} vouchers created successfully`);
       fetchVouchers();
+      
+      if (printAfter && mappedVouchers.length > 0) {
+        const clientName = user?.client?.name ?? user?.name ?? 'Network';
+        setTimeout(() => triggerVoucherCardPrint(mappedVouchers, clientPackages, clientName), 500);
+      }
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Failed to create vouchers');
     }
@@ -573,8 +609,8 @@ export default function VouchersPage() {
             </p>
           </div>
 
-          {/* <div className="flex flex-wrap items-center gap-2">
-            <Button
+          <div className="flex flex-wrap items-center gap-2">
+            {/* <Button
               variant="outline"
               size="sm"
               className="h-8 sm:h-9"
@@ -747,14 +783,14 @@ export default function VouchersPage() {
                   </Button>
                   <Button
                     variant="outline"
-                    onClick={() => { handleCreateVouchers(); setTimeout(() => window.print(), 500); }}
+                    onClick={() => handleCreateVouchers(true)}
                     className="gap-2"
                   >
                     <Printer className="h-4 w-4" />
                     Generate &amp; Print
                   </Button>
                   <Button
-                    onClick={handleCreateVouchers}
+                    onClick={() => handleCreateVouchers(false)}
                     className="bg-[#FF6A00] hover:bg-[#FF6A00]/90 text-white font-semibold shadow-lg shadow-[#FF6A00]/25 ring-2 ring-[#FF6A00]/20 focus:ring-4 focus:ring-[#FF6A00]/40 transition-all"
                   >
                     Generate {newVoucher.quantity} Vouchers
@@ -971,7 +1007,7 @@ export default function VouchersPage() {
                 </TableHeader>
                 <TableBody>
                   <AnimatePresence mode="popLayout">
-                    {filteredVouchers.slice(0, 20).map((voucher) => {
+                    {paginatedVouchers.map((voucher) => {
                       const statusInfo = statusConfig[voucher.status];
                       const catInfo    = categoryConfig[voucher.category];
                       const StatusIcon = statusInfo.icon;
@@ -1066,9 +1102,38 @@ export default function VouchersPage() {
               </Table>
             </div>
 
-            {filteredVouchers.length > 20 && (
-              <div className="mt-4 text-center text-sm text-muted-foreground">
-                Showing 20 of {filteredVouchers.length} vouchers
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between px-4 py-3">
+                <div className="text-sm text-muted-foreground hidden sm:block">
+                  Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredVouchers.length)} of {filteredVouchers.length} vouchers
+                </div>
+                <div className="flex items-center justify-center sm:justify-end w-full sm:w-auto gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    Previous
+                  </Button>
+                  <div className="text-sm font-medium px-2">
+                    Page {currentPage} of {totalPages}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            )}
+            
+            {totalPages <= 1 && filteredVouchers.length > 0 && (
+              <div className="mt-4 text-center text-sm text-muted-foreground pb-4">
+                Showing all {filteredVouchers.length} vouchers
               </div>
             )}
           </CardContent>
