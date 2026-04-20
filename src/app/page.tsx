@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { MarketingNav, MarketingFooter } from '@/components/marketing/layout-components';
 
 // ─── UTILITIES ───────────────────────────────────────────────────────────────
@@ -77,16 +78,20 @@ const Hero = () => {
         </div>
 
         <div className="mt-16 w-full max-w-[1000px] mx-auto rounded-xl border border-[var(--border)] bg-[var(--bg-secondary)] p-2 shadow-sm overflow-hidden">
-          <div className="w-full aspect-[16/9] bg-[var(--bg-primary)] rounded-lg border border-[var(--border)] overflow-hidden relative flex items-center justify-center">
-            {/* High-fidelity Dashboard Placeholder */}
-            <div className="absolute inset-x-0 top-0 h-10 border-b border-[var(--border)] bg-[var(--bg-secondary)] flex items-center px-4 gap-2">
+          <div className="w-full flex flex-col bg-[var(--bg-primary)] rounded-lg border border-[var(--border)] overflow-hidden">
+            <div className="h-10 border-b border-[var(--border)] bg-[var(--bg-secondary)] flex flex-none items-center px-4 gap-2 z-10">
               <div className="w-3 h-3 rounded-full bg-[var(--border-strong)]" />
               <div className="w-3 h-3 rounded-full bg-[var(--border-strong)]" />
               <div className="w-3 h-3 rounded-full bg-[var(--border-strong)]" />
             </div>
-            <div className="text-[var(--text-muted)] font-medium text-sm flex flex-col items-center">
-              <svg className="w-8 h-8 mb-2 opacity-50" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
-              Dashboard Interface Preview
+            <div className="relative w-full aspect-[16/9]">
+              <Image 
+                src="/images/Screenshot.png"
+                alt="XetiHub Dashboard Interface"
+                fill
+                className="object-cover object-top"
+                priority
+              />
             </div>
           </div>
         </div>
