@@ -218,7 +218,7 @@ export default function DevicesPage() {
   const [routerConfig, setRouterConfig] = useState('');
   const [newRouter, setNewRouter] = useState({
     name: '',
-    ipAddress: '',
+    publicKey: '',
     apiPort: 8728,
     apiUser: '',
     apiPassword: '',
@@ -267,7 +267,7 @@ export default function DevicesPage() {
     try {
       await routersService.create({
         name: newRouter.name,
-        ipAddress: newRouter.ipAddress,
+        publicKey: newRouter.publicKey,
         apiPort: newRouter.apiPort,
         apiUser: newRouter.apiUser,
         apiPassword: newRouter.apiPassword,
@@ -275,7 +275,7 @@ export default function DevicesPage() {
       });
       toast.success('Router registered successfully');
       setAddRouterDialogOpen(false);
-      setNewRouter({ name: '', ipAddress: '', apiPort: 8728, apiUser: '', apiPassword: '' });
+      setNewRouter({ name: '', publicKey: '', apiPort: 8728, apiUser: '', apiPassword: '' });
       fetchRouterDevices();
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Failed to register router');
@@ -656,11 +656,11 @@ export default function DevicesPage() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>IP Address</Label>
+                      <Label>Wiregaurd public key</Label>
                       <Input
-                        value={newRouter.ipAddress}
-                        onChange={(e) => setNewRouter({ ...newRouter, ipAddress: e.target.value })}
-                        placeholder="192.168.1.1"
+                        value={newRouter.publicKey}
+                        onChange={(e) => setNewRouter({ ...newRouter, publicKey: e.target.value })}
+                        placeholder="Wiregaurd public key for secure communication"
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-4">

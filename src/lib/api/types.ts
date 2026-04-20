@@ -361,7 +361,7 @@ export interface Router {
 
 export interface CreateRouterRequest {
   name: string;
-  ipAddress: string;
+  publicKey: string;
   apiPort: number;
   apiUser: string;
   apiPassword: string;
