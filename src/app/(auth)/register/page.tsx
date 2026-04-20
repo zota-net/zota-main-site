@@ -1,32 +1,21 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import dynamic from 'next/dynamic';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import {
-  Eye, EyeOff, ArrowRight, Shield, Zap,
-  Globe, Activity, Check, User, Mail, Lock, Building2, Phone, Loader2,
+  Eye, EyeOff, ArrowRight, User, Mail, Lock, Building2, Phone, Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Logo } from '@/components/common';
+import { Card, CardContent } from '@/components/ui/card';
 import { clientsService } from '@/lib/api/services/base-operations';
-import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-
-const OrbitalScene = dynamic(() => import('@/components/three/OrbitalScene'), {
-  ssr: false,
-  loading: () => null,
-});
-
-/* ─── SCHEMA ─── */
 
 const registerSchema = z
   .object({
@@ -45,86 +34,6 @@ const registerSchema = z
 
 type RegisterFormData = z.infer<typeof registerSchema>;
 
-/* ─── PARTICLES ─── */
-
-function generateParticles() {
-  const nodes = [...Array(15)].map((_, i) => ({
-    id: i,
-    left: Math.random() * 100,
-    top: Math.random() * 100,
-    duration: 3 + Math.random() * 2,
-    delay: Math.random() * 2,
-  }));
-  const lines = [...Array(8)].map((_, i) => ({
-    id: i,
-    width: 100 + Math.random() * 200,
-    left: Math.random() * 80,
-    top: Math.random() * 100,
-    rotate: Math.random() * 360,
-    duration: 4 + Math.random() * 3,
-    delay: Math.random() * 3,
-  }));
-  return { nodes, lines };
-}
-
-function NetworkParticles() {
-  const [particles, setParticles] = useState<ReturnType<typeof generateParticles> | null>(null);
-
-  useEffect(() => {
-    setParticles(generateParticles());
-  }, []);
-
-  const nodes = particles?.nodes ?? [];
-  const lines = particles?.lines ?? [];
-
-  return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      <svg className="absolute inset-0 w-full h-full opacity-10">
-        <defs>
-          <pattern id="reg-grid" width="40" height="40" patternUnits="userSpaceOnUse">
-            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="currentColor" strokeWidth="0.5" />
-          </pattern>
-        </defs>
-        <rect width="100%" height="100%" fill="url(#reg-grid)" />
-      </svg>
-      {nodes.map((node) => (
-        <motion.div
-          key={node.id}
-          className="absolute w-2 h-2 bg-primary/40 rounded-full"
-          style={{ left: `${node.left}%`, top: `${node.top}%` }}
-          animate={{ opacity: [0.2, 0.6, 0.2], scale: [1, 1.5, 1] }}
-          transition={{ duration: node.duration, repeat: Infinity, delay: node.delay }}
-        />
-      ))}
-      {lines.map((line) => (
-        <motion.div
-          key={`line-${line.id}`}
-          className="absolute h-px bg-linear-to-r from-transparent via-primary/30 to-transparent"
-          style={{
-            width: `${line.width}px`,
-            left: `${line.left}%`,
-            top: `${line.top}%`,
-            rotate: `${line.rotate}deg`,
-          }}
-          animate={{ opacity: [0, 0.5, 0], x: [0, 50, 0] }}
-          transition={{ duration: line.duration, repeat: Infinity, delay: line.delay }}
-        />
-      ))}
-    </div>
-  );
-}
-
-/* ─── FEATURES ─── */
-
-const features = [
-  { icon: Shield, label: 'Enterprise Security', description: 'Zero-trust architecture' },
-  { icon: Zap, label: 'Real-time Control', description: 'Sub-millisecond latency' },
-  { icon: Globe, label: 'Global Scale', description: 'Millions of endpoints' },
-  { icon: Activity, label: 'AI Intelligence', description: 'Predictive analytics' },
-];
-
-/* ─── PASSWORD STRENGTH ─── */
-
 function getPasswordStrength(password: string) {
   let score = 0;
   if (password.length >= 8) score++;
@@ -136,8 +45,6 @@ function getPasswordStrength(password: string) {
 
 const strengthLabels = ['Weak', 'Fair', 'Good', 'Strong'];
 const strengthColors = ['#E63946', '#F59E0B', '#00D9FF', '#22C55E'];
-
-/* ─── PAGE ─── */
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -188,339 +95,227 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex bg-background">
-      {/* Left Panel */}
-      <motion.div
-        initial={{ opacity: 0, x: -50 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.6, ease: 'easeOut' }}
-        className="hidden lg:flex lg:w-1/2 xl:w-3/5 relative bg-gradient-to-br from-background via-background to-muted/50 overflow-hidden"
-      >
-        <NetworkParticles />
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: 'easeOut' }}
+      className="w-full max-w-[500px]"
+    >
+      <div className="flex flex-col items-center mb-8 text-center pt-8 md:pt-0">
+        <h1 className="font-geist font-semibold text-[1.8rem] tracking-tight text-[var(--text-primary)] mb-2">
+          Create an account
+        </h1>
+        <p className="text-[1rem] text-[var(--text-secondary)]">
+          Join XetiHub to start managing your WiFi networks
+        </p>
+      </div>
 
-        {/* 3D Orbital Background */}
-        <OrbitalScene
-          className="absolute inset-0 opacity-40 pointer-events-none"
-          primaryColor="#FF6A00"
-          secondaryColor="#00D9FF"
-        />
-
-        <div className="relative z-10 flex flex-col justify-between p-12 xl:p-16 w-full">
-          {/* Logo */}
-          <div>
-            <Logo className="w-10 h-10" />
-            <div className="mt-1">
-              <span className="text-xl font-semibold tracking-tight">
-                Xeti<span className="text-primary">Hub</span>
-              </span>
-            </div>
-          </div>
-
-          {/* Center content */}
-          <div className="max-w-lg">
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.3 }}
-            >
-              <h1 className="text-4xl xl:text-5xl font-bold tracking-tight leading-[1.1] mb-6">
-                Start managing
-                <span className="text-primary block mt-1">your hotspots.</span>
-              </h1>
-              <p className="text-muted-foreground text-lg leading-relaxed mb-8">
-                Create your account and gain access to the ultimate WiFi hotspot
-                billing and control platform.
-              </p>
-            </motion.div>
-
-            {/* Features */}
-            <div className="grid grid-cols-2 gap-4">
-              {features.map((feature, i) => (
-                <motion.div
-                  key={feature.label}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.5 + i * 0.1 }}
-                  className="flex items-start gap-3 p-3 rounded-lg bg-muted/30 border border-border/50"
-                >
-                  <feature.icon className="w-5 h-5 text-primary mt-0.5" />
-                  <div>
-                    <p className="text-sm font-medium">{feature.label}</p>
-                    <p className="text-xs text-muted-foreground">{feature.description}</p>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-
-          {/* Bottom */}
-          <div className="flex items-center gap-6 text-xs text-muted-foreground">
-            <span>SOC 2 Certified</span>
-            <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />
-            <span>ISO 27001</span>
-            <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />
-            <span>PCI DSS L1</span>
-          </div>
-        </div>
-      </motion.div>
-
-      {/* Right Panel — Form */}
-      <motion.div
-        initial={{ opacity: 0, x: 50 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.6, delay: 0.2, ease: 'easeOut' }}
-        className="w-full lg:w-1/2 xl:w-2/5 flex items-center justify-center p-6 sm:p-10"
-      >
-        <div className="w-full max-w-md">
-          {/* Mobile logo */}
-          <div className="lg:hidden mb-8 text-center">
-            <Logo className="w-10 h-10 mx-auto" />
-            <span className="text-xl font-semibold tracking-tight block mt-2">
-              Xeti<span className="text-primary">Hub</span>
-            </span>
-          </div>
-
-          <Card className="border-border/50 shadow-xl">
-            <CardHeader className="space-y-1 pb-4">
-              <CardTitle className="text-2xl font-bold tracking-tight">
-                Create your account
-              </CardTitle>
-              <CardDescription>
-                Fill in your details to begin managing your WiFi network
-              </CardDescription>
-            </CardHeader>
-
-            <CardContent>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                {/* Admin Full Name */}
-                <div className="space-y-2">
-                  <Label htmlFor="adminFullName" className="text-sm font-medium">
-                    Admin Full Name
-                  </Label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      id="adminFullName"
-                      placeholder="John Doe"
-                      className="pl-10"
-                      {...form.register('adminFullName')}
-                    />
-                  </div>
-                  {form.formState.errors.adminFullName && (
-                    <p className="text-xs text-destructive">{form.formState.errors.adminFullName.message}</p>
-                  )}
-                </div>
-
-                {/* Admin Email */}
-                <div className="space-y-2">
-                  <Label htmlFor="adminEmail" className="text-sm font-medium">
-                    Admin Email
-                  </Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      id="adminEmail"
-                      type="email"
-                      placeholder="john@company.com"
-                      className="pl-10"
-                      {...form.register('adminEmail')}
-                    />
-                  </div>
-                  {form.formState.errors.adminEmail && (
-                    <p className="text-xs text-destructive">{form.formState.errors.adminEmail.message}</p>
-                  )}
-                </div>
-
-                {/* Contact */}
-                <div className="space-y-2">
-                  <Label htmlFor="contact" className="text-sm font-medium">
-                    Contact Number
-                  </Label>
-                  <div className="relative">
-                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      id="contact"
-                      type="tel"
-                      placeholder="+1 (555) 000-0000"
-                      className="pl-10"
-                      {...form.register('contact')}
-                    />
-                  </div>
-                  {form.formState.errors.contact && (
-                    <p className="text-xs text-destructive">{form.formState.errors.contact.message}</p>
-                  )}
-                </div>
-
-                {/* Business Name */}
-                <div className="space-y-2">
-                  <Label htmlFor="businessName" className="text-sm font-medium">
-                    Business Name
-                  </Label>
-                  <div className="relative">
-                    <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      id="businessName"
-                      placeholder="Acme Telecom"
-                      className="pl-10"
-                      {...form.register('businessName')}
-                    />
-                  </div>
-                  {form.formState.errors.businessName && (
-                    <p className="text-xs text-destructive">{form.formState.errors.businessName.message}</p>
-                  )}
-                </div>
-
-                {/* Admin Password */}
-                <div className="space-y-2">
-                  <Label htmlFor="adminPassword" className="text-sm font-medium">
-                    Password
-                  </Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      id="adminPassword"
-                      type={showPassword ? 'text' : 'password'}
-                      placeholder="Min. 8 characters"
-                      className="pl-10 pr-10"
-                      {...form.register('adminPassword')}
-                    />
-                    <button
-                      type="button"
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                  {/* Strength indicator */}
-                  {watchPassword && (
-                    <div className="flex items-center gap-2">
-                      <div className="flex gap-1 flex-1">
-                        {[0, 1, 2, 3].map((i) => (
-                          <div
-                            key={i}
-                            className="h-1 flex-1 rounded-full transition-colors duration-300"
-                            style={{
-                              backgroundColor: i < strength ? strengthColors[strength - 1] : 'var(--border)',
-                            }}
-                          />
-                        ))}
-                      </div>
-                      <span
-                        className="text-[10px] font-mono uppercase tracking-wider"
-                        style={{ color: strengthColors[strength - 1] || 'var(--muted-foreground)' }}
-                      >
-                        {strength > 0 ? strengthLabels[strength - 1] : ''}
-                      </span>
-                    </div>
-                  )}
-                  {form.formState.errors.adminPassword && (
-                    <p className="text-xs text-destructive">{form.formState.errors.adminPassword.message}</p>
-                  )}
-                </div>
-
-                {/* Confirm Password */}
-                <div className="space-y-2">
-                  <Label htmlFor="confirmPassword" className="text-sm font-medium">
-                    Confirm Password
-                  </Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      id="confirmPassword"
-                      type={showConfirm ? 'text' : 'password'}
-                      placeholder="Repeat your password"
-                      className="pl-10 pr-10"
-                      {...form.register('confirmPassword')}
-                    />
-                    <button
-                      type="button"
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                      onClick={() => setShowConfirm(!showConfirm)}
-                    >
-                      {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                  {form.formState.errors.confirmPassword && (
-                    <p className="text-xs text-destructive">{form.formState.errors.confirmPassword.message}</p>
-                  )}
-                </div>
-
-                {/* Terms */}
-                <div className="flex items-start gap-2 pt-1">
-                  <Checkbox
-                    id="agreeTerms"
-                    checked={form.watch('agreeTerms')}
-                    onCheckedChange={(checked) => form.setValue('agreeTerms', checked as boolean)}
-                    className="mt-0.5"
+      <Card className="border-[var(--border)] bg-[var(--bg-primary)] shadow-sm rounded-2xl overflow-hidden p-2 sm:p-4 mb-12">
+        <CardContent className="p-4 sm:p-6">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Admin Full Name */}
+              <div className="space-y-2">
+                <Label htmlFor="adminFullName" className="font-medium text-[0.85rem] text-[var(--text-primary)]">Full Name</Label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
+                  <Input
+                    id="adminFullName"
+                    placeholder="John Doe"
+                    className="pl-10 h-11 bg-[var(--bg-primary)] border-[var(--border-strong)] focus-visible:ring-[var(--brand-orange)] transition-colors"
+                    {...form.register('adminFullName')}
                   />
-                  <Label htmlFor="agreeTerms" className="text-sm text-muted-foreground leading-snug cursor-pointer">
-                    I agree to the{' '}
-                    <a href="#" className="text-primary hover:underline">Terms of Service</a>
-                    {' '}and{' '}
-                    <a href="#" className="text-primary hover:underline">Privacy Policy</a>
-                  </Label>
                 </div>
-                {form.formState.errors.agreeTerms && (
-                  <p className="text-xs text-destructive">{form.formState.errors.agreeTerms.message}</p>
+                {form.formState.errors.adminFullName && (
+                  <p className="text-[0.75rem] text-destructive">{form.formState.errors.adminFullName.message}</p>
                 )}
-
-                {/* Error Message */}
-                {error && (
-                  <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
-                    {error}
-                  </div>
-                )}
-
-                {/* Submit */}
-                <Button
-                  type="submit"
-                  className="w-full h-11 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold tracking-wide transition-all duration-300 hover:shadow-lg hover:shadow-primary/25"
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <span className="flex items-center gap-2">
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Creating account...
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-2">
-                      Create Account
-                      <ArrowRight className="w-4 h-4" />
-                    </span>
-                  )}
-                </Button>
-              </form>
-
-              {/* Divider */}
-              <div className="relative my-6">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-border" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-card px-2 text-muted-foreground">Already have an account?</span>
-                </div>
               </div>
 
-              {/* Login link */}
-              <Button
-                variant="outline"
-                className="w-full h-11"
-                onClick={() => router.push('/login')}
-              >
-                Sign in instead
-              </Button>
-            </CardContent>
-          </Card>
+              {/* Admin Email */}
+              <div className="space-y-2">
+                <Label htmlFor="adminEmail" className="font-medium text-[0.85rem] text-[var(--text-primary)]">Email Address</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
+                  <Input
+                    id="adminEmail"
+                    type="email"
+                    placeholder="john@company.com"
+                    className="pl-10 h-11 bg-[var(--bg-primary)] border-[var(--border-strong)] focus-visible:ring-[var(--brand-orange)] transition-colors"
+                    {...form.register('adminEmail')}
+                  />
+                </div>
+                {form.formState.errors.adminEmail && (
+                  <p className="text-[0.75rem] text-destructive">{form.formState.errors.adminEmail.message}</p>
+                )}
+              </div>
 
-          {/* Footer note */}
-          <p className="mt-6 text-center text-xs text-muted-foreground">
-            Protected by enterprise-grade encryption.
-            <br />
-            Your data never leaves our SOC 2 certified infrastructure.
-          </p>
-        </div>
-      </motion.div>
-    </div>
+              {/* Contact */}
+              <div className="space-y-2">
+                <Label htmlFor="contact" className="font-medium text-[0.85rem] text-[var(--text-primary)]">Contact Number</Label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
+                  <Input
+                    id="contact"
+                    type="tel"
+                    placeholder="+1 (555) 000-0000"
+                    className="pl-10 h-11 bg-[var(--bg-primary)] border-[var(--border-strong)] focus-visible:ring-[var(--brand-orange)] transition-colors"
+                    {...form.register('contact')}
+                  />
+                </div>
+                {form.formState.errors.contact && (
+                  <p className="text-[0.75rem] text-destructive">{form.formState.errors.contact.message}</p>
+                )}
+              </div>
+
+              {/* Business Name */}
+              <div className="space-y-2">
+                <Label htmlFor="businessName" className="font-medium text-[0.85rem] text-[var(--text-primary)]">Business Name</Label>
+                <div className="relative">
+                  <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
+                  <Input
+                    id="businessName"
+                    placeholder="Acme Telecom"
+                    className="pl-10 h-11 bg-[var(--bg-primary)] border-[var(--border-strong)] focus-visible:ring-[var(--brand-orange)] transition-colors"
+                    {...form.register('businessName')}
+                  />
+                </div>
+                {form.formState.errors.businessName && (
+                  <p className="text-[0.75rem] text-destructive">{form.formState.errors.businessName.message}</p>
+                )}
+              </div>
+            </div>
+
+            {/* Admin Password */}
+            <div className="space-y-2 pt-2">
+              <Label htmlFor="adminPassword" className="font-medium text-[0.85rem] text-[var(--text-primary)]">Password</Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
+                <Input
+                  id="adminPassword"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Min. 8 characters"
+                  className="pl-10 pr-10 h-11 bg-[var(--bg-primary)] border-[var(--border-strong)] focus-visible:ring-[var(--brand-orange)] transition-colors"
+                  {...form.register('adminPassword')}
+                />
+                <button
+                  type="button"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              
+              {/* Strength indicator */}
+              {watchPassword && (
+                <div className="flex items-center gap-2 pt-1 border-b border-transparent">
+                  <div className="flex gap-1 flex-1">
+                    {[0, 1, 2, 3].map((i) => (
+                      <div
+                        key={i}
+                        className="h-1 flex-1 rounded-full transition-colors duration-300"
+                        style={{
+                          backgroundColor: i < strength ? strengthColors[strength - 1] : 'var(--border)',
+                        }}
+                      />
+                    ))}
+                  </div>
+                  <span
+                    className="text-[0.65rem] font-mono uppercase tracking-wider min-w-[40px] text-right"
+                    style={{ color: strengthColors[strength - 1] || 'var(--text-muted)' }}
+                  >
+                    {strength > 0 ? strengthLabels[strength - 1] : ''}
+                  </span>
+                </div>
+              )}
+              {form.formState.errors.adminPassword && (
+                <p className="text-[0.75rem] text-destructive">{form.formState.errors.adminPassword.message}</p>
+              )}
+            </div>
+
+            {/* Confirm Password */}
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword" className="font-medium text-[0.85rem] text-[var(--text-primary)]">Confirm Password</Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
+                <Input
+                  id="confirmPassword"
+                  type={showConfirm ? 'text' : 'password'}
+                  placeholder="Repeat your password"
+                  className="pl-10 pr-10 h-11 bg-[var(--bg-primary)] border-[var(--border-strong)] focus-visible:ring-[var(--brand-orange)] transition-colors"
+                  {...form.register('confirmPassword')}
+                />
+                <button
+                  type="button"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+                  onClick={() => setShowConfirm(!showConfirm)}
+                >
+                  {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              {form.formState.errors.confirmPassword && (
+                <p className="text-[0.75rem] text-destructive">{form.formState.errors.confirmPassword.message}</p>
+              )}
+            </div>
+
+            {/* Terms */}
+            <div className="flex items-start gap-2 pt-2 pb-2">
+              <Checkbox
+                id="agreeTerms"
+                checked={form.watch('agreeTerms')}
+                onCheckedChange={(checked) => form.setValue('agreeTerms', checked as boolean)}
+                className="mt-0.5 border-[var(--border-strong)] data-[state=checked]:bg-[var(--brand-orange)] data-[state=checked]:border-[var(--brand-orange)]"
+              />
+              <Label htmlFor="agreeTerms" className="text-[0.85rem] text-[var(--text-secondary)] leading-snug cursor-pointer">
+                I agree to the{' '}
+                <a href="/terms" className="text-[var(--text-primary)] font-medium hover:underline">Terms of Service</a>
+                {' '}and{' '}
+                <a href="/privacy" className="text-[var(--text-primary)] font-medium hover:underline">Privacy Policy</a>
+              </Label>
+            </div>
+            {form.formState.errors.agreeTerms && (
+              <p className="text-[0.75rem] text-destructive">{form.formState.errors.agreeTerms.message}</p>
+            )}
+
+            {/* Error Message */}
+            {error && (
+              <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm font-medium">
+                {error}
+              </div>
+            )}
+
+            {/* Submit */}
+            <Button
+              type="submit"
+              disabled={isLoading}
+              className="w-full h-11 text-[1rem] font-medium bg-[var(--brand-orange)] text-white shadow-sm shadow-[var(--brand-orange)]/20 hover:shadow-md hover:shadow-[var(--brand-orange)]/40 hover:bg-[#e65c00] hover:-translate-y-0.5 transition-all duration-200 mt-2"
+            >
+              {isLoading ? (
+                <span className="flex items-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Creating account...
+                </span>
+              ) : (
+                <span className="flex items-center gap-2">
+                  Create Account
+                  <ArrowRight className="w-4 h-4" />
+                </span>
+              )}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+      
+      <p className="text-center text-[0.95rem] text-[var(--text-secondary)] mt-8">
+        Already have an account?{' '}
+        <button
+          onClick={() => router.push('/login')}
+          className="text-[var(--text-primary)] font-medium hover:underline underline-offset-4"
+        >
+          Sign in instead
+        </button>
+      </p>
+    </motion.div>
   );
 }

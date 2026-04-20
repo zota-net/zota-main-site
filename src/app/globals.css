@@ -45,242 +45,118 @@
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
 
-  /* Homepage theme tokens */
-  --color-home-bg: var(--home-bg);
-  --color-home-surface: var(--home-surface);
-  --color-home-text: var(--home-text);
-  --color-home-text-muted: var(--home-text-muted);
-  --color-home-text-faint: var(--home-text-faint);
-  --color-home-border: var(--home-border);
-  --color-home-card: var(--home-card);
-}
-
-:root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
-
-  /* Homepage light tokens */
-  --home-bg: #ffffff;
-  --home-surface: #f7f7f8;
-  --home-text: #0a0a0a;
-  --home-text-muted: rgba(10, 10, 10, 0.55);
-  --home-text-faint: rgba(10, 10, 10, 0.25);
-  --home-border: rgba(10, 10, 10, 0.08);
-  --home-card: rgba(10, 10, 10, 0.03);
-}
-
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
-
-  /* Homepage dark tokens */
-  --home-bg: #000000;
-  --home-surface: #050505;
-  --home-text: #ffffff;
-  --home-text-muted: rgba(255, 255, 255, 0.55);
-  --home-text-faint: rgba(255, 255, 255, 0.25);
-  --home-border: rgba(255, 255, 255, 0.06);
-  --home-card: rgba(255, 255, 255, 0.02);
+  /* Typography extensions */
+  --font-geist: 'Geist', 'DM Sans', system-ui, sans-serif;
+  --font-geist-mono: 'Geist Mono', monospace;
 }
 
 @layer base {
+  :root {
+    /* Marketing Theme - Light Mode */
+    --bg-primary: #ffffff;
+    --bg-secondary: #f5f5f4;
+    --bg-tertiary: #eeede9;
+    --text-primary: #111110;
+    --text-secondary: #6b6a67;
+    --text-muted: #a09f9b;
+    --accent: #1a6af5;
+    --accent-hover: #1455cc;
+    --brand-orange: #FF6A00;
+    --border: rgba(0,0,0,0.08);
+    --border-strong: rgba(0,0,0,0.14);
+    
+    /* System variables for ShadCN if needed on marketing pages */
+    --background: var(--bg-primary);
+    --foreground: var(--text-primary);
+    --card: var(--bg-primary);
+    --card-foreground: var(--text-primary);
+    --popover: var(--bg-primary);
+    --popover-foreground: var(--text-primary);
+    --primary: var(--accent);
+    --primary-foreground: #ffffff;
+    --secondary: var(--bg-secondary);
+    --secondary-foreground: var(--text-primary);
+    --muted: var(--bg-secondary);
+    --muted-foreground: var(--text-secondary);
+  }
+
+  .dark {
+    /* Marketing Theme - Dark Mode */
+    --bg-primary: #111110;
+    --bg-secondary: #1a1a18;
+    --bg-tertiary: #222220;
+    --text-primary: #f5f4f0;
+    --text-secondary: #9e9d99;
+    --text-muted: #636260;
+    --accent: #4d8ef8;
+    --accent-hover: #6ba3fa;
+    --brand-orange: #FF6A00;
+    --border: rgba(255,255,255,0.07);
+    --border-strong: rgba(255,255,255,0.12);
+    
+    /* System variables */
+    --background: var(--bg-primary);
+    --foreground: var(--text-primary);
+    --card: var(--bg-primary);
+    --card-foreground: var(--text-primary);
+    --popover: var(--bg-primary);
+    --popover-foreground: var(--text-primary);
+    --primary: var(--accent);
+    --primary-foreground: #ffffff;
+    --secondary: var(--bg-secondary);
+    --secondary-foreground: var(--text-primary);
+    --muted: var(--bg-secondary);
+    --muted-foreground: var(--text-secondary);
+  }
+
   * {
     @apply border-border outline-ring/50;
   }
+  
   body {
-    @apply bg-background text-foreground;
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-geist);
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 }
 
-/* Homepage immersive styles */
+/* Minimalist fade-in / slide-up utility class */
+.animate-fade-up {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.45s ease-out, transform 0.45s ease-out;
+}
+
+.animate-fade-up.in-view {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Base resets & utilities for marketing pages */
 html {
   scroll-behavior: smooth;
 }
 
-/* Custom selection */
 ::selection {
-  background: rgba(255, 106, 0, 0.2);
-  color: inherit;
+  background: var(--brand-orange);
+  color: white;
 }
 
-/* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 6px;
 }
-
 ::-webkit-scrollbar-track {
   background: transparent;
 }
-
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 106, 0, 0.2);
+  background: var(--border-strong);
   border-radius: 3px;
 }
-
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 106, 0, 0.4);
-}
-
-/* Homepage animation utilities */
-@keyframes pulse-orange {
-  0%, 100% {
-    box-shadow: 0 0 0 0 rgba(255, 106, 0, 0.4);
-  }
-  50% {
-    box-shadow: 0 0 20px 10px rgba(255, 106, 0, 0);
-  }
-}
-
-@keyframes scan-line {
-  0% {
-    transform: translateX(-100%);
-  }
-  100% {
-    transform: translateX(100%);
-  }
-}
-
-@keyframes float {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
-}
-
-.animate-pulse-orange {
-  animation: pulse-orange 2s infinite;
-}
-
-.animate-scan-line {
-  animation: scan-line 3s linear infinite;
-}
-
-.animate-float {
-  animation: float 6s ease-in-out infinite;
-}
-
-/* ─── Gaming Card Animations ─── */
-
-/* Rotating rings — different speeds & directions */
-@keyframes ring-spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-@keyframes ring-spin-reverse {
-  0% { transform: rotate(360deg); }
-  100% { transform: rotate(0deg); }
-}
-
-.gaming-ring-spin-slow {
-  animation: ring-spin 20s linear infinite;
-}
-.gaming-ring-spin-reverse {
-  animation: ring-spin-reverse 14s linear infinite;
-}
-.gaming-ring-spin-fast {
-  animation: ring-spin 9s linear infinite;
-}
-
-/* Card scanline sweep */
-@keyframes gaming-scanline-sweep {
-  0% { background-position: 0 -100%; }
-  100% { background-position: 0 200%; }
-}
-.gaming-scanline {
-  background: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 2px,
-    rgba(255, 255, 255, 0.03) 2px,
-    rgba(255, 255, 255, 0.03) 4px
-  );
-  background-size: 100% 200%;
-  animation: gaming-scanline-sweep 8s linear infinite;
-}
-
-/* Icon pulse glow */
-@keyframes gaming-icon-glow {
-  0%, 100% { filter: brightness(1); }
-  50% { filter: brightness(1.3); }
-}
-.gaming-icon-pulse {
-  animation: gaming-icon-glow 3s ease-in-out infinite;
-}
-
-/* Core node breathing glow */
-@keyframes gaming-core-breathe {
-  0%, 100% { transform: scale(1); filter: brightness(1); }
-  50% { transform: scale(1.05); filter: brightness(1.2); }
-}
-.gaming-core-glow {
-  animation: gaming-core-breathe 4s ease-in-out infinite;
-}
-
-@keyframes scan-line-vertical {
-  0% { transform: translateY(0); }
-  100% { transform: translateY(160px); }
-}
-.animate-scan-line-slow {
-  animation: scan-line-vertical 3s linear infinite;
+  background: var(--text-muted);
 }

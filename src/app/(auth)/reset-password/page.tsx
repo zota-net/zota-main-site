@@ -6,14 +6,12 @@ import { motion } from 'framer-motion';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
-import { Lock, ArrowRight, CheckCircle, Eye, EyeOff } from 'lucide-react';
+import { Lock, ArrowRight, CheckCircle, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Logo } from '@/components/common';
+import { Card, CardContent } from '@/components/ui/card';
 import { authService } from '@/lib/api/services/auth';
-import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
 const resetSchema = z
@@ -70,200 +68,151 @@ function ResetPasswordForm() {
 
   if (isReset) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="w-full max-w-md text-center"
-        >
-          <Card className="border-border/50 shadow-xl">
-            <CardContent className="pt-8 pb-8">
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
-              >
-                <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-              </motion.div>
-              <h2 className="text-2xl font-bold mb-2">Password Reset!</h2>
-              <p className="text-muted-foreground mb-6">
-                Your password has been successfully reset. You can now log in with your new password.
-              </p>
-              <Button
-                onClick={() => router.push('/login')}
-                className="w-full"
-              >
-                Continue to Login
-              </Button>
-            </CardContent>
-          </Card>
-        </motion.div>
-      </div>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: 'easeOut' }}
+        className="w-full max-w-[440px] text-center"
+      >
+        <Card className="border-[var(--border)] bg-[var(--bg-primary)] shadow-sm rounded-2xl overflow-hidden p-2 sm:p-4 mb-4">
+          <CardContent className="pt-8 pb-8 px-6">
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
+              className="flex justify-center mb-6"
+            >
+              <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center">
+                <CheckCircle className="w-8 h-8 text-green-500" />
+              </div>
+            </motion.div>
+            <h2 className="font-geist font-semibold text-[1.5rem] text-[var(--text-primary)] mb-2">Password Reset!</h2>
+            <p className="text-[0.95rem] text-[var(--text-secondary)] mb-8">
+              Your password has been successfully reset. You can now log in with your new password.
+            </p>
+            <Button
+              onClick={() => router.push('/login')}
+              className="w-full h-11 text-[1rem] font-medium bg-[var(--brand-orange)] text-white shadow-sm shadow-[var(--brand-orange)]/20 transition-all duration-200 hover:bg-[#e65c00]"
+            >
+              Continue to Login
+            </Button>
+          </CardContent>
+        </Card>
+      </motion.div>
     );
   }
 
   return (
-    <div className="min-h-screen flex bg-background">
-      {/* Left Panel */}
-      <motion.div
-        initial={{ opacity: 0, x: -50 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.6, ease: 'easeOut' }}
-        className="hidden lg:flex lg:w-1/2 xl:w-3/5 relative bg-gradient-to-br from-background via-background to-muted/50 overflow-hidden"
-      >
-        <div className="relative z-10 flex flex-col justify-center p-12 xl:p-16 w-full">
-          <div className="max-w-lg">
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.3 }}
-            >
-              <h1 className="text-4xl xl:text-5xl font-bold tracking-tight leading-[1.1] mb-6">
-                Set your new
-                <span className="text-primary block mt-1">password.</span>
-              </h1>
-              <p className="text-muted-foreground text-lg leading-relaxed mb-8">
-                Choose a strong password to secure your account.
-              </p>
-            </motion.div>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: 'easeOut' }}
+      className="w-full max-w-[440px]"
+    >
+      <div className="flex flex-col items-center mb-8 text-center pt-8 md:pt-0">
+        <h1 className="font-geist font-semibold text-[1.8rem] tracking-tight text-[var(--text-primary)] mb-2">
+          Reset Password
+        </h1>
+        <p className="text-[1rem] text-[var(--text-secondary)]">
+          Choose a secure new password for your account
+        </p>
+      </div>
 
-            <div className="flex items-center gap-4 p-4 rounded-lg bg-muted/30 border border-border/50">
-              <Lock className="w-8 h-8 text-primary" />
-              <div>
-                <p className="font-medium">Secure Password</p>
-                <p className="text-sm text-muted-foreground">
-                  Use at least 8 characters with numbers and symbols
-                </p>
+      <Card className="border-[var(--border)] bg-[var(--bg-primary)] shadow-sm rounded-2xl overflow-hidden p-2 sm:p-4 mb-8">
+        <CardContent className="p-4 sm:p-6">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            {/* New Password */}
+            <div className="space-y-2">
+              <Label htmlFor="newPassword" className="font-medium text-[0.85rem] text-[var(--text-primary)]">
+                New Password
+              </Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
+                <Input
+                  id="newPassword"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Min. 8 characters"
+                  className="pl-10 pr-10 h-11 bg-[var(--bg-primary)] border-[var(--border-strong)] focus-visible:ring-[var(--brand-orange)] transition-colors"
+                  {...form.register('newPassword')}
+                />
+                <button
+                  type="button"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
+              {form.formState.errors.newPassword && (
+                <p className="text-[0.75rem] text-destructive">{form.formState.errors.newPassword.message}</p>
+              )}
             </div>
-          </div>
-        </div>
-      </motion.div>
 
-      {/* Right Panel — Form */}
-      <motion.div
-        initial={{ opacity: 0, x: 50 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.6, delay: 0.2, ease: 'easeOut' }}
-        className="w-full lg:w-1/2 xl:w-2/5 flex items-center justify-center p-6 sm:p-10"
-      >
-        <div className="w-full max-w-md">
-          {/* Mobile logo */}
-          <div className="lg:hidden mb-8 text-center">
-            <Logo className="w-10 h-10 mx-auto" />
-            <span className="text-xl font-semibold tracking-tight block mt-2">
-              Xeti<span className="text-primary">Hub</span>
-            </span>
-          </div>
-
-          <Card className="border-border/50 shadow-xl">
-            <CardHeader className="space-y-1 pb-4">
-              <CardTitle className="text-2xl font-bold tracking-tight">
-                Reset Password
-              </CardTitle>
-              <CardDescription>
-                Enter your new password below
-              </CardDescription>
-            </CardHeader>
-
-            <CardContent>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                {/* New Password */}
-                <div className="space-y-2">
-                  <Label htmlFor="newPassword" className="text-sm font-medium">
-                    New Password
-                  </Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      id="newPassword"
-                      type={showPassword ? 'text' : 'password'}
-                      placeholder="Min. 8 characters"
-                      className="pl-10 pr-10"
-                      {...form.register('newPassword')}
-                    />
-                    <button
-                      type="button"
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                  {form.formState.errors.newPassword && (
-                    <p className="text-xs text-destructive">{form.formState.errors.newPassword.message}</p>
-                  )}
-                </div>
-
-                {/* Confirm Password */}
-                <div className="space-y-2">
-                  <Label htmlFor="confirmPassword" className="text-sm font-medium">
-                    Confirm New Password
-                  </Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      id="confirmPassword"
-                      type={showConfirm ? 'text' : 'password'}
-                      placeholder="Repeat your password"
-                      className="pl-10 pr-10"
-                      {...form.register('confirmPassword')}
-                    />
-                    <button
-                      type="button"
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                      onClick={() => setShowConfirm(!showConfirm)}
-                    >
-                      {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                  {form.formState.errors.confirmPassword && (
-                    <p className="text-xs text-destructive">{form.formState.errors.confirmPassword.message}</p>
-                  )}
-                </div>
-
-                {/* Submit */}
-                <Button
-                  type="submit"
-                  className="w-full h-11 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold tracking-wide transition-all duration-300 hover:shadow-lg hover:shadow-primary/25"
-                  disabled={form.formState.isSubmitting}
+            {/* Confirm Password */}
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword" className="font-medium text-[0.85rem] text-[var(--text-primary)]">
+                Confirm New Password
+              </Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
+                <Input
+                  id="confirmPassword"
+                  type={showConfirm ? 'text' : 'password'}
+                  placeholder="Repeat your password"
+                  className="pl-10 pr-10 h-11 bg-[var(--bg-primary)] border-[var(--border-strong)] focus-visible:ring-[var(--brand-orange)] transition-colors"
+                  {...form.register('confirmPassword')}
+                />
+                <button
+                  type="button"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+                  onClick={() => setShowConfirm(!showConfirm)}
                 >
-                  {form.formState.isSubmitting ? (
-                    <motion.div
-                      className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full"
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                    />
-                  ) : (
-                    <span className="flex items-center gap-2">
-                      Reset Password
-                      <ArrowRight className="w-4 h-4" />
-                    </span>
-                  )}
-                </Button>
-              </form>
-
-              {/* Back to Login */}
-              <div className="mt-6 text-center">
-                <Button
-                  variant="ghost"
-                  onClick={() => router.push('/login')}
-                  className="text-sm"
-                >
-                  Back to Login
-                </Button>
+                  {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
-            </CardContent>
-          </Card>
-        </div>
-      </motion.div>
-    </div>
+              {form.formState.errors.confirmPassword && (
+                <p className="text-[0.75rem] text-destructive">{form.formState.errors.confirmPassword.message}</p>
+              )}
+            </div>
+
+            {/* Submit */}
+            <Button
+              type="submit"
+              disabled={form.formState.isSubmitting}
+              className="w-full h-11 text-[1rem] font-medium bg-[var(--brand-orange)] text-white shadow-sm shadow-[var(--brand-orange)]/20 hover:shadow-md hover:shadow-[var(--brand-orange)]/40 hover:bg-[#e65c00] hover:-translate-y-0.5 transition-all duration-200 mt-2"
+            >
+              {form.formState.isSubmitting ? (
+                <span className="flex items-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Updating...
+                </span>
+              ) : (
+                <span className="flex items-center gap-2">
+                  Reset Password
+                  <ArrowRight className="w-4 h-4" />
+                </span>
+              )}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      {/* Back to Login */}
+      <div className="text-center">
+        <button
+          onClick={() => router.push('/login')}
+          className="text-[0.95rem] text-[var(--text-secondary)] font-medium hover:text-[var(--text-primary)] transition-colors"
+        >
+          &larr; Back to Login
+        </button>
+      </div>
+    </motion.div>
   );
 }
 
 export default function ResetPasswordPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<div className="flex items-center justify-center p-8"><Loader2 className="w-6 h-6 animate-spin text-[var(--brand-orange)]" /></div>}>
       <ResetPasswordForm />
     </Suspense>
   );

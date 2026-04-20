@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { MarketingNav, MarketingFooter } from '@/components/marketing/layout-components';
 
 export const metadata: Metadata = {
   title: 'XETIHUB | Master Your WiFi Network',
@@ -15,5 +16,13 @@ export default function HomeLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <>{children}</>;
+  return (
+    <div className="min-h-screen bg-[var(--bg-primary)] flex flex-col">
+      <MarketingNav />
+      <main className="flex-grow pt-16">
+        {children}
+      </main>
+      <MarketingFooter />
+    </div>
+  );
 }

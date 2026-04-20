@@ -1,119 +1,54 @@
 'use client';
 
-import { motion } from 'framer-motion';
-import Navigation from '@/components/home/Navigation';
-import Footer from '@/components/home/Footer';
+import React from 'react';
 
 export default function TermsPage() {
   return (
-    <div className="min-h-screen bg-home-bg text-home-text">
-      <Navigation />
+    <section className="pt-[clamp(6rem,12vw,10rem)] pb-[clamp(4rem,8vw,10rem)] px-[clamp(1.25rem,5vw,4rem)]">
+      <div className="mx-auto max-w-[720px]">
+        <h1 className="font-geist font-semibold text-[clamp(2.2rem,4vw,3.2rem)] leading-[1.1] tracking-[-0.02em] text-[var(--text-primary)] mb-4">
+          Terms of Service
+        </h1>
+        <p className="font-geist-mono text-[0.85rem] text-[var(--text-muted)] mb-12 uppercase tracking-wide">
+          Last Updated: March 15, 2026
+        </p>
 
-      <main className="relative pt-32 pb-20">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            <h1 className="text-4xl sm:text-5xl font-bold text-home-text mb-8">
-              Terms of Service
-            </h1>
+        <div className="prose prose-neutral dark:prose-invert prose-p:text-[1rem] prose-p:leading-[1.7] prose-p:text-[var(--text-secondary)] prose-headings:font-geist prose-headings:font-semibold prose-headings:text-[var(--text-primary)] prose-h2:mt-12 prose-h2:mb-6 prose-h2:text-[1.5rem] prose-h2:-tracking-[0.01em] max-w-none">
+          <p>
+            Welcome to XetiHub. These Terms of Service control your use of our platform, software, APIs, and associated services. By registering an account and using the platform, you agree to be bound by these terms.
+          </p>
 
-            <div className="prose prose-lg prose-invert max-w-none">
-              <p className="text-home-text-muted mb-6">
-                Last updated: {new Date().toLocaleDateString()}
-              </p>
+          <h2>1. Platform Usage & Scope</h2>
+          <p>
+            XetiHub provides a management overlay for networking hardware (e.g., MikroTik routers) allowing you to execute billing, hotspot session control, and voucher generation. You agree to use the Service strictly for lawful operations and maintain proper authorization over any networking infrastructure you connect to our API.
+          </p>
 
-              <section className="mb-8">
-                <h2 className="text-2xl font-bold text-home-text mb-4">Acceptance of Terms</h2>
-                <p className="text-home-text-muted mb-4">
-                  By accessing and using XETIHUB's WiFi hotspot billing platform, you accept and agree to be
-                  bound by the terms and provision of this agreement. If you do not agree to abide by the
-                  above, please do not use this service.
-                </p>
-              </section>
+          <h2>2. Service Level Agreement</h2>
+          <p>
+            While we strive for 99.9% uptime and utilize globally redundant edge infrastructure, XetiHub is provided on an "as is" and "as available" basis. We do not warrant that the service will be uninterrupted or error-free.
+          </p>
 
-              <section className="mb-8">
-                <h2 className="text-2xl font-bold text-home-text mb-4">Service Description</h2>
-                <p className="text-home-text-muted mb-4">
-                  XETIHUB provides a comprehensive WiFi hotspot billing and management platform that includes:
-                </p>
-                <ul className="list-disc list-inside text-home-text-muted space-y-2 mb-4">
-                  <li>Hotspot network management and monitoring</li>
-                  <li>Mobile money payment processing</li>
-                  <li>Voucher generation and distribution</li>
-                  <li>RADIUS server integration</li>
-                  <li>Hardware controller support (Mikrotik, TP-Link, Unifi, Ruijie)</li>
-                  <li>Automatic reconnection technology</li>
-                  <li>Multi-site management capabilities</li>
-                </ul>
-              </section>
+          <h2>3. Payments and Billing</h2>
+          <p>
+            If you subscribe to a paid tier on XetiHub, you agree to pay all applicable fees relative to your usage volume or tier limits. Failure to pay may result in immediate suspension of API access to your routers and RADIUS authentication services.
+          </p>
 
-              <section className="mb-8">
-                <h2 className="text-2xl font-bold text-home-text mb-4">User Responsibilities</h2>
-                <p className="text-home-text-muted mb-4">
-                  As a user of our platform, you agree to:
-                </p>
-                <ul className="list-disc list-inside text-home-text-muted space-y-2 mb-4">
-                  <li>Provide accurate and complete information</li>
-                  <li>Maintain the security of your account credentials</li>
-                  <li>Comply with all applicable laws and regulations</li>
-                  <li>Use the service only for lawful purposes</li>
-                  <li>Not interfere with or disrupt the service</li>
-                </ul>
-              </section>
+          <h2>4. Limitation of Liability</h2>
+          <p>
+            In no event shall XetiHub be liable for any indirect, incidental, special, consequential or punitive damages, or any loss of profits or revenues, whether incurred directly or indirectly, or any loss of data, use, goodwill, or other intangible losses, resulting from your use or inability to use the Service.
+          </p>
 
-              <section className="mb-8">
-                <h2 className="text-2xl font-bold text-home-text mb-4">Payment Terms</h2>
-                <p className="text-home-text-muted mb-4">
-                  Payment terms for our services are as follows:
-                </p>
-                <ul className="list-disc list-inside text-home-text-muted space-y-2 mb-4">
-                  <li>Services are billed according to the pricing plan selected</li>
-                  <li>Payment is due in advance for subscription services</li>
-                  <li>Late payments may result in service suspension</li>
-                  <li>All fees are non-refundable unless otherwise specified</li>
-                </ul>
-              </section>
-
-              <section className="mb-8">
-                <h2 className="text-2xl font-bold text-home-text mb-4">Service Availability</h2>
-                <p className="text-home-text-muted mb-4">
-                  We strive to provide continuous service availability with a target uptime of 99.9%.
-                  However, we do not guarantee uninterrupted service and may perform maintenance
-                  that temporarily affects availability.
-                </p>
-              </section>
-
-              <section className="mb-8">
-                <h2 className="text-2xl font-bold text-home-text mb-4">Limitation of Liability</h2>
-                <p className="text-home-text-muted mb-4">
-                  XETIHUB shall not be liable for any indirect, incidental, special, or consequential
-                  damages arising out of or in connection with the use of our services. Our total
-                  liability shall not exceed the amount paid by you for the services in the 12 months
-                  preceding the claim.
-                </p>
-              </section>
-
-              <section className="mb-8">
-                <h2 className="text-2xl font-bold text-home-text mb-4">Contact Information</h2>
-                <p className="text-home-text-muted mb-4">
-                  If you have any questions about these Terms of Service, please contact us at:
-                </p>
-                <div className="bg-home-card border border-home-border rounded-lg p-4">
-                  <p className="text-home-text-muted">
-                  Email: legal@XETIHUB.io<br />
-                    Address: [Company Address]
-                  </p>
-                </div>
-              </section>
-            </div>
-          </motion.div>
+          <h2>5. Termination</h2>
+          <p>
+            We may terminate or suspend your account and bar access to the Service immediately, without prior notice or liability, under our sole discretion, for any reason whatsoever, including without limitation a breach of the Terms.
+          </p>
+          
+          <h2>6. Contact</h2>
+          <p>
+            For any legal inquiries regarding these Terms of Service, reach out to us at <a href="mailto:legal@xetihub.com" className="text-[var(--accent)] hover:underline">legal@xetihub.com</a>.
+          </p>
         </div>
-      </main>
-
-      <Footer />
-    </div>
+      </div>
+    </section>
   );
 }

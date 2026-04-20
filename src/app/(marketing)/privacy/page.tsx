@@ -1,110 +1,52 @@
 'use client';
 
-import { motion } from 'framer-motion';
-import Navigation from '@/components/home/Navigation';
-import Footer from '@/components/home/Footer';
+import React from 'react';
 
 export default function PrivacyPage() {
   return (
-    <div className="min-h-screen bg-home-bg text-home-text">
-      <Navigation />
+    <section className="pt-[clamp(6rem,12vw,10rem)] pb-[clamp(4rem,8vw,10rem)] px-[clamp(1.25rem,5vw,4rem)]">
+      <div className="mx-auto max-w-[720px]">
+        <h1 className="font-geist font-semibold text-[clamp(2.2rem,4vw,3.2rem)] leading-[1.1] tracking-[-0.02em] text-[var(--text-primary)] mb-4">
+          Privacy Policy
+        </h1>
+        <p className="font-geist-mono text-[0.85rem] text-[var(--text-muted)] mb-12 uppercase tracking-wide">
+          Last Updated: March 15, 2026
+        </p>
 
-      <main className="relative pt-32 pb-20">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            <h1 className="text-4xl sm:text-5xl font-bold text-home-text mb-8">
-              Privacy Policy
-            </h1>
+        <div className="prose prose-neutral dark:prose-invert prose-p:text-[1rem] prose-p:leading-[1.7] prose-p:text-[var(--text-secondary)] prose-headings:font-geist prose-headings:font-semibold prose-headings:text-[var(--text-primary)] prose-h2:mt-12 prose-h2:mb-6 prose-h2:text-[1.5rem] prose-h2:-tracking-[0.01em] max-w-none">
+          <p>
+            At XetiHub, we take your privacy seriously. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website or use our networking platform.
+          </p>
 
-            <div className="prose prose-lg prose-invert max-w-none">
-              <p className="text-home-text-muted mb-6">
-                Last updated: {new Date().toLocaleDateString()}
-              </p>
+          <h2>1. Information We Collect</h2>
+          <p>
+            We may collect information about you in a variety of ways. When you register for our platform, we collect personal information such as your name, email address, company details, and billing information. Our platform also inherently collects networking data, such as router IP addresses, MAC addresses of connected devices, and session data required for billing operations.
+          </p>
 
-              <section className="mb-8">
-                <h2 className="text-2xl font-bold text-home-text mb-4">Information We Collect</h2>
-                <p className="text-home-text-muted mb-4">
-                  We collect information you provide directly to us, such as when you create an account,
-                  use our services, or contact us for support. This may include:
-                </p>
-                <ul className="list-disc list-inside text-home-text-muted space-y-2 mb-4">
-                  <li>Account information (name, email, phone number)</li>
-                  <li>Payment information for billing purposes</li>
-                  <li>Network usage data for hotspot management</li>
-                  <li>Device information and connection logs</li>
-                </ul>
-              </section>
+          <h2>2. How We Use Your Information</h2>
+          <p>
+            The primary use of your data is to facilitate the core services of XetiHub: orchestrating RADIUS authentication, managing WiFi hotspot user sessions, generating billing metrics, and executing requested mobile money API callbacks.
+          </p>
+          <p>
+            We also use the information to monitor and analyze usage and trends to improve your experience with the platform.
+          </p>
 
-              <section className="mb-8">
-                <h2 className="text-2xl font-bold text-home-text mb-4">How We Use Your Information</h2>
-                <p className="text-home-text-muted mb-4">
-                  We use the information we collect to:
-                </p>
-                <ul className="list-disc list-inside text-home-text-muted space-y-2 mb-4">
-                  <li>Provide and maintain our WiFi hotspot billing services</li>
-                  <li>Process payments and manage billing</li>
-                  <li>Monitor network performance and security</li>
-                  <li>Communicate with you about our services</li>
-                  <li>Improve our platform and develop new features</li>
-                </ul>
-              </section>
+          <h2>3. Data Security</h2>
+          <p>
+            We use administrative, technical, and physical security measures to help protect your personal information. While we have taken reasonable steps to secure the personal information you provide to us, please be aware that despite our efforts, no security measures are perfect or impenetrable.
+          </p>
 
-              <section className="mb-8">
-                <h2 className="text-2xl font-bold text-home-text mb-4">Data Security</h2>
-                <p className="text-home-text-muted mb-4">
-                  We implement appropriate technical and organizational measures to protect your personal
-                  information against unauthorized access, alteration, disclosure, or destruction. This
-                  includes encryption of data in transit and at rest, regular security audits, and
-                  compliance with industry standards.
-                </p>
-              </section>
+          <h2>4. Third-Party Integrations</h2>
+          <p>
+            Our platform allows you to integrate with third-party payment gateways (e.g., MTN Mobile Money, M-Pesa). When utilizing these features, note that your data handled by these entities goes subject to their respective privacy policies.
+          </p>
 
-              <section className="mb-8">
-                <h2 className="text-2xl font-bold text-home-text mb-4">Data Retention</h2>
-                <p className="text-home-text-muted mb-4">
-                  We retain your personal information for as long as necessary to provide our services,
-                  comply with legal obligations, resolve disputes, and enforce our agreements. Specific
-                  retention periods vary depending on the type of data and the purpose for which it was collected.
-                </p>
-              </section>
-
-              <section className="mb-8">
-                <h2 className="text-2xl font-bold text-home-text mb-4">Your Rights</h2>
-                <p className="text-home-text-muted mb-4">
-                  You have the right to:
-                </p>
-                <ul className="list-disc list-inside text-home-text-muted space-y-2 mb-4">
-                  <li>Access the personal information we hold about you</li>
-                  <li>Correct inaccurate or incomplete information</li>
-                  <li>Request deletion of your personal information</li>
-                  <li>Object to or restrict certain processing of your information</li>
-                  <li>Data portability</li>
-                </ul>
-              </section>
-
-              <section className="mb-8">
-                <h2 className="text-2xl font-bold text-home-text mb-4">Contact Us</h2>
-                <p className="text-home-text-muted mb-4">
-                  If you have any questions about this Privacy Policy or our data practices,
-                  please contact us at:
-                </p>
-                <div className="bg-home-card border border-home-border rounded-lg p-4">
-                  <p className="text-home-text-muted">
-                  Email: privacy@XETIHUB.io<br />
-                    Address: [Company Address]
-                  </p>
-                </div>
-              </section>
-            </div>
-          </motion.div>
+          <h2>5. Contact Us</h2>
+          <p>
+            If you have questions or comments about this Privacy Policy, please contact us at: <a href="mailto:privacy@xetihub.com" className="text-[var(--accent)] hover:underline">privacy@xetihub.com</a>.
+          </p>
         </div>
-      </main>
-
-      <Footer />
-    </div>
+      </div>
+    </section>
   );
 }

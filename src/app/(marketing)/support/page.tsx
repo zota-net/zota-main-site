@@ -1,188 +1,94 @@
 'use client';
 
-import { motion } from 'framer-motion';
-import Navigation from '@/components/home/Navigation';
-import Footer from '@/components/home/Footer';
-import { HelpCircle, MessageSquare, Book, Phone, Mail, Clock } from 'lucide-react';
+import React, { useRef, useEffect } from 'react';
+import Link from 'next/link';
 
-const SUPPORT_OPTIONS = [
-  {
-    icon: <Book className="w-6 h-6" />,
-    title: 'Documentation',
-    description: 'Comprehensive guides for setup, configuration, and troubleshooting.',
-    link: '#',
-  },
-  {
-    icon: <MessageSquare className="w-6 h-6" />,
-    title: 'Community Forum',
-    description: 'Connect with other operators and share solutions.',
-    link: '#',
-  },
-  {
-    icon: <Mail className="w-6 h-6" />,
-    title: 'Email Support',
-    description: 'Get help from our technical support team.',
-    link: 'mailto:support@XETIHUB.io',
-  },
-  {
-    icon: <Phone className="w-6 h-6" />,
-    title: 'Phone Support',
-    description: 'Speak directly with our support specialists.',
-    link: 'tel:+1-555-0123',
-  },
-];
-
-const FAQ_ITEMS = [
-  {
-    question: 'How do I set up a new hotspot?',
-    answer: 'Follow our quick start guide in the documentation. It covers hardware configuration, RADIUS setup, and initial testing.',
-  },
-  {
-    question: 'What payment methods are supported?',
-    answer: 'We support mobile money payments, credit cards, bank transfers, and voucher redemptions across multiple regions.',
-  },
-  {
-    question: 'How does automatic reconnection work?',
-    answer: 'Our intelligent reconnection system monitors connection status and automatically restores service when users return to range or after power outages.',
-  },
-  {
-    question: 'Can I manage multiple sites?',
-    answer: 'Yes, our platform supports unlimited sites with centralized management, role-based access, and unified reporting.',
-  },
-];
+function useScrollFade() {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('in-view');
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.1, rootMargin: '0px 0px -50px 0px' }
+    );
+    if (ref.current) {
+      observer.observe(ref.current);
+    }
+    return () => observer.disconnect();
+  }, []);
+  return ref;
+}
 
 export default function SupportPage() {
+  const fadeRef1 = useScrollFade();
+  const fadeRef2 = useScrollFade();
+
+  const categories = [
+    { title: "Getting Started", desc: "Initial setup, platform navigation, and foundational concepts.", icon: "M13 10V3L4 14h7v7l9-11h-7z" },
+    { title: "Router Configuration", desc: "Connecting MikroTik hardware, secure API bridges, and RADIUS.", icon: "M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" },
+    { title: "Billing & Payments", desc: "Subscription packages, pricing tiers, and revenue analytics.", icon: "M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" },
+    { title: "Mobile Money Integration", desc: "M-Pesa, MTN Mobile Money setup and webhooks troubleshooting.", icon: "M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" },
+    { title: "Voucher Codes", desc: "Batch generation, PDF exports, layout configuration, and limits.", icon: "M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" },
+    { title: "API & Developers", desc: "REST endpoints, authentication, and webhooks documentation.", icon: "M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" },
+  ];
+
   return (
-    <div className="min-h-screen bg-home-bg text-home-text">
-      <Navigation />
-
-      <main className="relative pt-32 pb-20">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-16"
-          >
-            <h1 className="text-4xl sm:text-5xl font-bold text-home-text mb-6">
-              Support Center
-            </h1>
-            <p className="text-xl text-home-text-muted max-w-3xl mx-auto">
-              Get the help you need to maximize your WiFi hotspot network performance.
-            </p>
-          </motion.div>
-
-          {/* Support Options */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16"
-          >
-            {SUPPORT_OPTIONS.map((option, index) => (
-              <div
-                key={index}
-                className="bg-home-card border border-home-border rounded-xl p-6 text-center hover:border-[#FF6A00]/20 transition-colors duration-300"
-              >
-                <div className="w-12 h-12 bg-[#FF6A00]/10 rounded-lg flex items-center justify-center mx-auto mb-4">
-                  <div className="text-[#FF6A00]">{option.icon}</div>
-                </div>
-                <h3 className="text-lg font-semibold text-home-text mb-2">{option.title}</h3>
-                <p className="text-sm text-home-text-muted mb-4">{option.description}</p>
-                <a
-                  href={option.link}
-                  className="text-[#FF6A00] hover:text-[#FF6A00]/80 text-sm font-medium"
-                >
-                  Learn more →
-                </a>
-              </div>
-            ))}
-          </motion.div>
-
-          {/* Status & Contact Info */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-            className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16"
-          >
-            <div className="bg-home-card border border-home-border rounded-xl p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                <h3 className="text-lg font-semibold text-home-text">System Status</h3>
-              </div>
-              <p className="text-home-text-muted mb-4">
-                All systems are operational. View detailed status and incident history.
-              </p>
-              <a href="#" className="text-[#FF6A00] hover:text-[#FF6A00]/80 text-sm font-medium">
-                View Status Page →
-              </a>
-            </div>
-
-            <div className="bg-home-card border border-home-border rounded-xl p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <Clock className="w-5 h-5 text-[#FF6A00]" />
-                <h3 className="text-lg font-semibold text-home-text">Support Hours</h3>
-              </div>
-              <div className="space-y-2 text-sm text-home-text-muted">
-                <p><strong>Monday - Friday:</strong> 9:00 AM - 6:00 PM UTC</p>
-                <p><strong>Saturday:</strong> 10:00 AM - 4:00 PM UTC</p>
-                <p><strong>Sunday:</strong> Emergency support only</p>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* FAQ Section */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.6 }}
-          >
-            <h2 className="text-3xl font-bold text-home-text mb-8 text-center">Frequently Asked Questions</h2>
-            <div className="space-y-6">
-              {FAQ_ITEMS.map((faq, index) => (
-                <div key={index} className="bg-home-card border border-home-border rounded-xl p-6">
-                  <h3 className="text-lg font-semibold text-home-text mb-3 flex items-center gap-3">
-                    <HelpCircle className="w-5 h-5 text-[#FF6A00] flex-shrink-0" />
-                    {faq.question}
-                  </h3>
-                  <p className="text-home-text-muted ml-8">{faq.answer}</p>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-
-          {/* Contact CTA */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.8 }}
-            className="text-center mt-16 bg-home-card border border-home-border rounded-xl p-8"
-          >
-            <h3 className="text-2xl font-bold text-home-text mb-4">Still need help?</h3>
-            <p className="text-home-text-muted mb-6 max-w-2xl mx-auto">
-              Our support team is here to help you succeed. Contact us for personalized assistance
-              with your WiFi hotspot network.
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <a
-                href="mailto:support@XETIHUB.ioio"
-                className="px-6 py-3 bg-[#FF6A00] text-white font-semibold rounded-lg hover:bg-[#FF6A00]/90 transition-colors duration-300"
-              >
-                Contact Support
-              </a>
-              <a
-                href="/contact"
-                className="px-6 py-3 border border-home-border text-home-text font-medium rounded-lg hover:border-[#FF6A00]/30 transition-colors duration-300"
-              >
-                Schedule a Call
-              </a>
-            </div>
-          </motion.div>
+    <>
+      <section className="pt-[clamp(6rem,12vw,10rem)] pb-[clamp(3rem,6vw,5rem)] px-[clamp(1.25rem,5vw,4rem)]">
+        <div ref={fadeRef1} className="animate-fade-up mx-auto max-w-[800px] text-center">
+          <h1 className="font-geist font-semibold text-[clamp(2.4rem,5vw,4rem)] leading-[1.1] tracking-[-0.03em] text-[var(--text-primary)] mb-8">
+            Support Center
+          </h1>
+          
+          <div className="relative max-w-2xl mx-auto">
+            <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-muted)]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            <input 
+              type="text" 
+              placeholder="Search for help..."
+              className="w-full bg-[var(--bg-secondary)] border border-[var(--border)] rounded-full px-12 py-4 text-[1.1rem] text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--brand-orange)] focus:bg-[var(--bg-primary)] transition-colors shadow-sm"
+            />
+          </div>
         </div>
-      </main>
+      </section>
 
-      <Footer />
-    </div>
+      <section className="py-[clamp(3rem,6vw,5rem)] px-[clamp(1.25rem,5vw,4rem)]">
+        <div ref={fadeRef2} className="animate-fade-up mx-auto max-w-[1100px]">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {categories.map((c, i) => (
+              <Link key={i} href="#" className="group bg-[var(--bg-primary)] p-6 rounded-xl border border-[var(--border)] hover:border-[var(--border-strong)] hover:shadow-sm transition-all flex flex-col gap-4">
+                <div className="w-10 h-10 flex items-center justify-center bg-[var(--bg-secondary)] rounded-md text-[var(--text-primary)] group-hover:text-[var(--accent)] group-hover:bg-[rgba(26,106,245,0.1)] transition-colors">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d={c.icon}></path>
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="font-medium text-[1.1rem] text-[var(--text-primary)] mb-2">{c.title}</h3>
+                  <p className="text-[0.95rem] text-[var(--text-secondary)] mb-4">{c.desc}</p>
+                  <span className="text-[0.9rem] text-[var(--accent)] font-medium inline-flex items-center">
+                    View articles <span className="ml-1 group-hover:translate-x-1 transition-transform">→</span>
+                  </span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="py-[clamp(3rem,6vw,8rem)] px-[clamp(1.25rem,5vw,4rem)]">
+        <div className="mx-auto max-w-[1100px] text-center bg-[var(--bg-secondary)] border border-[var(--border)] rounded-2xl p-10">
+          <h2 className="font-medium text-[1.2rem] text-[var(--text-primary)] mb-2">Need urgent help?</h2>
+          <p className="text-[1rem] text-[var(--text-secondary)] mb-4">Our engineering support team is available via direct chat or email.</p>
+          <a href="mailto:support@xetihub.com" className="text-[var(--accent)] font-medium hover:text-[var(--accent-hover)] transition-colors">
+            support@xetihub.com
+          </a>
+        </div>
+      </section>
+    </>
   );
 }

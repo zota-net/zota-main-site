@@ -468,7 +468,7 @@ export default function VouchersPage() {
   const handleExportPrintableCards = () => {
     if (selectedVouchers.length === 0) { toast.error('Please select vouchers to export'); return; }
     const data = filteredVouchers.filter((v) => selectedVouchers.includes(v.id));
-    const clientName = user?.client?.name ?? user?.name ?? 'Network';
+    const clientName = user?.client?.businessName ?? user?.name ?? 'Network';
     triggerVoucherCardPrint(data, clientPackages, clientName);
   };
 
@@ -510,7 +510,7 @@ export default function VouchersPage() {
       fetchVouchers();
       
       if (printAfter && mappedVouchers.length > 0) {
-        const clientName = user?.client?.name ?? user?.name ?? 'Network';
+        const clientName = user?.client?.businessName ?? user?.name ?? 'Network';
         setTimeout(() => triggerVoucherCardPrint(mappedVouchers, clientPackages, clientName), 500);
       }
     } catch (err) {
