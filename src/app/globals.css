@@ -78,6 +78,10 @@
     --secondary-foreground: var(--text-primary);
     --muted: var(--bg-secondary);
     --muted-foreground: var(--text-secondary);
+    --input: var(--border);
+    --ring: var(--accent);
+    --destructive: #ef4444;
+    --destructive-foreground: #ffffff;
   }
 
   .dark {
@@ -107,6 +111,10 @@
     --secondary-foreground: var(--text-primary);
     --muted: var(--bg-secondary);
     --muted-foreground: var(--text-secondary);
+    --input: var(--border);
+    --ring: var(--accent);
+    --destructive: #7f1d1d;
+    --destructive-foreground: #ffffff;
   }
 
   * {
