@@ -3,6 +3,7 @@
 import React, { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { Router, Wifi, Server, Radio, Network } from 'lucide-react';
 import { MarketingNav, MarketingFooter } from '@/components/marketing/layout-components';
 
 // ─── UTILITIES ───────────────────────────────────────────────────────────────
@@ -146,6 +147,49 @@ const Features = () => {
   );
 };
 
+// ─── SUPPORTED DEVICES ───────────────────────────────────────────────────────
+
+const SupportedDevices = () => {
+  const fadeRef = useScrollFade();
+  
+  const devices = [
+    { name: "MikroTik Routers", desc: "Native API integration for seamless hotspot and queue management.", icon: Router },
+    { name: "TP-Link Omada", desc: "Full controller integration via external portal server mapping.", icon: Server },
+    { name: "TP-Link EAP (Direct)", desc: "Direct captive portal authentication for standalone access points.", icon: Wifi },
+    { name: "Ubiquiti UniFi", desc: "Advanced guest policies and RADIUS profile sync for UniFi OS.", icon: Radio },
+    { name: "Ruijie / Reyee", desc: "Cloud controller integration with seamless authentication.", icon: Network }
+  ];
+
+  return (
+    <section className="py-[clamp(4rem,8vw,8rem)] px-[clamp(1.25rem,5vw,4rem)] bg-[var(--bg-primary)]">
+      <div ref={fadeRef} className="animate-fade-up mx-auto max-w-[1100px]">
+        <div className="mb-12 text-center max-w-2xl mx-auto">
+          <h2 className="font-geist font-semibold text-[clamp(1.5rem,3vw,2.2rem)] tracking-[-0.02em] text-[var(--text-primary)] mb-4">
+            Hardware Agnostic
+          </h2>
+          <p className="text-[1.1rem] text-[var(--text-secondary)]">
+            XetiHub seamlessly interfaces with industry-leading networking equipment, ensuring no vendor lock-in for your operations.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {devices.map((d, i) => (
+            <div key={i} className="flex flex-col gap-4 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl p-6 hover:border-[var(--brand-orange)]/50 transition-colors">
+              <div className="w-12 h-12 rounded-lg bg-[var(--bg-primary)] border border-[var(--border)] flex items-center justify-center">
+                <d.icon className="w-6 h-6 text-[var(--text-primary)]" strokeWidth={1.5} />
+              </div>
+              <div>
+                <h3 className="font-medium text-[1.1rem] text-[var(--text-primary)] mb-2">{d.name}</h3>
+                <p className="text-[0.95rem] text-[var(--text-secondary)] leading-relaxed">{d.desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
+
 // ─── STATS ROW ───────────────────────────────────────────────────────────────
 
 const StatsRow = () => {
@@ -242,6 +286,7 @@ export default function Home() {
       <MarketingNav />
       <Hero />
       <Features />
+      <SupportedDevices />
       <StatsRow />
       <HowItWorks />
       <CtaBanner />
