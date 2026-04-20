@@ -76,13 +76,13 @@ async function apiFetch<T = unknown>(endpoint: string, options: RequestOptions =
     body: body ? JSON.stringify(body) : undefined,
   });
 
-  // Handle 401 — force logout
-  if (response.status === 401) {
+  // Handle 401 and 403 — force logout
+  if (response.status === 401 || response.status === 403) {
     useUserStore.getState().logout();
     if (typeof window !== 'undefined') {
       window.location.href = '/login';
     }
-    throw new ApiError('Session expired. Please log in again.', 401);
+    throw new ApiError('Session expired or invalid. Please log in again.', response.status);
   }
 
   let data: unknown;
