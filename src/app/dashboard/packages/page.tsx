@@ -77,6 +77,8 @@ interface SubscriptionPackage {
   name: string;
   description: string;
   duration: number;
+  durationUnit: 'minutes' | 'hours' | 'days';
+  periodSeconds: number;
   price: number;
   agentCommission: number;
   ratelimit: number;
@@ -115,21 +117,28 @@ export default function PackagesPage() {
     try {
       setLoading(true);
       const data = await packagesService.getByClient(clientId);
-      const mapped: SubscriptionPackage[] = (Array.isArray(data) ? data : []).map((p: Package) => ({
-        id: String(p.id),
-        name: String(p.title ?? ''),
-        description: String(p.title ?? ''),
-        duration: Math.round(Number(p.period ?? 0) / 86400),
-        price: Number(p.price ?? 0),
-        agentCommission: Number(p.agentComissionPercentage ?? 0),
-        ratelimit: Number(p.ratelimit ?? 0),
-        category: 'hotspot' as const,
-        status: 'active' as const,
-        createdAt: new Date(String(p.createdAt ?? '')),
-        updatedAt: new Date(String(p.updatedAt ?? '')),
-        usageCount: 0,
-        featured: false,
-      }));
+      const mapped: SubscriptionPackage[] = (Array.isArray(data) ? data : []).map((p: Package) => {
+        const periodSeconds = Number(p.period ?? 0)
+        const { value, unit } = secondsToBestUnit(periodSeconds)  // ← smart conversion
+
+        return {
+          id: String(p.id),
+          name: String(p.title ?? ''),
+          description: String(p.title ?? ''),
+          duration: value,          // ← e.g. 30 (not always days)
+          durationUnit: unit,       // ← e.g. 'hours' | 'days' | 'minutes'
+          periodSeconds,            // ← keep raw seconds for API calls
+          price: Number(p.price ?? 0),
+          agentCommission: Number(p.agentComissionPercentage ?? 0),
+          ratelimit: Number(p.ratelimit ?? 0),
+          category: 'hotspot' as const,
+          status: 'active' as const,
+          createdAt: new Date(String(p.createdAt ?? '')),
+          updatedAt: new Date(String(p.updatedAt ?? '')),
+          usageCount: 0,
+          featured: false,
+        }
+      });
       setPackages(mapped);
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Failed to load packages');
@@ -252,6 +261,7 @@ export default function PackagesPage() {
         title: formData.name,
         period: periodInSeconds,
         price: formData.price,
+        ratelimit: formData.ratelimit,
         agentComissionPercentage: formData.agentCommission,
       });
       setCreateDialogOpen(false);
@@ -277,6 +287,7 @@ export default function PackagesPage() {
         title: formData.name,
         period: periodInSeconds,
         price: formData.price,
+        ratelimit: formData.ratelimit,
         agentComissionPercentage: formData.agentCommission,
       });
       setEditDialogOpen(false);
@@ -315,21 +326,21 @@ export default function PackagesPage() {
   };
 
   const openEditDialog = (pkg: SubscriptionPackage) => {
-    setSelectedPackage(pkg);
+    setSelectedPackage(pkg)
     setFormData({
       name: pkg.name,
       description: pkg.description,
       duration: pkg.duration,
-      durationUnit: 'days',
+      durationUnit: pkg.durationUnit,   // ← was hardcoded 'days' before
       price: pkg.price,
       agentCommission: pkg.agentCommission,
       ratelimit: pkg.ratelimit,
-      category: pkg.category as SubscriptionPackage['category'],
-      status: pkg.status as SubscriptionPackage['status'],
+      category: pkg.category,
+      status: pkg.status,
       featured: pkg.featured,
-    });
-    setEditDialogOpen(true);
-  };
+    })
+    setEditDialogOpen(true)
+  }
 
   const openDeleteDialog = (pkg: SubscriptionPackage) => {
     setSelectedPackage(pkg);
@@ -343,6 +354,29 @@ export default function PackagesPage() {
       maximumFractionDigits: 0,
     }).format(amount);
   };
+
+  // Converts seconds → best human-readable { value, unit }
+  function secondsToBestUnit(seconds: number): { value: number; unit: 'minutes' | 'hours' | 'days' } {
+    if (seconds < 3600) {
+      // Under 1 hour → show in minutes
+      return { value: Math.round(seconds / 60), unit: 'minutes' }
+    } else if (seconds < 86400) {
+      // Under 1 day → show in hours
+      return { value: Math.round(seconds / 3600), unit: 'hours' }
+    } else {
+      // 1 day or more → show in days
+      return { value: Math.round(seconds / 86400), unit: 'days' }
+    }
+  }
+
+  // Formats for display in the table e.g. "30d", "6h", "45m"
+  function formatPeriodDisplay(seconds: number): string {
+    const { value, unit } = secondsToBestUnit(seconds)
+    const labels = { minutes: 'm', hours: 'h', days: 'd' }
+    return `${value}${labels[unit]}`
+  }
+
+
 
   return (
     <PageTransition>
@@ -630,7 +664,7 @@ export default function PackagesPage() {
                           <TableCell>
                             <div className="flex items-center gap-1">
                               <Clock className="h-4 w-4 text-muted-foreground" />
-                              <span className="text-sm">{pkg.duration}d</span>
+                              <span className="text-sm">{formatPeriodDisplay(pkg.periodSeconds)}</span>
                             </div>
                           </TableCell>
                           <TableCell className="font-medium">
