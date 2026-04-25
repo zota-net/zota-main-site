@@ -102,6 +102,7 @@ export interface Package {
   title: string;
   period: number; // seconds
   price: number;
+  ratelimit?: number;
   agentComissionPercentage: number;
   client_id?: string;
   createdAt: string;
@@ -113,6 +114,7 @@ export interface CreatePackageRequest {
   period: number; // seconds
   title: string;
   price: number;
+  ratelimit?: number;
   agentComissionPercentage: number;
 }
 
@@ -120,6 +122,7 @@ export interface UpdatePackageRequest {
   period?: number;
   title?: string;
   price?: number;
+  ratelimit?: number;
   agentComissionPercentage?: number;
 }
 
@@ -177,6 +180,7 @@ export interface BopDevice {
   expiresAt: string;
   createdAt?: string;
   updatedAt?: string;
+  voucher?: Voucher;
 }
 
 // ─── Device Types (Devices Service) ──────────────────────────────────────────

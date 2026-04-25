@@ -79,7 +79,7 @@ interface SubscriptionPackage {
   duration: number;
   price: number;
   agentCommission: number;
-  dataLimit: string;
+  ratelimit: number;
   category: 'hotspot' | 'pppoe' | 'prepaid' | 'corporate' | 'guest';
   status: 'active' | 'inactive';
   createdAt: Date;
@@ -122,7 +122,7 @@ export default function PackagesPage() {
         duration: Math.round(Number(p.period ?? 0) / 86400),
         price: Number(p.price ?? 0),
         agentCommission: Number(p.agentComissionPercentage ?? 0),
-        dataLimit: 'Unlimited',
+        ratelimit: Number(p.ratelimit ?? 0),
         category: 'hotspot' as const,
         status: 'active' as const,
         createdAt: new Date(String(p.createdAt ?? '')),
@@ -156,7 +156,7 @@ export default function PackagesPage() {
     durationUnit: 'minutes' | 'hours' | 'days';
     price: number;
     agentCommission: number;
-    dataLimit: string;
+    ratelimit: number;
     category: SubscriptionPackage['category'];
     status: SubscriptionPackage['status'];
     featured: boolean;
@@ -167,7 +167,7 @@ export default function PackagesPage() {
     durationUnit: 'days',
     price: 0,
     agentCommission: 10,
-    dataLimit: 'Unlimited',
+    ratelimit: 100,
     category: 'hotspot',
     status: 'active',
     featured: false,
@@ -198,7 +198,7 @@ export default function PackagesPage() {
       durationUnit: 'days',
       price: 0,
       agentCommission: 10,
-      dataLimit: 'Unlimited',
+      ratelimit: 100,
       category: 'hotspot',
       status: 'active',
       featured: false,
@@ -323,7 +323,7 @@ export default function PackagesPage() {
       durationUnit: 'days',
       price: pkg.price,
       agentCommission: pkg.agentCommission,
-      dataLimit: pkg.dataLimit,
+      ratelimit: pkg.ratelimit,
       category: pkg.category as SubscriptionPackage['category'],
       status: pkg.status as SubscriptionPackage['status'],
       featured: pkg.featured,
@@ -513,11 +513,12 @@ export default function PackagesPage() {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label>Data Limit</Label>
+                        <Label>Ratelimit (MB)</Label>
                         <Input
-                          value={formData.dataLimit}
-                          onChange={(e) => setFormData({ ...formData, dataLimit: e.target.value })}
-                          placeholder="e.g., 10GB, Unlimited"
+                          type="number"
+                          value={formData.ratelimit}
+                          onChange={(e) => setFormData({ ...formData, ratelimit: parseInt(e.target.value) })}
+                          placeholder="e.g., 100"
                         />
                       </div>
                     </div>
@@ -642,7 +643,7 @@ export default function PackagesPage() {
                             </div>
                           </TableCell>
                           <TableCell className="text-sm text-muted-foreground">
-                            {pkg.dataLimit}
+                            {pkg.ratelimit}MB/{pkg.ratelimit}MB
                           </TableCell>
                           <TableCell>
                             <Badge variant="outline" className={statusInfo.color}>
@@ -758,10 +759,11 @@ export default function PackagesPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Speed Limit</Label>
+                  <Label>Ratelimit (MB)</Label>
                   <Input
-                    value={formData.dataLimit}
-                    onChange={(e) => setFormData({ ...formData, dataLimit: e.target.value })}
+                    type="number"
+                    value={formData.ratelimit}
+                    onChange={(e) => setFormData({ ...formData, ratelimit: parseInt(e.target.value) })}
                   />
                 </div>
               </div>

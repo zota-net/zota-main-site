@@ -125,7 +125,7 @@ export const bopDevicesService = {
     api.get<ApiResponse<BopDevice>>(`/bop/devices/mac/${macAddress}`).then((response) => response.data ?? response as unknown as BopDevice),
 
   getByClient: (clientId: string) =>
-    api.get<ApiResponse<BopDevice[]>>(`/bop/devices/${clientId}`).then((response) => response.data ?? response as unknown as BopDevice[]),
+    api.get<ApiResponse<BopDevice[]>>(`/bop/devices/client/${clientId}`).then((response) => response.data ?? response as unknown as BopDevice[]),
 };
 
 // ─── Router Devices ──────────────────────────────────────────────────────────
