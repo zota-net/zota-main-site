@@ -1232,9 +1232,9 @@ export default function PaymentsPage() {
                       <div className="text-sm">
                         <p className="font-medium text-amber-500">Withdrawal Fees Apply</p>
                         <ul className="text-muted-foreground mt-1 space-y-0.5 text-xs">
-                          <li>• Standard withdrawal: <span className="text-foreground font-medium">UGX 2,500</span> per transaction</li>
-                          <li>• Express withdrawal (same day): <span className="text-foreground font-medium">UGX 5,000</span> per transaction</li>
-                          <li>• Minimum withdrawal amount: <span className="text-foreground font-medium">UGX 10,000</span></li>
+                          {/* <li>• Standard withdrawal(UGX 500 - UGX 500,000): <span className="text-foreground font-medium">UGX 300 + 4%</span> per transaction</li> */}
+                          {/* <li>• Express withdrawal (same day): <span className="text-foreground font-medium">UGX 5,000</span> per transaction</li> */}
+                          <li>• Minimum withdrawal amount: <span className="text-foreground font-medium">UGX 2,000</span></li>
                         </ul>
                       </div>
                     </div>
@@ -1251,8 +1251,8 @@ export default function PaymentsPage() {
                   className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/25 font-semibold"
                   onClick={async () => {
                     const amount = parseFloat(withdrawalForm.amount);
-                    if (!amount || amount < 10000) {
-                      toast.error('Minimum withdrawal amount is UGX 10,000');
+                    if (!amount || amount < 2000) {
+                      toast.error('Minimum withdrawal amount is UGX 2,000');
                       return;
                     }
                     
