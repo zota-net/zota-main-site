@@ -16,6 +16,9 @@ import {
   Trash2,
   Plus,
   Eye,
+  KeyRound,
+  EyeOff,
+  AlertCircle,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -48,6 +51,8 @@ import { useAppStore } from '@/lib/store/app-store';
 import { useUserStore } from '@/lib/store/user-store';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { authService } from '@/lib/api/services/auth';
+import { ApiError } from '@/lib/api/client';
 
 function ThemeCard({ 
   theme, 
@@ -146,6 +151,48 @@ export default function SettingsPage() {
   });
   const [createThemeOpen, setCreateThemeOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // ── Password reset state ──────────────────────────────────────────────────
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+  const [showPasswords, setShowPasswords] = useState({
+    current: false,
+    newPw: false,
+    confirm: false,
+  });
+  const [passwordLoading, setPasswordLoading] = useState(false);
+
+  const handlePasswordChange = async () => {
+    if (!passwordForm.currentPassword) {
+      toast.error('Please enter your current password');
+      return;
+    }
+    if (passwordForm.newPassword.length < 8) {
+      toast.error('New password must be at least 8 characters');
+      return;
+    }
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      toast.error('New passwords do not match');
+      return;
+    }
+    setPasswordLoading(true);
+    try {
+      await authService.updateProfile({
+        currentPassword: passwordForm.currentPassword,
+        newPassword: passwordForm.newPassword,
+        client_id: user?.client_id,
+      });
+      toast.success('Password updated successfully');
+      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Failed to update password');
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
 
   const allThemes = [...defaultThemes, ...customThemes];
 
@@ -528,6 +575,120 @@ export default function SettingsPage() {
                 <div className="space-y-2">
                   <Label>Role</Label>
                   <Input value={user?.role || ''} disabled className="bg-muted" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <KeyRound className="h-5 w-5 text-primary" />
+                  Change Password
+                </CardTitle>
+                <CardDescription>
+                  Update your account password. We recommend using a strong, unique password.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Current Password</Label>
+                  <div className="relative">
+                    <Input
+                      type={showPasswords.current ? 'text' : 'password'}
+                      value={passwordForm.currentPassword}
+                      onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
+                      placeholder="Enter current password"
+                      className="pr-10"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground"
+                      onClick={() => setShowPasswords((p) => ({ ...p, current: !p.current }))}
+                    >
+                      {showPasswords.current ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>New Password</Label>
+                  <div className="relative">
+                    <Input
+                      type={showPasswords.newPw ? 'text' : 'password'}
+                      value={passwordForm.newPassword}
+                      onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                      placeholder="Enter new password (min 8 chars)"
+                      className="pr-10"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground"
+                      onClick={() => setShowPasswords((p) => ({ ...p, newPw: !p.newPw }))}
+                    >
+                      {showPasswords.newPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                  {passwordForm.newPassword && passwordForm.newPassword.length < 8 && (
+                    <p className="text-xs text-destructive flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" /> At least 8 characters required
+                    </p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label>Confirm New Password</Label>
+                  <div className="relative">
+                    <Input
+                      type={showPasswords.confirm ? 'text' : 'password'}
+                      value={passwordForm.confirmPassword}
+                      onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+                      placeholder="Re-enter new password"
+                      className="pr-10"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground"
+                      onClick={() => setShowPasswords((p) => ({ ...p, confirm: !p.confirm }))}
+                    >
+                      {showPasswords.confirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                  {passwordForm.confirmPassword && passwordForm.newPassword !== passwordForm.confirmPassword && (
+                    <p className="text-xs text-destructive flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" /> Passwords do not match
+                    </p>
+                  )}
+                  {passwordForm.confirmPassword && passwordForm.newPassword === passwordForm.confirmPassword && passwordForm.newPassword.length >= 8 && (
+                    <p className="text-xs text-green-500 flex items-center gap-1">
+                      <Check className="h-3 w-3" /> Passwords match
+                    </p>
+                  )}
+                </div>
+                <div className="flex justify-end pt-2">
+                  <Button
+                    onClick={handlePasswordChange}
+                    disabled={passwordLoading}
+                    className="bg-[#FF6A00] hover:bg-[#FF6A00]/90 text-white font-semibold"
+                  >
+                    {passwordLoading ? (
+                      <span className="flex items-center gap-2">
+                        <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                        </svg>
+                        Updating...
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-2">
+                        <KeyRound className="h-4 w-4" />
+                        Update Password
+                      </span>
+                    )}
+                  </Button>
                 </div>
               </CardContent>
             </Card>
