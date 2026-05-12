@@ -19,6 +19,7 @@ import {
   Printer,
   QrCode,
   CalendarIcon,
+  Package,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -67,7 +68,7 @@ import { PageTransition, AnimatedCounter } from '@/components/common';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { packagesService, vouchersService } from '@/lib/api/services/base-operations';
-import type { Package } from '@/lib/api/types';
+import type { Package as PkgType } from '@/lib/api/types';
 import { useUserStore } from '@/lib/store/user-store';
 import { ApiError } from '@/lib/api/client';
 
@@ -138,11 +139,31 @@ const statusConfig = {
   revoked: { label: 'Revoked', color: 'bg-red-500/10 text-red-500 border-red-500/20',         icon: XCircle },
 };
 
+// ─── Timezone-aware date formatter ────────────────────────────────────────────
+function formatLocalDate(date: Date | undefined, userTimezone?: string): string {
+  if (!date || isNaN(date.getTime())) return '—';
+  try {
+    const tz = userTimezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+    return new Intl.DateTimeFormat('en-UG', {
+      timeZone: tz,
+      year:     'numeric',
+      month:    'short',
+      day:      'numeric',
+      hour:     '2-digit',
+      minute:   '2-digit',
+      hour12:   true,
+    }).format(date);
+  } catch {
+    return date.toLocaleString();
+  }
+}
+
 // ─── Print helper ─────────────────────────────────────────────────────────────
 function triggerVoucherCardPrint(
   selectedVoucherData: Voucher[],
-  clientPackages: Package[],
+  clientPackages: PkgType[],
   clientName: string,
+  vouchersPerPage: number = 3,
 ) {
   const formatDuration = (seconds: number) => {
     const days  = seconds / 86400;
@@ -189,7 +210,7 @@ function triggerVoucherCardPrint(
             </div>
             <div class="detail-block">
               <div class="detail-label">PRICE</div>
-              <div class="detail-value price">UGX ${price.toLocaleString()}</div>
+              <div class="detail-value price">UGX ${Number(price).toLocaleString()}</div>
             </div>
           </div>
           <div class="card-footer">
@@ -200,140 +221,174 @@ function triggerVoucherCardPrint(
       </div>`;
   }).join('');
 
-  const printContainer = document.createElement('div');
-  printContainer.id = 'voucher-print-container';
-  printContainer.style.cssText = 'position:absolute;left:-9999px;top:-9999px;';
+  const cols = Math.min(vouchersPerPage, 4); // max 4 per row to keep readable
+  // Determine grid columns for the selected per-page layout
+  // vouchersPerPage means per row on the page; we always fill full pages
+  const gridCols = vouchersPerPage <= 2 ? vouchersPerPage : vouchersPerPage <= 4 ? vouchersPerPage : 3;
 
-  printContainer.innerHTML = `
-    <style>
-      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@700&display=swap');
-      @media print {
-        body * { visibility: hidden !important; }
-        #voucher-print-container,
-        #voucher-print-container * { visibility: visible !important; }
-        #voucher-print-container {
-          position: absolute !important;
-          inset: 0 !important;
-          background: white !important;
-        }
-      }
-      .print-wrapper {
-        font-family: 'Inter', sans-serif;
-        padding: 0.4in;
-        background: white;
-      }
-      .voucher-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 0.2in;
-      }
-      .voucher-card {
-        border: 1.5px solid #d1d5db;
-        border-radius: 8px;
-        overflow: hidden;
-        background: white;
-        position: relative;
-        break-inside: avoid;
-        page-break-inside: avoid;
-      }
-      .card-stripe {
-        height: 5px;
-        background: linear-gradient(90deg, #16a34a 0%, #22c55e 100%);
-      }
-      .card-inner {
-        padding: 10px 12px 8px;
-      }
-      .card-top {
-        margin-bottom: 6px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-      .brand-name {
-        font-size: 11px;
-        font-weight: 700;
-        letter-spacing: 2px;
-        color: #15803d;
-        text-align: center;
-      }
-      .voucher-code-row {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        margin-bottom: 8px;
-      }
-      .wifi-icon {
-        width: 18px;
-        height: 18px;
-        color: #16a34a;
-        flex-shrink: 0;
-      }
-      .voucher-code {
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 18px;
-        font-weight: 700;
-        color: #111827;
-        letter-spacing: 1px;
-      }
-      .card-details {
-        display: flex;
-        gap: 6px;
-        margin-bottom: 8px;
-        flex-wrap: wrap;
-      }
-      .detail-block {
-        flex: 1;
-        min-width: 50px;
-      }
-      .detail-label {
-        font-size: 7px;
-        font-weight: 600;
-        color: #9ca3af;
-        letter-spacing: 0.8px;
-        text-transform: uppercase;
-        margin-bottom: 2px;
-      }
-      .detail-value {
-        font-size: 10px;
-        font-weight: 600;
-        color: #111827;
-      }
-      .detail-value.price {
-        font-size: 11px;
-        font-weight: 700;
-        color: #15803d;
-      }
-      .card-footer {
-        border-top: 1px solid #f3f4f6;
-        padding-top: 6px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        font-size: 7px;
-        color: #9ca3af;
-        gap: 4px;
-      }
-      .footer-brand {
-        font-weight: 700;
-        color: #6b7280;
-        white-space: nowrap;
-      }
-    </style>
-    <div class="print-wrapper">
-      <div class="voucher-grid">${cardHTML}</div>
-    </div>`;
+  const printHTML = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vouchers</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@700&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', Arial, sans-serif;
+    background: white;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .print-wrapper {
+    padding: 0.3in;
+    background: white;
+  }
+  .voucher-grid {
+    display: grid;
+    grid-template-columns: repeat(${gridCols}, 1fr);
+    gap: 0.15in;
+  }
+  .voucher-card {
+    border: 1.5px solid #d1d5db;
+    border-radius: 8px;
+    overflow: hidden;
+    background: white;
+    position: relative;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    -webkit-column-break-inside: avoid;
+  }
+  .card-stripe {
+    height: 5px;
+    background: #16a34a;
+  }
+  .card-inner {
+    padding: 10px 12px 8px;
+  }
+  .card-top {
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .brand-name {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: #15803d;
+    text-align: center;
+  }
+  .voucher-code-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+  .wifi-icon {
+    width: 18px;
+    height: 18px;
+    color: #16a34a;
+    flex-shrink: 0;
+  }
+  .voucher-code {
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    font-size: 18px;
+    font-weight: 700;
+    color: #111827;
+    letter-spacing: 1px;
+    word-break: break-all;
+  }
+  .card-details {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+  }
+  .detail-block {
+    flex: 1;
+    min-width: 50px;
+  }
+  .detail-label {
+    font-size: 7px;
+    font-weight: 600;
+    color: #9ca3af;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+  }
+  .detail-value {
+    font-size: 10px;
+    font-weight: 600;
+    color: #111827;
+  }
+  .detail-value.price {
+    font-size: 11px;
+    font-weight: 700;
+    color: #15803d;
+  }
+  .card-footer {
+    border-top: 1px solid #f3f4f6;
+    padding-top: 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 7px;
+    color: #9ca3af;
+    gap: 4px;
+  }
+  .footer-brand {
+    font-weight: 700;
+    color: #6b7280;
+    white-space: nowrap;
+  }
+  @media print {
+    body { background: white !important; }
+    .print-wrapper { padding: 0.2in; }
+  }
+</style>
+</head>
+<body>
+<div class="print-wrapper">
+  <div class="voucher-grid">${cardHTML}</div>
+</div>
+<script>
+  window.onload = function() {
+    setTimeout(function() { window.print(); }, 300);
+  };
+<\/script>
+</body>
+</html>`;
 
-  document.body.appendChild(printContainer);
-  window.print();
-  setTimeout(() => document.body.removeChild(printContainer), 1200);
+  // Android-compatible: open a new window/tab with self-contained HTML
+  const printWindow = window.open('', '_blank', 'width=800,height=600');
+  if (printWindow) {
+    printWindow.document.open();
+    printWindow.document.write(printHTML);
+    printWindow.document.close();
+  } else {
+    // Fallback for popups blocked: use blob URL
+    const blob = new Blob([printHTML], { type: 'text/html' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.target   = '_blank';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  }
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function VouchersPage() {
-  const [vouchers, setVouchers]           = useState<Voucher[]>([]);
-  const [loading, setLoading]             = useState(true);
-  const [clientPackages, setClientPackages] = useState<Package[]>([]);
-  const { user }                          = useUserStore();
+  const [vouchers, setVouchers]             = useState<Voucher[]>([]);
+  const [loading, setLoading]               = useState(true);
+  const [clientPackages, setClientPackages] = useState<PkgType[]>([]);
+  const { user }                            = useUserStore();
+
+  // User timezone from preferences, falling back to browser
+  const userTimezone = (user as any)?.preferences?.timezone ||
+    Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   const fetchVouchers = useCallback(async () => {
     const clientId = user?.client_id;
@@ -367,7 +422,7 @@ export default function VouchersPage() {
   // ── Filters ────────────────────────────────────────────────────────────────
   const [searchQuery,    setSearchQuery]    = useState('');
   const [statusFilter,   setStatusFilter]   = useState<string>('all');
-  const [typeFilter,     setTypeFilter]     = useState<string>('all');
+  const [packageFilter,  setPackageFilter]  = useState<string>('all');
   const [dateFrom,       setDateFrom]       = useState<Date | undefined>(undefined);
   const [dateTo,         setDateTo]         = useState<Date | undefined>(undefined);
   const [datePickerStep, setDatePickerStep] = useState<'start' | 'end'>('start');
@@ -375,14 +430,18 @@ export default function VouchersPage() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [copiedCode, setCopiedCode]         = useState<string | null>(null);
 
+  // ── Print options state ────────────────────────────────────────────────────
+  const [printDialogOpen,   setPrintDialogOpen]   = useState(false);
+  const [vouchersPerPage,   setVouchersPerPage]   = useState<number>(3);
+
   // ── New voucher form state ─────────────────────────────────────────────────
   const [newVoucher, setNewVoucher] = useState({
-    category:  'hotspot' as VoucherCategory,
-    quantity:  10,
-    length:    8,
-    prefix:    'NET',
-    packageId: '',
-    charsetKey: 'lower_numeric',   // default charset key
+    category:   'hotspot' as VoucherCategory,
+    quantity:   10,
+    length:     8,
+    prefix:     'NET',
+    packageId:  '',
+    charsetKey: 'lower_numeric',
   });
 
   useEffect(() => {
@@ -408,16 +467,16 @@ export default function VouchersPage() {
   // ── Filtered vouchers ──────────────────────────────────────────────────────
   const filteredVouchers = useMemo(() => {
     return vouchers.filter((v) => {
-      const matchesSearch  = v.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      const matchesSearch   = v.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
         v.batchId?.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesStatus  = statusFilter === 'all' || v.status === statusFilter;
-      const matchesType    = typeFilter   === 'all' || v.type   === typeFilter;
-      const vDate          = new Date(v.createdAt);
-      const matchesFrom    = !dateFrom || vDate >= dateFrom;
-      const matchesTo      = !dateTo   || vDate <= new Date(dateTo.getTime() + 86_399_999);
-      return matchesSearch && matchesStatus && matchesType && matchesFrom && matchesTo;
+      const matchesStatus   = statusFilter  === 'all' || v.status  === statusFilter;
+      const matchesPackage  = packageFilter === 'all' || v.batchId === packageFilter;
+      const vDate           = new Date(v.createdAt);
+      const matchesFrom     = !dateFrom || vDate >= dateFrom;
+      const matchesTo       = !dateTo   || vDate <= new Date(dateTo.getTime() + 86_399_999);
+      return matchesSearch && matchesStatus && matchesPackage && matchesFrom && matchesTo;
     });
-  }, [vouchers, searchQuery, statusFilter, typeFilter, dateFrom, dateTo]);
+  }, [vouchers, searchQuery, statusFilter, packageFilter, dateFrom, dateTo]);
 
   const clearDateFilter = () => { setDateFrom(undefined); setDateTo(undefined); setDatePickerStep('start'); };
 
@@ -445,7 +504,7 @@ export default function VouchersPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, statusFilter, typeFilter, dateFrom, dateTo]);
+  }, [searchQuery, statusFilter, packageFilter, dateFrom, dateTo]);
 
   const paginatedVouchers = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
@@ -467,9 +526,14 @@ export default function VouchersPage() {
 
   const handleExportPrintableCards = () => {
     if (selectedVouchers.length === 0) { toast.error('Please select vouchers to export'); return; }
+    setPrintDialogOpen(true);
+  };
+
+  const handleConfirmPrint = () => {
     const data = filteredVouchers.filter((v) => selectedVouchers.includes(v.id));
-    const clientName = user?.client?.businessName ?? user?.name ?? 'Network';
-    triggerVoucherCardPrint(data, clientPackages, clientName);
+    const clientName = user?.client?.businessName ?? (user as any)?.name ?? 'Network';
+    triggerVoucherCardPrint(data, clientPackages, clientName, vouchersPerPage);
+    setPrintDialogOpen(false);
   };
 
   const handleCreateVouchers = async (printAfter: boolean = false) => {
@@ -510,8 +574,8 @@ export default function VouchersPage() {
       fetchVouchers();
       
       if (printAfter && mappedVouchers.length > 0) {
-        const clientName = user?.client?.businessName ?? user?.name ?? 'Network';
-        setTimeout(() => triggerVoucherCardPrint(mappedVouchers, clientPackages, clientName), 500);
+        const clientName = user?.client?.businessName ?? (user as any)?.name ?? 'Network';
+        setTimeout(() => triggerVoucherCardPrint(mappedVouchers, clientPackages, clientName, vouchersPerPage), 500);
       }
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Failed to create vouchers');
@@ -610,22 +674,6 @@ export default function VouchersPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            {/* <Button
-              variant="outline"
-              size="sm"
-              className="h-8 sm:h-9"
-              onClick={handleExportPrintableCards}
-              disabled={selectedVouchers.length === 0}
-            >
-              <Download className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Export Cards</span>
-              <span className="sm:hidden">Cards</span>
-            </Button>
-            <Button variant="outline" size="sm" className="h-8 sm:h-9" onClick={handleExportPrintableCards}>
-              <Printer className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Print</span>
-            </Button> */}
-
             {/* ── Create Dialog ─────────────────────────────────────────── */}
             <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
               <DialogTrigger asChild>
@@ -745,9 +793,33 @@ export default function VouchersPage() {
                         ))}
                       </SelectContent>
                     </Select>
-                    {/* Charset preview strip */}
                     <p className="text-xs text-muted-foreground font-mono truncate px-1">
                       {previewCharset.slice(0, 60)}{previewCharset.length > 60 ? '…' : ''}
+                    </p>
+                  </div>
+
+                  {/* Vouchers per page (for printing) */}
+                  <div className="space-y-2">
+                    <Label className="text-sm">
+                      Vouchers per Page <span className="text-muted-foreground font-normal">(for printing)</span>
+                    </Label>
+                    <Select
+                      value={String(vouchersPerPage)}
+                      onValueChange={(v) => setVouchersPerPage(Number(v))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">1 per page</SelectItem>
+                        <SelectItem value="2">2 per page</SelectItem>
+                        <SelectItem value="3">3 per page (default)</SelectItem>
+                        <SelectItem value="4">4 per page</SelectItem>
+                        <SelectItem value="6">6 per page (small cards)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      Controls how many cards print per row on paper
                     </p>
                   </div>
 
@@ -847,6 +919,7 @@ export default function VouchersPage() {
 
               {/* Filter row */}
               <div className="flex flex-wrap gap-2">
+                {/* Status filter */}
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
                   <SelectTrigger className="w-full sm:w-[130px]">
                     <SelectValue placeholder="Status" />
@@ -860,15 +933,19 @@ export default function VouchersPage() {
                   </SelectContent>
                 </Select>
 
-                <Select value={typeFilter} onValueChange={setTypeFilter}>
-                  <SelectTrigger className="w-full sm:w-[130px]">
-                    <SelectValue placeholder="Type" />
+                {/* Package filter (replaces "All Types") */}
+                <Select value={packageFilter} onValueChange={setPackageFilter}>
+                  <SelectTrigger className="w-full sm:w-[160px]">
+                    <Package className="h-4 w-4 mr-1 text-muted-foreground" />
+                    <SelectValue placeholder="All Packages" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Types</SelectItem>
-                    <SelectItem value="time">Time-based</SelectItem>
-                    <SelectItem value="data">Data-based</SelectItem>
-                    <SelectItem value="unlimited">Unlimited</SelectItem>
+                    <SelectItem value="all">All Packages</SelectItem>
+                    {clientPackages.map((pkg) => (
+                      <SelectItem key={pkg.id} value={String(pkg.id)}>
+                        {pkg.title}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
 
@@ -1060,10 +1137,14 @@ export default function VouchersPage() {
                             </Badge>
                           </TableCell>
                           <TableCell className="hidden lg:table-cell text-muted-foreground text-xs sm:text-sm p-2 sm:p-4">
-                            {voucher.createdAt.toLocaleDateString()}
+                            <span title={formatLocalDate(voucher.createdAt, userTimezone)}>
+                              {formatLocalDate(voucher.createdAt, userTimezone)}
+                            </span>
                           </TableCell>
                           <TableCell className="hidden lg:table-cell text-muted-foreground text-xs sm:text-sm p-2 sm:p-4">
-                            {voucher.usedAt ? voucher.usedAt.toLocaleDateString() : '—'}
+                            {voucher.usedAt
+                              ? <span title={formatLocalDate(voucher.usedAt, userTimezone)}>{formatLocalDate(voucher.usedAt, userTimezone)}</span>
+                              : '—'}
                           </TableCell>
                           <TableCell className="p-2 sm:p-4">
                             <DropdownMenu>
@@ -1138,6 +1219,69 @@ export default function VouchersPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* ── Print Options Dialog ─────────────────────────────────────── */}
+        <Dialog open={printDialogOpen} onOpenChange={setPrintDialogOpen}>
+          <DialogContent className="w-[95vw] max-w-[420px]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Printer className="h-5 w-5" />
+                Print Voucher Cards
+              </DialogTitle>
+              <DialogDescription>
+                Configure print layout for {selectedVouchers.length} selected voucher{selectedVouchers.length !== 1 ? 's' : ''}.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-2">
+              <div className="space-y-2">
+                <Label>Vouchers per Row</Label>
+                <Select
+                  value={String(vouchersPerPage)}
+                  onValueChange={(v) => setVouchersPerPage(Number(v))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">1 per row — large cards</SelectItem>
+                    <SelectItem value="2">2 per row</SelectItem>
+                    <SelectItem value="3">3 per row (default)</SelectItem>
+                    <SelectItem value="4">4 per row — compact</SelectItem>
+                    <SelectItem value="6">6 per row — mini cards</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Tip: On Android, the print dialog may open in your browser. Choose "Save as PDF" first if needed.
+                </p>
+              </div>
+              {/* Visual grid preview */}
+              <div className="p-3 rounded-lg bg-muted/40 border">
+                <p className="text-xs text-muted-foreground mb-2 font-medium">Layout Preview</p>
+                <div
+                  className="grid gap-1"
+                  style={{ gridTemplateColumns: `repeat(${Math.min(vouchersPerPage, 4)}, 1fr)` }}
+                >
+                  {Array.from({ length: Math.min(vouchersPerPage * 2, 8) }).map((_, i) => (
+                    <div key={i} className="h-8 rounded bg-muted border border-border/60 flex items-center justify-center">
+                      <div className="w-2/3 h-1.5 rounded-full bg-muted-foreground/20" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <DialogFooter className="gap-2">
+              <Button variant="outline" onClick={() => setPrintDialogOpen(false)}>Cancel</Button>
+              <Button
+                onClick={handleConfirmPrint}
+                className="bg-[#FF6A00] hover:bg-[#FF6A00]/90 text-white font-semibold"
+              >
+                <Printer className="h-4 w-4 mr-2" />
+                Open Print View
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
       </div>
     </PageTransition>
   );
