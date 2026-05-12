@@ -12,6 +12,7 @@ import type {
   CreateAdvertRequest,
   BopDevice,
   ApiResponse,
+  SupportTicket,
 } from '../types';
 
 // Nginx proxies /bop/ → base-operations-service:3000
@@ -126,6 +127,43 @@ export const bopDevicesService = {
 
   getByClient: (clientId: string) =>
     api.get<ApiResponse<BopDevice[]>>(`/bop/devices/client/${clientId}`).then((response) => response.data ?? response as unknown as BopDevice[]),
+};
+
+// ─── Client Settings ─────────────────────────────────────────────────────────
+
+export const clientSettingsService = {
+  updateGatewayFee: (clientId: string, gatewayFeeOnUsers: boolean) =>
+    api.put<ApiResponse>(`/bop/clients/${clientId}/gateway-fee`, { gatewayFeeOnUsers }),
+};
+
+// ─── Support Tickets ──────────────────────────────────────────────────────────
+
+export const supportService = {
+  createTicket: (data: { clientId: string | number; subject: string; description: string; category?: string; priority?: string }) =>
+    api.post<ApiResponse<SupportTicket>>('/bop/support/tickets', data).then((r) => r.data!),
+
+  getByClient: (clientId: string, params?: { page?: number; limit?: number }) => {
+    const qs = params ? `?page=${params.page ?? 1}&limit=${params.limit ?? 20}` : '';
+    return api.get<any>(`/bop/support/tickets/client/${clientId}${qs}`).then((r) => r);
+  },
+
+  getAll: (params?: { page?: number; limit?: number; status?: string }) => {
+    const qs = new URLSearchParams();
+    if (params?.page) qs.set('page', String(params.page));
+    if (params?.limit) qs.set('limit', String(params.limit));
+    if (params?.status) qs.set('status', params.status);
+    const str = qs.toString();
+    return api.get<any>(`/bop/support/tickets${str ? `?${str}` : ''}`).then((r) => r);
+  },
+
+  getById: (id: string | number) =>
+    api.get<ApiResponse<SupportTicket>>(`/bop/support/tickets/${id}`).then((r) => r.data!),
+
+  addMessage: (id: string | number, content: string, senderName: string, sender: 'user' | 'agent' = 'user') =>
+    api.post<ApiResponse<SupportTicket>>(`/bop/support/tickets/${id}/messages`, { content, senderName, sender }).then((r) => r.data!),
+
+  updateStatus: (id: string | number, status: string, assignedTo?: string) =>
+    api.put<ApiResponse<SupportTicket>>(`/bop/support/tickets/${id}/status`, { status, assignedTo }).then((r) => r.data!),
 };
 
 // ─── Router Devices ──────────────────────────────────────────────────────────

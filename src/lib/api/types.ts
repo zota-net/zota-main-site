@@ -75,6 +75,7 @@ export interface Client {
   adminEmail: string;
   contact: string;
   status: string;
+  gatewayFeeOnUsers?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -444,6 +445,51 @@ export interface RouterDevice {
   isConnected?: boolean;
   uptime?: string;
   connectedDevices?: number;
+}
+
+// ─── Top User Type ───────────────────────────────────────────────────────────
+
+export interface TopUser {
+  rank: number;
+  phone: string;
+  provider: string;
+  purchaseCount: number;
+  totalSpent: number;
+  lastPurchase: string;
+}
+
+// ─── Support Ticket Types ─────────────────────────────────────────────────────
+
+export interface TicketMessage {
+  id: string;
+  content: string;
+  sender: 'user' | 'agent' | 'system';
+  senderName: string;
+  timestamp: number;
+  read: boolean;
+}
+
+export interface SupportTicket {
+  id: number;
+  clientId: number;
+  subject: string;
+  description: string;
+  status: 'open' | 'in-progress' | 'waiting' | 'resolved' | 'closed';
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  category: string;
+  assignedTo?: string;
+  messages?: TicketMessage[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ─── Pagination ───────────────────────────────────────────────────────────────
+
+export interface Pagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
 }
 
 // ─── Generic API Response ────────────────────────────────────────────────────
