@@ -52,9 +52,8 @@ const navGroups: NavGroup[] = [
     title: 'Dashboard',
     items: [
       { title: 'Overview', href: '/dashboard', icon: LayoutDashboard },
+      { title: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
       { title: 'My Activities', href: '/dashboard/agent-dashboard', icon: Activity },
-      // { title: 'Network', href: '/dashboard/network', icon: Network },
-      // { title: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 }
     ],
   },
   {
@@ -80,7 +79,6 @@ const navGroups: NavGroup[] = [
   {
     title: 'System',
     items: [
-      { title: 'Reports', href: '/dashboard/reports', icon: FileText },
       { title: 'Settings', href: '/dashboard/settings', icon: Settings },
       // { title: 'Help', href: '/dashboard/help', icon: HelpCircle },
     ],
