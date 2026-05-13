@@ -29,11 +29,14 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from '@/components/ui/chart';
-import { Area, AreaChart, XAxis, YAxis, ResponsiveContainer, Line, LineChart, Bar, BarChart } from 'recharts';
+import { Area, AreaChart, XAxis, YAxis, ResponsiveContainer, Legend, Line, LineChart, Bar, BarChart } from 'recharts';
+
+const MOBILE_MONEY_COLOR = '#22c55e';
+const DIRECT_VOUCHER_COLOR = '#f97316';
 
 const salesChartConfig: ChartConfig = {
-  amount: { label: 'Sales', color: 'hsl(var(--primary))' },
-  count: { label: 'Transactions', color: 'hsl(var(--accent))' },
+  mobileMoney:   { label: 'Mobile Money',   color: MOBILE_MONEY_COLOR },
+  directVoucher: { label: 'Direct Voucher', color: DIRECT_VOUCHER_COLOR },
 };
 
 export default function DashboardOverviewPage() {
@@ -116,14 +119,17 @@ export default function DashboardOverviewPage() {
       return [];
     }
 
-    const map = new Map<string, { date: string; amount: number; count: number; iso: string }>();
+    const map = new Map<string, { date: string; mobileMoney: number; directVoucher: number; iso: string }>();
 
     salesReport.sales.forEach((sale) => {
       const iso = format(parseISO(sale.createdAt), 'yyyy-MM-dd');
       const date = format(parseISO(sale.createdAt), 'MMM dd');
-      const current = map.get(iso) ?? { date, amount: 0, count: 0, iso };
-      current.amount += sale.amount;
-      current.count += 1;
+      const current = map.get(iso) ?? { date, mobileMoney: 0, directVoucher: 0, iso };
+      if (sale.paymentMethod === 'MobileMoney') {
+        current.mobileMoney += sale.amount;
+      } else if (sale.paymentMethod === 'Voucher' || sale.paymentMethod === 'Cash') {
+        current.directVoucher += sale.amount;
+      }
       map.set(iso, current);
     });
 
@@ -249,31 +255,53 @@ export default function DashboardOverviewPage() {
             <CardContent>
               <ChartContainer config={salesChartConfig} className="h-[300px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={salesByDate}>
+                  <AreaChart data={salesByDate} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
                     <defs>
-                      <linearGradient id="salesGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                      <linearGradient id="mobileMoneyGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%"  stopColor={MOBILE_MONEY_COLOR}   stopOpacity={0.4} />
+                        <stop offset="95%" stopColor={MOBILE_MONEY_COLOR}   stopOpacity={0.05} />
+                      </linearGradient>
+                      <linearGradient id="directVoucherGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%"  stopColor={DIRECT_VOUCHER_COLOR} stopOpacity={0.4} />
+                        <stop offset="95%" stopColor={DIRECT_VOUCHER_COLOR} stopOpacity={0.05} />
                       </linearGradient>
                     </defs>
-                    <XAxis 
-                      dataKey="date" 
+                    <XAxis
+                      dataKey="date"
                       tickLine={false}
                       axisLine={false}
                       tick={{ fontSize: 12 }}
                     />
-                    <YAxis 
+                    <YAxis
                       tickLine={false}
                       axisLine={false}
                       tick={{ fontSize: 12 }}
                       tickFormatter={(value) => `UGX ${value.toLocaleString()}`}
                     />
                     <ChartTooltip content={<ChartTooltipContent />} />
+                    <Legend
+                      verticalAlign="top"
+                      align="right"
+                      iconType="circle"
+                      iconSize={8}
+                      wrapperStyle={{ fontSize: 12, paddingBottom: 8 }}
+                    />
                     <Area
                       type="monotone"
-                      dataKey="amount"
-                      stroke="hsl(var(--primary))"
-                      fill="url(#salesGradient)"
+                      dataKey="directVoucher"
+                      stackId="sales"
+                      name="Direct Voucher"
+                      stroke={DIRECT_VOUCHER_COLOR}
+                      fill="url(#directVoucherGradient)"
+                      strokeWidth={2}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="mobileMoney"
+                      stackId="sales"
+                      name="Mobile Money"
+                      stroke={MOBILE_MONEY_COLOR}
+                      fill="url(#mobileMoneyGradient)"
                       strokeWidth={2}
                     />
                   </AreaChart>
