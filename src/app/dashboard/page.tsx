@@ -11,6 +11,8 @@ import {
   HardDrive,
   Users,
   TrendingUp,
+  Smartphone,
+  Ticket,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PageTransition, StaggerContainer, StaggerItem } from '@/components/common';
@@ -130,6 +132,18 @@ export default function DashboardOverviewPage() {
     return result;
   }, [salesReport]);
 
+  const mobileMoneyRevenue = useMemo(() =>
+    salesReport?.sales
+      .filter((s) => s.paymentMethod === 'MobileMoney')
+      .reduce((sum, s) => sum + s.amount, 0) ?? 0
+  , [salesReport]);
+
+  const directSalesRevenue = useMemo(() =>
+    salesReport?.sales
+      .filter((s) => s.paymentMethod === 'Voucher' || s.paymentMethod === 'Cash')
+      .reduce((sum, s) => sum + s.amount, 0) ?? 0
+  , [salesReport]);
+
   const greeting = () => {
     const hour = new Date().getHours();
     if (hour < 12) return 'Good morning';
@@ -166,25 +180,37 @@ export default function DashboardOverviewPage() {
         </motion.div>
 
         {/* Stats Grid */}
-        <StaggerContainer className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <StaggerContainer className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
           <StaggerItem>
             <StatsCard
-              title="Net Sales"
+              title="Net Revenue"
               value={salesReport?.summary.totalRevenue ?? salesReport?.summary.netRevenue ?? report?.totalRevenue ?? 0}
-              description="Total revenue from sales"
+              prefix="UGX "
+              decimals={0}
+              description="Total revenue from all sales"
               icon={Server}
               variant="primary"
             />
           </StaggerItem>
           <StaggerItem>
             <StatsCard
-              title="Voucher Sales"
-              value={salesReport?.summary.totalSales ?? salesReport?.sales.length ?? report?.totalVouchers ?? 0}
-              suffix=""
+              title="Mobile Money"
+              value={mobileMoneyRevenue}
+              prefix="UGX "
               decimals={0}
-              description="Total vouchers sold"
-              icon={Activity}
+              description="Revenue via mobile money"
+              icon={Smartphone}
               variant="success"
+            />
+          </StaggerItem>
+          <StaggerItem>
+            <StatsCard
+              title="Direct Voucher"
+              value={directSalesRevenue}
+              prefix="UGX "
+              decimals={0}
+              description="Revenue from voucher sales"
+              icon={Ticket}
             />
           </StaggerItem>
           <StaggerItem>
@@ -203,7 +229,7 @@ export default function DashboardOverviewPage() {
               value={report?.totalDevices ?? 0}
               suffix=""
               decimals={0}
-              description="Total Connected Devices"
+              description="Total connected devices"
               icon={Zap}
               variant="success"
             />

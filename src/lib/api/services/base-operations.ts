@@ -13,6 +13,7 @@ import type {
   BopDevice,
   ApiResponse,
   SupportTicket,
+  Tutorial,
 } from '../types';
 
 // Nginx proxies /bop/ → base-operations-service:3000
@@ -164,6 +165,22 @@ export const supportService = {
 
   updateStatus: (id: string | number, status: string, assignedTo?: string) =>
     api.put<ApiResponse<SupportTicket>>(`/bop/support/tickets/${id}/status`, { status, assignedTo }).then((r) => r.data!),
+};
+
+// ─── Tutorials ───────────────────────────────────────────────────────────────
+
+export const tutorialsService = {
+  getAll: () =>
+    api.get<ApiResponse<Tutorial[]>>('/bop/tutorials').then((response) => response.data ?? (response as unknown as Tutorial[])),
+
+  create: (data: { title: string; description?: string; videoUrl: string; order?: number }) =>
+    api.post<ApiResponse<Tutorial>>('/bop/tutorials', data).then((r) => r.data!),
+
+  update: (id: number, data: Partial<{ title: string; description: string; videoUrl: string; order: number; isActive: boolean }>) =>
+    api.put<ApiResponse<Tutorial>>(`/bop/tutorials/${id}`, data).then((r) => r.data!),
+
+  delete: (id: number) =>
+    api.delete<ApiResponse>(`/bop/tutorials/${id}`),
 };
 
 // ─── Router Devices ──────────────────────────────────────────────────────────

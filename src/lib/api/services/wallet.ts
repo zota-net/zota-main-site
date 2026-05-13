@@ -46,6 +46,7 @@ type RawVoucherSale = {
   netAmount?: string | number;
   phone: string;
   provider: string;
+  paymentMethod?: string;
   createdAt: string;
 };
 
@@ -106,6 +107,7 @@ function normalizeVoucherSale(raw: RawVoucherSale): VoucherSale {
     netAmount,
     phone: raw.phone,
     provider: raw.provider,
+    paymentMethod: (raw.paymentMethod ?? 'Voucher') as VoucherSale['paymentMethod'],
     createdAt: raw.createdAt,
   };
 }

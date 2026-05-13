@@ -71,8 +71,8 @@ import { PageTransition } from '@/components/common';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useUserStore } from '@/lib/store/user-store';
-import { supportService } from '@/lib/api/services/base-operations';
-import type { SupportTicket } from '@/lib/api/types';
+import { supportService, tutorialsService } from '@/lib/api/services/base-operations';
+import type { SupportTicket, Tutorial } from '@/lib/api/types';
 
 // ─── Local display types ──────────────────────────────────────────────────────
 
@@ -159,6 +159,20 @@ const agentStatusConfig = {
   offline: { label: 'Offline', color: 'bg-gray-400' },
 };
 
+function toEmbedUrl(url: string): string {
+  try {
+    const u = new URL(url);
+    if (u.hostname.includes('youtube.com') && u.pathname === '/watch') {
+      const v = u.searchParams.get('v');
+      if (v) return `https://www.youtube.com/embed/${v}`;
+    }
+    if (u.hostname === 'youtu.be') {
+      return `https://www.youtube.com/embed${u.pathname}`;
+    }
+  } catch {}
+  return url;
+}
+
 // Static placeholder agents (no dedicated agents endpoint yet)
 const STATIC_AGENTS: StaticAgent[] = [
   { id: 'agent-1', name: 'Support Team', status: 'online', activeChats: 0, department: 'General' },
@@ -181,6 +195,8 @@ export default function SupportPage() {
   const [isLoadingTickets, setIsLoadingTickets] = useState(false);
   const [isSendingMessage, setIsSendingMessage] = useState(false);
   const [isCreatingTicket, setIsCreatingTicket] = useState(false);
+  const [tutorials, setTutorials] = useState<Tutorial[]>([]);
+  const [isLoadingTutorials, setIsLoadingTutorials] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const [newTicket, setNewTicket] = useState({
@@ -214,6 +230,14 @@ export default function SupportPage() {
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, [fetchTickets]);
+
+  useEffect(() => {
+    setIsLoadingTutorials(true);
+    tutorialsService.getAll()
+      .then((data) => setTutorials(Array.isArray(data) ? data : []))
+      .catch(() => setTutorials([]))
+      .finally(() => setIsLoadingTutorials(false));
+  }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -782,32 +806,37 @@ export default function SupportPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {[
-                      { title: 'Getting Started with Zota', desc: 'Complete setup guide for new installations' },
-                      { title: 'Router Configuration', desc: 'How to configure MikroTik routers for hotspot management' },
-                      { title: 'Payment Integration', desc: 'Setting up mobile money payments and wallet management' },
-                      { title: 'Voucher Management', desc: 'Creating and managing voucher codes for your customers' },
-                      { title: 'Analytics & Reporting', desc: 'Understanding your network performance and revenue metrics' },
-                      { title: 'Troubleshooting Common Issues', desc: 'Solutions for the most frequently encountered problems' },
-                    ].map(({ title, desc }) => (
-                      <div key={title} className="space-y-3">
-                        <div className="aspect-video bg-muted rounded-lg overflow-hidden">
-                          <iframe
-                            src="https://www.youtube.com/embed/dQw4w9WgXcQ"
-                            title={title}
-                            className="w-full h-full"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                            allowFullScreen
-                          />
+                  {isLoadingTutorials ? (
+                    <div className="flex items-center justify-center py-12 text-muted-foreground">
+                      <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                      Loading tutorials...
+                    </div>
+                  ) : tutorials.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                      <HelpCircle className="h-10 w-10 mb-3 opacity-40" />
+                      <p className="text-sm">No tutorial videos available yet.</p>
+                    </div>
+                  ) : (
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                      {tutorials.map((tutorial) => (
+                        <div key={tutorial.id} className="space-y-3">
+                          <div className="aspect-video bg-muted rounded-lg overflow-hidden">
+                            <iframe
+                              src={toEmbedUrl(tutorial.videoUrl)}
+                              title={tutorial.title}
+                              className="w-full h-full"
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                              allowFullScreen
+                            />
+                          </div>
+                          <div>
+                            <h4 className="font-medium">{tutorial.title}</h4>
+                            <p className="text-sm text-muted-foreground">{tutorial.description}</p>
+                          </div>
                         </div>
-                        <div>
-                          <h4 className="font-medium">{title}</h4>
-                          <p className="text-sm text-muted-foreground">{desc}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 

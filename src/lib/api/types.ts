@@ -296,7 +296,19 @@ export interface VoucherSale {
   netAmount: number;
   phone: string;
   provider: string;
+  paymentMethod: 'MobileMoney' | 'Voucher' | 'Cash' | 'Internal';
   createdAt: string;
+}
+
+export interface Tutorial {
+  id: number;
+  title: string;
+  description: string;
+  videoUrl: string;
+  order: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // ─── Agent Account Types ─────────────────────────────────────────────────────
