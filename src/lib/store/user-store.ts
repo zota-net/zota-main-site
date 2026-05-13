@@ -63,6 +63,40 @@ const defaultPreferences: UserPreferences = {
   pushNotifications: false,
 };
 
+async function completeLogin(
+  result: any,
+  set: (partial: Partial<UserState>) => void
+): Promise<boolean> {
+  const session: Session = {
+    token: result.token,
+    expiresAt: Date.now() + 24 * 60 * 60 * 1000,
+  };
+
+  let clientData = null;
+  try {
+    if (result.user?.client_id) {
+      clientData = await clientsService.getById(result.user.client_id);
+    }
+  } catch (clientError) {
+    console.warn('Failed to fetch client details:', clientError);
+  }
+
+  const user: User = {
+    id: result.user.id,
+    email: result.user.email,
+    name: result.user.fullname,
+    role: result.user.role as User['role'],
+    client_id: result.user.client_id,
+    client: clientData,
+    permissions: result.user.role === 'admin' ? ['*'] : [],
+    lastLogin: Date.now(),
+    preferences: defaultPreferences,
+  };
+
+  set({ user, session, isAuthenticated: true, isLoading: false, error: null, otpPending: false, otpEmail: null });
+  return true;
+}
+
 export const useUserStore = create<UserState>()(
   persist(
     (set, get) => ({
@@ -87,7 +121,7 @@ export const useUserStore = create<UserState>()(
             return 'otp_required';
           }
 
-          return await get()._completeLogin(result);
+          return await completeLogin(result, set);
         } catch (err: any) {
           // Handle 206 from HTTP layer
           if (err?.status === 206 || err?.response?.status === 206) {
@@ -104,43 +138,12 @@ export const useUserStore = create<UserState>()(
         set({ isLoading: true, error: null });
         try {
           const result = await authService.verifyLoginOtp(email, otp);
-          return await get()._completeLogin(result);
+          return await completeLogin(result, set);
         } catch (err) {
           const message = err instanceof ApiError ? err.message : 'Invalid OTP. Please try again.';
           set({ isLoading: false, error: message });
           return false;
         }
-      },
-
-      _completeLogin: async (result: any) => {
-        const session: Session = {
-          token: result.token,
-          expiresAt: Date.now() + 24 * 60 * 60 * 1000,
-        };
-
-        let clientData = null;
-        try {
-          if (result.user?.client_id) {
-            clientData = await clientsService.getById(result.user.client_id);
-          }
-        } catch (clientError) {
-          console.warn('Failed to fetch client details:', clientError);
-        }
-
-        const user: User = {
-          id: result.user.id,
-          email: result.user.email,
-          name: result.user.fullname,
-          role: result.user.role as User['role'],
-          client_id: result.user.client_id,
-          client: clientData,
-          permissions: result.user.role === 'admin' ? ['*'] : [],
-          lastLogin: Date.now(),
-          preferences: defaultPreferences,
-        };
-
-        set({ user, session, isAuthenticated: true, isLoading: false, error: null, otpPending: false, otpEmail: null });
-        return true;
       },
 
       register: async (fullname: string, email: string, password: string, company?: string, contact?: string) => {
