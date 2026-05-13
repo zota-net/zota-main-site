@@ -49,7 +49,7 @@ export const packagesService = {
     api.get<ApiResponse<Package[]>>('/bop/packages').then((response) => response.data),
 
   getByClient: (clientId: string) =>
-    api.get<ApiResponse<Package[]>>(`/bop/clients/${clientId}/packages`).then((response) => response.data),
+    api.get<ApiResponse<Package[]>>(`/bop/clients/${clientId}/packages`).then((response) => response.data ?? response as unknown as Package[]),
 
   getById: (id: string) =>
     api.get<ApiResponse<Package>>(`/bop/packages/${id}`).then((response) => response.data),

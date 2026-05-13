@@ -6,7 +6,6 @@ import { reportsService, salesService } from '@/lib/api/services/wallet';
 import { clientsService } from '@/lib/api/services/base-operations';
 import type { ClientReport, SalesReport, VoucherSale, TopUser, Pagination } from '@/lib/api/types';
 import { format, parseISO } from 'date-fns';
-import { motion } from 'framer-motion';
 import {
   BarChart3,
   Calendar,
@@ -50,6 +49,16 @@ const rangeLabel = {
 } as const;
 
 type SalesTabValue = 'all' | 'mobile' | 'direct';
+
+interface DisplayTopUser {
+  rank: number;
+  phone: string;
+  provider: string;
+  purchaseCount: number;
+  totalSpent: number;
+  lastPurchase: string;
+  volumePct: number;
+}
 
 interface SalesPage {
   data: VoucherSale[];
@@ -198,18 +207,59 @@ export default function AnalyticsPage() {
     }));
   }, [sales]);
 
+  const computedTopUsers = useMemo((): DisplayTopUser[] => {
+    const allSales = salesReport?.sales ?? [];
+    if (!allSales.length) return [];
+
+    const grandTotal = allSales.reduce((s, sale) => s + sale.amount, 0);
+    const byPhone = new Map<string, { phone: string; providers: Set<string>; purchaseCount: number; totalSpent: number; lastPurchase: string }>();
+
+    allSales.forEach((sale) => {
+      const key = sale.phone || '–';
+      const cur = byPhone.get(key) ?? { phone: key, providers: new Set(), purchaseCount: 0, totalSpent: 0, lastPurchase: sale.createdAt };
+      cur.purchaseCount += 1;
+      cur.totalSpent += sale.amount;
+      if (sale.provider) cur.providers.add(sale.provider);
+      if (new Date(sale.createdAt) > new Date(cur.lastPurchase)) cur.lastPurchase = sale.createdAt;
+      byPhone.set(key, cur);
+    });
+
+    return Array.from(byPhone.values())
+      .sort((a, b) => b.totalSpent - a.totalSpent)
+      .slice(0, 10)
+      .map((u, i) => ({
+        rank: i + 1,
+        phone: u.phone,
+        provider: [...u.providers].join(' / ') || 'Unknown',
+        purchaseCount: u.purchaseCount,
+        totalSpent: u.totalSpent,
+        lastPurchase: u.lastPurchase,
+        volumePct: grandTotal > 0 ? (u.totalSpent / grandTotal) * 100 : 0,
+      }));
+  }, [salesReport]);
+
+  const displayTopUsers = useMemo((): DisplayTopUser[] => {
+    if (topUsers.length > 0) {
+      const grandTotal = topUsers.reduce((s, u) => s + Number(u.totalSpent), 0);
+      return topUsers.map((u) => ({
+        rank: u.rank,
+        phone: u.phone,
+        provider: u.provider,
+        purchaseCount: u.purchaseCount,
+        totalSpent: Number(u.totalSpent),
+        lastPurchase: u.lastPurchase,
+        volumePct: grandTotal > 0 ? (Number(u.totalSpent) / grandTotal) * 100 : 0,
+      }));
+    }
+    return computedTopUsers;
+  }, [topUsers, computedTopUsers]);
+
   const totalRevenue = filteredSales.reduce((sum, s) => sum + s.amount, 0);
   const totalNetRevenue = salesReport?.summary.netRevenue ?? salesReport?.summary.totalRevenue ?? 0;
   const averageSale = filteredSales.length > 0 ? totalRevenue / filteredSales.length : 0;
 
   const currentTabSales = activeTab === 'all' ? allSales : activeTab === 'mobile' ? mobileSales : directSales;
 
-  const getRankColor = (rank: number) => {
-    if (rank === 1) return 'text-yellow-500';
-    if (rank === 2) return 'text-gray-400';
-    if (rank === 3) return 'text-amber-600';
-    return 'text-muted-foreground';
-  };
 
   const getRankBadge = (rank: number) => {
     if (rank === 1) return 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20';
@@ -385,11 +435,11 @@ export default function AnalyticsPage() {
               Top Customers
             </CardTitle>
             <CardDescription>
-              Users ranked by total spending via mobile money purchases
+              All customers ranked by total spend across all payment methods
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {topUsers.length === 0 ? (
+            {displayTopUsers.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
                 <Trophy className="h-12 w-12 mb-3 opacity-30" />
                 <p className="text-sm">No purchase data yet</p>
@@ -404,11 +454,12 @@ export default function AnalyticsPage() {
                       <TableHead>Provider</TableHead>
                       <TableHead className="text-right">Purchases</TableHead>
                       <TableHead className="text-right">Total Spent</TableHead>
+                      <TableHead className="w-44">Volume Share</TableHead>
                       <TableHead>Last Purchase</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {topUsers.map((u) => (
+                    {displayTopUsers.map((u) => (
                       <TableRow key={u.phone} className={u.rank <= 3 ? 'bg-muted/30' : ''}>
                         <TableCell>
                           <Badge variant="outline" className={cn('font-bold', getRankBadge(u.rank))}>
@@ -422,6 +473,19 @@ export default function AnalyticsPage() {
                         <TableCell className="text-right font-medium">{u.purchaseCount}</TableCell>
                         <TableCell className="text-right font-bold text-primary">
                           UGX {Number(u.totalSpent).toLocaleString()}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
+                              <div
+                                className="h-full rounded-full bg-primary transition-all"
+                                style={{ width: `${Math.min(u.volumePct, 100)}%` }}
+                              />
+                            </div>
+                            <span className="text-xs text-muted-foreground w-10 text-right shrink-0">
+                              {u.volumePct.toFixed(1)}%
+                            </span>
+                          </div>
                         </TableCell>
                         <TableCell className="text-muted-foreground text-sm">
                           {u.lastPurchase ? format(new Date(u.lastPurchase), 'MMM d, yyyy') : '–'}
