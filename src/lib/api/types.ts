@@ -518,3 +518,32 @@ export interface ApiResponse<T = unknown> {
   message: string;
   data?: T;
 }
+
+// ─── SMS Float Types ──────────────────────────────────────────────────────────
+
+export interface SmsFloatBalance {
+  balance:         number;
+  smsRemaining:    number;
+  smsPricePerUnit: number;
+  totalSmsSent:    number;
+}
+
+export interface SmsSentLog {
+  id:                number;
+  recipient:         string;
+  voucherCode:       string;
+  cost:              number;
+  status:            'sent' | 'failed';
+  providerReference: string | null;
+  sentAt:            string;
+}
+
+export interface SmsTopup {
+  id:         number;
+  amount:     number;
+  smsCredits: number;
+  phone:      string;
+  provider:   string;
+  status:     string;
+  createdAt:  string;
+}

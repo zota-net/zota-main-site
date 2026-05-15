@@ -337,3 +337,20 @@ export const salesService = {
         };
       }),
 };
+
+
+// ─── SMS Float ───────────────────────────────────────────────────────────────
+
+export const smsService = {
+  getBalance: (clientId: string | number) =>
+    api.get<ApiResponse<any>>(`/wallet/sms/float/${clientId}`).then((r) => (r as any).data ?? r),
+
+  topup: (data: { clientId: number; amount: number; phone: string; provider: string }) =>
+    api.post<ApiResponse<any>>('/wallet/sms/topup', data).then((r) => (r as any).data ?? r),
+
+  getLogs: (clientId: string | number, limit = 50, offset = 0) =>
+    api.get<ApiResponse<any>>(`/wallet/sms/logs/${clientId}?limit=${limit}&offset=${offset}`).then((r) => (r as any).data ?? r),
+
+  getTopupHistory: (clientId: string | number, limit = 50, offset = 0) =>
+    api.get<ApiResponse<any>>(`/wallet/sms/topups/${clientId}?limit=${limit}&offset=${offset}`).then((r) => (r as any).data ?? r),
+};
