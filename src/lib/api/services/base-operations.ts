@@ -1,4 +1,5 @@
-import { api } from '../client';
+import { api, ApiError } from '../client';
+import { useUserStore } from '@/lib/store/user-store';
 import type {
   Client,
   CreateClientRequest,
@@ -10,6 +11,7 @@ import type {
   CreateVoucherRequest,
   Advert,
   CreateAdvertRequest,
+  UploadAdvertMediaResponse,
   BopDevice,
   ApiResponse,
   SupportTicket,
@@ -82,7 +84,31 @@ export const vouchersService = {
 
 // ─── Adverts ─────────────────────────────────────────────────────────────────
 
+const BOP_BASE_URL = process.env.NEXT_PUBLIC_BASE_OPS_API_BASE_URL
+  || `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost'}/bop`;
+
 export const advertsService = {
+  uploadMedia: async (file: File): Promise<UploadAdvertMediaResponse> => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const headers: Record<string, string> = {};
+    const session = useUserStore.getState().session;
+    if (session?.token) headers['Authorization'] = `Bearer ${session.token}`;
+    const user = useUserStore.getState().user;
+    const clientId = (user as { client_id?: string } | null)?.client_id;
+    if (clientId) headers['client_id'] = clientId;
+
+    const res = await fetch(`${BOP_BASE_URL}/adverts/upload`, {
+      method: 'POST',
+      headers,
+      body: formData,
+    });
+    const data = await res.json();
+    if (!res.ok) throw new ApiError(data?.message || 'Upload failed', res.status, data);
+    return data as UploadAdvertMediaResponse;
+  },
+
   create: (data: CreateAdvertRequest) =>
     api.post<ApiResponse<Advert>>('/bop/adverts', data),
 

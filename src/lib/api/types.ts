@@ -156,6 +156,7 @@ export interface Advert {
   id: string;
   description: string;
   media: string;
+  mediaType: 'image' | 'video';
   client_id: string;
   duration: number; // seconds
   endsIn: string;
@@ -165,9 +166,15 @@ export interface Advert {
 
 export interface CreateAdvertRequest {
   description: string;
-  media: string;
+  media?: string;
+  mediaType?: 'image' | 'video';
   client_id: string;
   duration: number;
+}
+
+export interface UploadAdvertMediaResponse {
+  url: string;
+  mediaType: 'image' | 'video';
 }
 
 // ─── Device Types (Base Operations) ──────────────────────────────────────────
