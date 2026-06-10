@@ -113,6 +113,7 @@ export interface CreatePackageRequest {
   clientId: string | number;
   period: number; // seconds
   title: string;
+  description: string;
   price: number;
   ratelimit?: number;
   agentComissionPercentage: number;
@@ -121,6 +122,7 @@ export interface CreatePackageRequest {
 export interface UpdatePackageRequest {
   period?: number;
   title?: string;
+  description?: string;
   price?: number;
   ratelimit?: number;
   agentComissionPercentage?: number;

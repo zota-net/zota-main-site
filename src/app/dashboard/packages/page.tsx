@@ -259,6 +259,7 @@ export default function PackagesPage() {
       await packagesService.create({
         clientId: user.client_id,
         title: formData.name,
+        description: formData.description,
         period: periodInSeconds,
         price: formData.price,
         ratelimit: formData.ratelimit,
@@ -285,6 +286,7 @@ export default function PackagesPage() {
       const periodInSeconds = convertDurationToSeconds(formData.duration, formData.durationUnit);
       await packagesService.update(selectedPackage.id, {
         title: formData.name,
+        description: formData.description,
         period: periodInSeconds,
         price: formData.price,
         ratelimit: formData.ratelimit,
