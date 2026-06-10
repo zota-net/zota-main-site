@@ -16,6 +16,10 @@ import {
   Trash2,
   Plus,
   Eye,
+  CreditCard,
+  Users,
+  Loader2,
+  Info,
   KeyRound,
   EyeOff,
   AlertCircle,
@@ -49,6 +53,7 @@ import { useTheme } from 'next-themes';
 import { useThemeStore, defaultThemes, ColorTheme } from '@/lib/store/theme-store';
 import { useAppStore } from '@/lib/store/app-store';
 import { useUserStore } from '@/lib/store/user-store';
+import { clientSettingsService } from '@/lib/api/services/base-operations';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { authService } from '@/lib/api/services/auth';
@@ -139,6 +144,34 @@ export default function SettingsPage() {
   const { settings, setSetting, setSettings, resetSettings } = useAppStore();
   const { user, updateUser, updatePreferences } = useUserStore();
   
+  const [gatewayFeeOnUsers, setGatewayFeeOnUsers] = useState<boolean>(
+    user?.client?.gatewayFeeOnUsers ?? false
+  );
+  const [savingGatewayFee, setSavingGatewayFee] = useState(false);
+
+  const handleGatewayFeeToggle = async (value: boolean) => {
+    const clientId = user?.client_id;
+    if (!clientId) {
+      toast.error('Client ID not found');
+      return;
+    }
+    setSavingGatewayFee(true);
+    try {
+      await clientSettingsService.updateGatewayFee(clientId, value);
+      setGatewayFeeOnUsers(value);
+      useUserStore.setState((state) => ({
+        user: state.user
+          ? { ...state.user, client: { ...state.user.client, gatewayFeeOnUsers: value } }
+          : null,
+      }));
+      toast.success('Gateway fee preference saved');
+    } catch {
+      toast.error('Failed to update gateway fee preference');
+    } finally {
+      setSavingGatewayFee(false);
+    }
+  };
+
   const [newTheme, setNewTheme] = useState<Partial<ColorTheme>>({
     name: '',
     primary: '#FF6A00',
@@ -254,7 +287,7 @@ export default function SettingsPage() {
         </div>
 
         <Tabs defaultValue="appearance" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 lg:w-[600px]">
+          <TabsList className="grid w-full grid-cols-5 lg:w-[750px]">
             <TabsTrigger value="appearance" className="flex items-center gap-2">
               <Palette className="h-4 w-4" />
               <span className="hidden sm:inline">Appearance</span>
@@ -266,6 +299,10 @@ export default function SettingsPage() {
             <TabsTrigger value="account" className="flex items-center gap-2">
               <User className="h-4 w-4" />
               <span className="hidden sm:inline">Account</span>
+            </TabsTrigger>
+            <TabsTrigger value="billing" className="flex items-center gap-2">
+              <CreditCard className="h-4 w-4" />
+              <span className="hidden sm:inline">Billing</span>
             </TabsTrigger>
             <TabsTrigger value="system" className="flex items-center gap-2">
               <Monitor className="h-4 w-4" />
@@ -736,6 +773,67 @@ export default function SettingsPage() {
                     checked={settings.soundEnabled}
                     onCheckedChange={(checked) => setSetting('soundEnabled', checked)}
                   />
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Billing Tab */}
+          <TabsContent value="billing" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CreditCard className="h-5 w-5" />
+                  Mobile Money Gateway Fee
+                </CardTitle>
+                <CardDescription>
+                  Configure how the 4% mobile money gateway fee is applied when customers purchase via mobile money.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex items-start justify-between gap-4 p-4 rounded-lg border">
+                  <div className="space-y-1 flex-1">
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4 text-muted-foreground" />
+                      <Label className="font-medium">Charge gateway fee to customers</Label>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      {gatewayFeeOnUsers
+                        ? 'Enabled — the 4% gateway fee is added on top of the package price when customers pay via mobile money. Your wallet receives the full package amount.'
+                        : 'Disabled — the 4% gateway fee is deducted from your wallet balance. Customers pay the standard package price.'}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0 pt-1">
+                    {savingGatewayFee && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+                    <Switch
+                      checked={gatewayFeeOnUsers}
+                      onCheckedChange={handleGatewayFeeToggle}
+                      disabled={savingGatewayFee}
+                    />
+                  </div>
+                </div>
+
+                <div className="rounded-lg border border-blue-500/20 bg-blue-500/5 p-4 space-y-3">
+                  <div className="flex items-center gap-2 text-sm font-medium text-blue-600 dark:text-blue-400">
+                    <Info className="h-4 w-4" />
+                    How the gateway fee works
+                  </div>
+                  <div className="grid sm:grid-cols-2 gap-4 text-sm">
+                    <div className="space-y-1">
+                      <p className="font-medium">Fee off (default)</p>
+                      <p className="text-muted-foreground">Customer pays: <span className="font-mono">package price</span></p>
+                      <p className="text-muted-foreground">Your wallet: <span className="font-mono">price − 5% service fee − 4% gateway fee</span></p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="font-medium">Fee on (charge users)</p>
+                      <p className="text-muted-foreground">Customer pays: <span className="font-mono">package price + 4%</span></p>
+                      <p className="text-muted-foreground">Your wallet: <span className="font-mono">price − 5% service fee</span></p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    The 5% platform service fee always applies to all sales regardless of this setting.
+                    The gateway fee only applies to mobile money purchases (MTN, Airtel).
+                  </p>
                 </div>
               </CardContent>
             </Card>

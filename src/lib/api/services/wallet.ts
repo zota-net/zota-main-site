@@ -14,6 +14,7 @@ import type {
   ReportParams,
   SalesReport,
   WalletStatement,
+  TopUser,
   ApiResponse,
 } from '../types';
 
@@ -45,6 +46,7 @@ type RawVoucherSale = {
   netAmount?: string | number;
   phone: string;
   provider: string;
+  paymentMethod?: string;
   createdAt: string;
 };
 
@@ -105,6 +107,7 @@ function normalizeVoucherSale(raw: RawVoucherSale): VoucherSale {
     netAmount,
     phone: raw.phone,
     provider: raw.provider,
+    paymentMethod: (raw.paymentMethod ?? 'Voucher') as VoucherSale['paymentMethod'],
     createdAt: raw.createdAt,
   };
 }
@@ -252,12 +255,14 @@ export const accountsService = {
 
 // ─── Reports ─────────────────────────────────────────────────────────────────
 
-function buildQuery(params?: ReportParams): string {
+function buildQuery(params?: ReportParams & { page?: number; limit?: number }): string {
   if (!params) return '';
   const qs = new URLSearchParams();
   if (params.startDate) qs.set('startDate', params.startDate);
   if (params.endDate) qs.set('endDate', params.endDate);
   if (params.type) qs.set('type', params.type);
+  if (params.page) qs.set('page', String(params.page));
+  if (params.limit) qs.set('limit', String(params.limit));
   const str = qs.toString();
   return str ? `?${str}` : '';
 }
@@ -292,4 +297,60 @@ export const reportsService = {
       .get<ApiResponse<WalletStatement>>(`/wallet/reports/statement/${walletId}${buildQuery(params)}`)
       .then((response) => response.data ?? (response as unknown as WalletStatement)),
 
+  getTopUsers: (clientId: string, params?: { startDate?: string; endDate?: string; limit?: number }) =>
+    api
+      .get<ApiResponse<any[]>>(`/wallet/reports/top-users/${clientId}${buildQuery(params as any)}`)
+      .then((response) => (response.data ?? (response as unknown as any[])) as TopUser[]),
+};
+
+export const salesService = {
+  getAll: (clientId: string, params?: { page?: number; limit?: number }) =>
+    api
+      .get<ApiResponse<RawVoucherSale[]>>(`/wallet/vouchers/sales/${clientId}${buildQuery(params)}`)
+      .then((response) => {
+        const raw = response as any;
+        return {
+          data: Array.isArray(raw.data) ? raw.data.map(normalizeVoucherSale) : [],
+          pagination: raw.pagination ?? { page: 1, limit: 20, total: 0, totalPages: 1 },
+        };
+      }),
+
+  getMobileMoney: (clientId: string, params?: { page?: number; limit?: number }) =>
+    api
+      .get<ApiResponse<RawVoucherSale[]>>(`/wallet/vouchers/sales/${clientId}/mobile-money${buildQuery(params)}`)
+      .then((response) => {
+        const raw = response as any;
+        return {
+          data: Array.isArray(raw.data) ? raw.data.map(normalizeVoucherSale) : [],
+          pagination: raw.pagination ?? { page: 1, limit: 20, total: 0, totalPages: 1 },
+        };
+      }),
+
+  getDirect: (clientId: string, params?: { page?: number; limit?: number }) =>
+    api
+      .get<ApiResponse<RawVoucherSale[]>>(`/wallet/vouchers/sales/${clientId}/voucher${buildQuery(params)}`)
+      .then((response) => {
+        const raw = response as any;
+        return {
+          data: Array.isArray(raw.data) ? raw.data.map(normalizeVoucherSale) : [],
+          pagination: raw.pagination ?? { page: 1, limit: 20, total: 0, totalPages: 1 },
+        };
+      }),
+};
+
+
+// ─── SMS Float ───────────────────────────────────────────────────────────────
+
+export const smsService = {
+  getBalance: (clientId: string | number) =>
+    api.get<ApiResponse<any>>(`/wallet/sms/float/${clientId}`).then((r) => (r as any).data ?? r),
+
+  topup: (data: { clientId: number; amount: number; phone: string; provider: string }) =>
+    api.post<ApiResponse<any>>('/wallet/sms/topup', data).then((r) => (r as any).data ?? r),
+
+  getLogs: (clientId: string | number, limit = 50, offset = 0) =>
+    api.get<ApiResponse<any>>(`/wallet/sms/logs/${clientId}?limit=${limit}&offset=${offset}`).then((r) => (r as any).data ?? r),
+
+  getTopupHistory: (clientId: string | number, limit = 50, offset = 0) =>
+    api.get<ApiResponse<any>>(`/wallet/sms/topups/${clientId}?limit=${limit}&offset=${offset}`).then((r) => (r as any).data ?? r),
 };

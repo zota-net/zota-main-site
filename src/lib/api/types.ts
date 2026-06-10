@@ -75,6 +75,7 @@ export interface Client {
   adminEmail: string;
   contact: string;
   status: string;
+  gatewayFeeOnUsers?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -157,6 +158,7 @@ export interface Advert {
   id: string;
   description: string;
   media: string;
+  mediaType: 'image' | 'video';
   client_id: string;
   duration: number; // seconds
   endsIn: string;
@@ -166,9 +168,15 @@ export interface Advert {
 
 export interface CreateAdvertRequest {
   description: string;
-  media: string;
+  media?: string;
+  mediaType?: 'image' | 'video';
   client_id: string;
   duration: number;
+}
+
+export interface UploadAdvertMediaResponse {
+  url: string;
+  mediaType: 'image' | 'video';
 }
 
 // ─── Device Types (Base Operations) ──────────────────────────────────────────
@@ -297,7 +305,19 @@ export interface VoucherSale {
   netAmount: number;
   phone: string;
   provider: string;
+  paymentMethod: 'MobileMoney' | 'Voucher' | 'Cash' | 'Internal';
   createdAt: string;
+}
+
+export interface Tutorial {
+  id: number;
+  title: string;
+  description: string;
+  videoUrl: string;
+  order: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // ─── Agent Account Types ─────────────────────────────────────────────────────
@@ -448,10 +468,84 @@ export interface RouterDevice {
   connectedDevices?: number;
 }
 
+// ─── Top User Type ───────────────────────────────────────────────────────────
+
+export interface TopUser {
+  rank: number;
+  phone: string;
+  provider: string;
+  purchaseCount: number;
+  totalSpent: number;
+  lastPurchase: string;
+}
+
+// ─── Support Ticket Types ─────────────────────────────────────────────────────
+
+export interface TicketMessage {
+  id: string;
+  content: string;
+  sender: 'user' | 'agent' | 'system';
+  senderName: string;
+  timestamp: number;
+  read: boolean;
+}
+
+export interface SupportTicket {
+  id: number;
+  clientId: number;
+  subject: string;
+  description: string;
+  status: 'open' | 'in-progress' | 'waiting' | 'resolved' | 'closed';
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  category: string;
+  assignedTo?: string;
+  messages?: TicketMessage[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ─── Pagination ───────────────────────────────────────────────────────────────
+
+export interface Pagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
 // ─── Generic API Response ────────────────────────────────────────────────────
 
 export interface ApiResponse<T = unknown> {
   status: number;
   message: string;
   data?: T;
+}
+
+// ─── SMS Float Types ──────────────────────────────────────────────────────────
+
+export interface SmsFloatBalance {
+  balance:         number;
+  smsRemaining:    number;
+  smsPricePerUnit: number;
+  totalSmsSent:    number;
+}
+
+export interface SmsSentLog {
+  id:                number;
+  recipient:         string;
+  voucherCode:       string;
+  cost:              number;
+  status:            'sent' | 'failed';
+  providerReference: string | null;
+  sentAt:            string;
+}
+
+export interface SmsTopup {
+  id:         number;
+  amount:     number;
+  smsCredits: number;
+  phone:      string;
+  provider:   string;
+  status:     string;
+  createdAt:  string;
 }

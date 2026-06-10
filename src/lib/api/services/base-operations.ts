@@ -1,4 +1,5 @@
-import { api } from '../client';
+import { api, ApiError } from '../client';
+import { useUserStore } from '@/lib/store/user-store';
 import type {
   Client,
   CreateClientRequest,
@@ -10,8 +11,11 @@ import type {
   CreateVoucherRequest,
   Advert,
   CreateAdvertRequest,
+  UploadAdvertMediaResponse,
   BopDevice,
   ApiResponse,
+  SupportTicket,
+  Tutorial,
 } from '../types';
 
 // Nginx proxies /bop/ → base-operations-service:3000
@@ -47,7 +51,7 @@ export const packagesService = {
     api.get<ApiResponse<Package[]>>('/bop/packages').then((response) => response.data),
 
   getByClient: (clientId: string) =>
-    api.get<ApiResponse<Package[]>>(`/bop/clients/${clientId}/packages`).then((response) => response.data),
+    api.get<ApiResponse<Package[]>>(`/bop/clients/${clientId}/packages`).then((response) => response.data ?? response as unknown as Package[]),
 
   getById: (id: string) =>
     api.get<ApiResponse<Package>>(`/bop/packages/${id}`).then((response) => response.data),
@@ -80,7 +84,31 @@ export const vouchersService = {
 
 // ─── Adverts ─────────────────────────────────────────────────────────────────
 
+const BOP_BASE_URL = process.env.NEXT_PUBLIC_BASE_OPS_API_BASE_URL
+  || `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost'}/bop`;
+
 export const advertsService = {
+  uploadMedia: async (file: File): Promise<UploadAdvertMediaResponse> => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const headers: Record<string, string> = {};
+    const session = useUserStore.getState().session;
+    if (session?.token) headers['Authorization'] = `Bearer ${session.token}`;
+    const user = useUserStore.getState().user;
+    const clientId = (user as { client_id?: string } | null)?.client_id;
+    if (clientId) headers['client_id'] = clientId;
+
+    const res = await fetch(`${BOP_BASE_URL}/adverts/upload`, {
+      method: 'POST',
+      headers,
+      body: formData,
+    });
+    const data = await res.json();
+    if (!res.ok) throw new ApiError(data?.message || 'Upload failed', res.status, data);
+    return data as UploadAdvertMediaResponse;
+  },
+
   create: (data: CreateAdvertRequest) =>
     api.post<ApiResponse<Advert>>('/bop/adverts', data),
 
@@ -126,6 +154,59 @@ export const bopDevicesService = {
 
   getByClient: (clientId: string) =>
     api.get<ApiResponse<BopDevice[]>>(`/bop/devices/client/${clientId}`).then((response) => response.data ?? response as unknown as BopDevice[]),
+};
+
+// ─── Client Settings ─────────────────────────────────────────────────────────
+
+export const clientSettingsService = {
+  updateGatewayFee: (clientId: string, gatewayFeeOnUsers: boolean) =>
+    api.put<ApiResponse>(`/bop/clients/${clientId}/gateway-fee`, { gatewayFeeOnUsers }),
+};
+
+// ─── Support Tickets ──────────────────────────────────────────────────────────
+
+export const supportService = {
+  createTicket: (data: { clientId: string | number; subject: string; description: string; category?: string; priority?: string }) =>
+    api.post<ApiResponse<SupportTicket>>('/bop/support/tickets', data).then((r) => r.data!),
+
+  getByClient: (clientId: string, params?: { page?: number; limit?: number }) => {
+    const qs = params ? `?page=${params.page ?? 1}&limit=${params.limit ?? 20}` : '';
+    return api.get<any>(`/bop/support/tickets/client/${clientId}${qs}`).then((r) => r);
+  },
+
+  getAll: (params?: { page?: number; limit?: number; status?: string }) => {
+    const qs = new URLSearchParams();
+    if (params?.page) qs.set('page', String(params.page));
+    if (params?.limit) qs.set('limit', String(params.limit));
+    if (params?.status) qs.set('status', params.status);
+    const str = qs.toString();
+    return api.get<any>(`/bop/support/tickets${str ? `?${str}` : ''}`).then((r) => r);
+  },
+
+  getById: (id: string | number) =>
+    api.get<ApiResponse<SupportTicket>>(`/bop/support/tickets/${id}`).then((r) => r.data!),
+
+  addMessage: (id: string | number, content: string, senderName: string, sender: 'user' | 'agent' = 'user') =>
+    api.post<ApiResponse<SupportTicket>>(`/bop/support/tickets/${id}/messages`, { content, senderName, sender }).then((r) => r.data!),
+
+  updateStatus: (id: string | number, status: string, assignedTo?: string) =>
+    api.put<ApiResponse<SupportTicket>>(`/bop/support/tickets/${id}/status`, { status, assignedTo }).then((r) => r.data!),
+};
+
+// ─── Tutorials ───────────────────────────────────────────────────────────────
+
+export const tutorialsService = {
+  getAll: () =>
+    api.get<ApiResponse<Tutorial[]>>('/bop/tutorials').then((response) => response.data ?? (response as unknown as Tutorial[])),
+
+  create: (data: { title: string; description?: string; videoUrl: string; order?: number }) =>
+    api.post<ApiResponse<Tutorial>>('/bop/tutorials', data).then((r) => r.data!),
+
+  update: (id: number, data: Partial<{ title: string; description: string; videoUrl: string; order: number; isActive: boolean }>) =>
+    api.put<ApiResponse<Tutorial>>(`/bop/tutorials/${id}`, data).then((r) => r.data!),
+
+  delete: (id: number) =>
+    api.delete<ApiResponse>(`/bop/tutorials/${id}`),
 };
 
 // ─── Router Devices ──────────────────────────────────────────────────────────

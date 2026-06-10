@@ -39,9 +39,12 @@ export interface UserState {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
-  
+  otpPending: boolean;   // true when login credentials passed but OTP not yet verified
+  otpEmail: string | null;
+
   // Actions
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<boolean | 'otp_required'>;
+  verifyLoginOtp: (email: string, otp: string) => Promise<boolean>;
   register: (fullname: string, email: string, password: string, company?: string, contact?: string) => Promise<boolean>;
   logout: () => void;
   updateUser: (updates: Partial<User>) => void;
@@ -60,6 +63,40 @@ const defaultPreferences: UserPreferences = {
   pushNotifications: false,
 };
 
+async function completeLogin(
+  result: any,
+  set: (partial: Partial<UserState>) => void
+): Promise<boolean> {
+  const session: Session = {
+    token: result.token,
+    expiresAt: Date.now() + 24 * 60 * 60 * 1000,
+  };
+
+  let clientData = null;
+  try {
+    if (result.user?.client_id) {
+      clientData = await clientsService.getById(result.user.client_id);
+    }
+  } catch (clientError) {
+    console.warn('Failed to fetch client details:', clientError);
+  }
+
+  const user: User = {
+    id: result.user.id,
+    email: result.user.email,
+    name: result.user.fullname,
+    role: result.user.role as User['role'],
+    client_id: result.user.client_id,
+    client: clientData,
+    permissions: result.user.role === 'admin' ? ['*'] : [],
+    lastLogin: Date.now(),
+    preferences: defaultPreferences,
+  };
+
+  set({ user, session, isAuthenticated: true, isLoading: false, error: null, otpPending: false, otpEmail: null });
+  return true;
+}
+
 export const useUserStore = create<UserState>()(
   persist(
     (set, get) => ({
@@ -68,56 +105,43 @@ export const useUserStore = create<UserState>()(
       isAuthenticated: false,
       isLoading: false,
       error: null,
+      otpPending: false,
+      otpEmail: null,
 
       login: async (email: string, password: string) => {
         set({ isLoading: true, error: null });
-        
+
         try {
           const clientId = process.env.NEXT_PUBLIC_CLIENT_ID || '';
           const result = await authService.login({ email, password, client_id: clientId });
 
-          const session: Session = {
-            token: result.token,
-            expiresAt: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
-          };
-          
-          // Fetch client details
-          let clientData = null;
-          try {
-            if (result.user.client_id) {
-              clientData = await clientsService.getById(result.user.client_id);
-            }
-          } catch (clientError) {
-            console.warn('Failed to fetch client details:', clientError);
+          // Backend returns 206 when OTP is required
+          if ((result as any).status === 206 || !(result as any).token) {
+            set({ isLoading: false, otpPending: true, otpEmail: email });
+            return 'otp_required';
           }
-          
-          const user: User = {
-            id: result.user.id,
-            email: result.user.email,
-            name: result.user.fullname,
-            role: result.user.role as User['role'],
-            client_id: result.user.client_id,
-            client: clientData,
-            permissions: result.user.role === 'admin' ? ['*'] : [],
-            lastLogin: Date.now(),
-            preferences: defaultPreferences,
-          };
-          
-          set({
-            user,
-            session,
-            isAuthenticated: true,
-            isLoading: false,
-            error: null,
-          });
-          
-          return true;
-        } catch (err) {
+
+          return await completeLogin(result, set);
+        } catch (err: any) {
+          // Handle 206 from HTTP layer
+          if (err?.status === 206 || err?.response?.status === 206) {
+            set({ isLoading: false, otpPending: true, otpEmail: email });
+            return 'otp_required';
+          }
           const message = err instanceof ApiError ? err.message : 'Login failed. Please try again.';
-          set({
-            isLoading: false,
-            error: message,
-          });
+          set({ isLoading: false, error: message });
+          return false;
+        }
+      },
+
+      verifyLoginOtp: async (email: string, otp: string) => {
+        set({ isLoading: true, error: null });
+        try {
+          const result = await authService.verifyLoginOtp(email, otp);
+          return await completeLogin(result, set);
+        } catch (err) {
+          const message = err instanceof ApiError ? err.message : 'Invalid OTP. Please try again.';
+          set({ isLoading: false, error: message });
           return false;
         }
       },
@@ -199,6 +223,8 @@ export const useUserStore = create<UserState>()(
         user: state.user,
         session: state.session,
         isAuthenticated: state.isAuthenticated,
+        otpPending: state.otpPending,
+        otpEmail: state.otpEmail,
       }),
     }
   )

@@ -15,6 +15,7 @@ import {
   FileText,
   HelpCircle,
   ChevronLeft,
+  MessageSquare,
   Ticket,
   Smartphone,
   CreditCard,
@@ -52,9 +53,8 @@ const navGroups: NavGroup[] = [
     title: 'Dashboard',
     items: [
       { title: 'Overview', href: '/dashboard', icon: LayoutDashboard },
+      { title: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
       { title: 'My Activities', href: '/dashboard/agent-dashboard', icon: Activity },
-      // { title: 'Network', href: '/dashboard/network', icon: Network },
-      // { title: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 }
     ],
   },
   {
@@ -67,6 +67,7 @@ const navGroups: NavGroup[] = [
       { title: 'Devices', href: '/dashboard/devices', icon: Smartphone },
       { title: 'Connected Users', href: '/dashboard/users', icon: Users },
       { title: 'Payments', href: '/dashboard/payments', icon: CreditCard },
+      { title: 'SMS Float', href: '/dashboard/sms', icon: MessageSquare },
     ],
   },
   {
@@ -80,7 +81,6 @@ const navGroups: NavGroup[] = [
   {
     title: 'System',
     items: [
-      { title: 'Reports', href: '/dashboard/reports', icon: FileText },
       { title: 'Settings', href: '/dashboard/settings', icon: Settings },
       // { title: 'Help', href: '/dashboard/help', icon: HelpCircle },
     ],

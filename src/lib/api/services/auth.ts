@@ -41,6 +41,11 @@ export const authService = {
   resetPassword: (data: ResetPasswordRequest) =>
     api.post<ApiResponse>('/auth/reset-password', data, { skipAuth: true }),
 
+  verifyLoginOtp: (email: string, otp: string) =>
+    api
+      .post<ApiResponseWithData<LoginResponse>>('/auth/verify-login-otp', { email, otp }, { skipAuth: true })
+      .then((response) => response.data),
+
   addAgent: (data: AddAgentRequest) =>
     api.post<ApiResponse>('/auth/add-agent', data),
 

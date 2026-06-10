@@ -11,8 +11,14 @@ import {
   HardDrive,
   Users,
   TrendingUp,
+  Smartphone,
+  Ticket,
+  Trophy,
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import Link from 'next/link';
+import { cn } from '@/lib/utils';
 import { PageTransition, StaggerContainer, StaggerItem } from '@/components/common';
 import { StatsCard, NodesCard } from '@/components/dashboard/cards';
 import { useNetworkStore } from '@/lib/store/network-store';
@@ -27,11 +33,14 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from '@/components/ui/chart';
-import { Area, AreaChart, XAxis, YAxis, ResponsiveContainer, Line, LineChart, Bar, BarChart } from 'recharts';
+import { Area, AreaChart, XAxis, YAxis, ResponsiveContainer, Legend, Line, LineChart, Bar, BarChart } from 'recharts';
+
+const MOBILE_MONEY_COLOR = '#22c55e';
+const DIRECT_VOUCHER_COLOR = '#f97316';
 
 const salesChartConfig: ChartConfig = {
-  amount: { label: 'Sales', color: 'hsl(var(--primary))' },
-  count: { label: 'Transactions', color: 'hsl(var(--accent))' },
+  mobileMoney:   { label: 'Mobile Money',   color: MOBILE_MONEY_COLOR },
+  directVoucher: { label: 'Direct Voucher', color: DIRECT_VOUCHER_COLOR },
 };
 
 export default function DashboardOverviewPage() {
@@ -114,20 +123,53 @@ export default function DashboardOverviewPage() {
       return [];
     }
 
-    const map = new Map<string, { date: string; amount: number; count: number; iso: string }>();
+    const map = new Map<string, { date: string; mobileMoney: number; directVoucher: number; iso: string }>();
 
     salesReport.sales.forEach((sale) => {
       const iso = format(parseISO(sale.createdAt), 'yyyy-MM-dd');
       const date = format(parseISO(sale.createdAt), 'MMM dd');
-      const current = map.get(iso) ?? { date, amount: 0, count: 0, iso };
-      current.amount += sale.amount;
-      current.count += 1;
+      const current = map.get(iso) ?? { date, mobileMoney: 0, directVoucher: 0, iso };
+      if (sale.paymentMethod === 'MobileMoney') {
+        current.mobileMoney += sale.amount;
+      } else if (sale.paymentMethod === 'Voucher' || sale.paymentMethod === 'Cash') {
+        current.directVoucher += sale.amount;
+      }
       map.set(iso, current);
     });
 
     const result = Array.from(map.values()).sort((a, b) => a.iso.localeCompare(b.iso));
     console.debug('salesByDate computed:', { count: result.length, items: result });
     return result;
+  }, [salesReport]);
+
+  const mobileMoneyRevenue = useMemo(() =>
+    salesReport?.sales
+      .filter((s) => s.paymentMethod === 'MobileMoney')
+      .reduce((sum, s) => sum + s.amount, 0) ?? 0
+  , [salesReport]);
+
+  const directSalesRevenue = useMemo(() =>
+    salesReport?.sales
+      .filter((s) => s.paymentMethod === 'Voucher' || s.paymentMethod === 'Cash')
+      .reduce((sum, s) => sum + s.amount, 0) ?? 0
+  , [salesReport]);
+
+  const topCustomers = useMemo(() => {
+    const allSales = salesReport?.sales ?? [];
+    if (!allSales.length) return [];
+    const grandTotal = allSales.reduce((s, sale) => s + sale.amount, 0);
+    const byPhone = new Map<string, { phone: string; purchaseCount: number; totalSpent: number }>();
+    allSales.forEach((sale) => {
+      const key = sale.phone || '–';
+      const cur = byPhone.get(key) ?? { phone: key, purchaseCount: 0, totalSpent: 0 };
+      cur.purchaseCount += 1;
+      cur.totalSpent += sale.amount;
+      byPhone.set(key, cur);
+    });
+    return Array.from(byPhone.values())
+      .sort((a, b) => b.totalSpent - a.totalSpent)
+      .slice(0, 5)
+      .map((u, i) => ({ ...u, rank: i + 1, volumePct: grandTotal > 0 ? (u.totalSpent / grandTotal) * 100 : 0 }));
   }, [salesReport]);
 
   const greeting = () => {
@@ -166,25 +208,37 @@ export default function DashboardOverviewPage() {
         </motion.div>
 
         {/* Stats Grid */}
-        <StaggerContainer className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <StaggerContainer className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
           <StaggerItem>
             <StatsCard
-              title="Net Sales"
+              title="Net Revenue"
               value={salesReport?.summary.totalRevenue ?? salesReport?.summary.netRevenue ?? report?.totalRevenue ?? 0}
-              description="Total revenue from sales"
+              prefix="UGX "
+              decimals={0}
+              description="Total revenue from all sales"
               icon={Server}
               variant="primary"
             />
           </StaggerItem>
           <StaggerItem>
             <StatsCard
-              title="Voucher Sales"
-              value={salesReport?.summary.totalSales ?? salesReport?.sales.length ?? report?.totalVouchers ?? 0}
-              suffix=""
+              title="Mobile Money"
+              value={mobileMoneyRevenue}
+              prefix="UGX "
               decimals={0}
-              description="Total vouchers sold"
-              icon={Activity}
+              description="Revenue via mobile money"
+              icon={Smartphone}
               variant="success"
+            />
+          </StaggerItem>
+          <StaggerItem>
+            <StatsCard
+              title="Direct Voucher"
+              value={directSalesRevenue}
+              prefix="UGX "
+              decimals={0}
+              description="Revenue from voucher sales"
+              icon={Ticket}
             />
           </StaggerItem>
           <StaggerItem>
@@ -203,7 +257,7 @@ export default function DashboardOverviewPage() {
               value={report?.totalDevices ?? 0}
               suffix=""
               decimals={0}
-              description="Total Connected Devices"
+              description="Total connected devices"
               icon={Zap}
               variant="success"
             />
@@ -211,7 +265,7 @@ export default function DashboardOverviewPage() {
         </StaggerContainer>
 
         {/* Charts and Info Grid */}
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div className="grid gap-6 lg:grid-cols-4">
           {/* Sales Trend Chart */}
           <Card className="lg:col-span-2">
             <CardHeader>
@@ -223,36 +277,108 @@ export default function DashboardOverviewPage() {
             <CardContent>
               <ChartContainer config={salesChartConfig} className="h-[300px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={salesByDate}>
+                  <AreaChart data={salesByDate} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
                     <defs>
-                      <linearGradient id="salesGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                      <linearGradient id="mobileMoneyGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%"  stopColor={MOBILE_MONEY_COLOR}   stopOpacity={0.4} />
+                        <stop offset="95%" stopColor={MOBILE_MONEY_COLOR}   stopOpacity={0.05} />
+                      </linearGradient>
+                      <linearGradient id="directVoucherGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%"  stopColor={DIRECT_VOUCHER_COLOR} stopOpacity={0.4} />
+                        <stop offset="95%" stopColor={DIRECT_VOUCHER_COLOR} stopOpacity={0.05} />
                       </linearGradient>
                     </defs>
-                    <XAxis 
-                      dataKey="date" 
+                    <XAxis
+                      dataKey="date"
                       tickLine={false}
                       axisLine={false}
                       tick={{ fontSize: 12 }}
                     />
-                    <YAxis 
+                    <YAxis
                       tickLine={false}
                       axisLine={false}
                       tick={{ fontSize: 12 }}
                       tickFormatter={(value) => `UGX ${value.toLocaleString()}`}
                     />
                     <ChartTooltip content={<ChartTooltipContent />} />
+                    <Legend
+                      verticalAlign="top"
+                      align="right"
+                      iconType="circle"
+                      iconSize={8}
+                      wrapperStyle={{ fontSize: 12, paddingBottom: 8 }}
+                    />
                     <Area
                       type="monotone"
-                      dataKey="amount"
-                      stroke="hsl(var(--primary))"
-                      fill="url(#salesGradient)"
+                      dataKey="directVoucher"
+                      stackId="sales"
+                      name="Direct Voucher"
+                      stroke={DIRECT_VOUCHER_COLOR}
+                      fill="url(#directVoucherGradient)"
+                      strokeWidth={2}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="mobileMoney"
+                      stackId="sales"
+                      name="Mobile Money"
+                      stroke={MOBILE_MONEY_COLOR}
+                      fill="url(#mobileMoneyGradient)"
                       strokeWidth={2}
                     />
                   </AreaChart>
                 </ResponsiveContainer>
               </ChartContainer>
+            </CardContent>
+          </Card>
+
+          {/* Top Customers */}
+          <Card className="lg:col-span-1">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <div>
+                <CardTitle className="text-base font-semibold flex items-center gap-2">
+                  <Trophy className="h-4 w-4 text-yellow-500" />
+                  Top Customers
+                </CardTitle>
+                <CardDescription className="text-xs mt-0.5">By total spend</CardDescription>
+              </div>
+              <Link href="/dashboard/analytics" className="text-xs text-primary hover:underline shrink-0">
+                View all
+              </Link>
+            </CardHeader>
+            <CardContent>
+              {topCustomers.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+                  <Trophy className="h-8 w-8 mb-2 opacity-20" />
+                  <p className="text-sm">No data yet</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {topCustomers.map((u) => (
+                    <div key={u.phone} className="flex items-center gap-3">
+                      <span className={cn(
+                        'text-sm font-bold w-5 text-center shrink-0',
+                        u.rank === 1 && 'text-yellow-500',
+                        u.rank === 2 && 'text-gray-400',
+                        u.rank === 3 && 'text-amber-600',
+                        u.rank > 3 && 'text-muted-foreground',
+                      )}>
+                        {u.rank <= 3 ? ['🥇','🥈','🥉'][u.rank - 1] : `#${u.rank}`}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-mono truncate">{u.phone}</p>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <div className="flex-1 h-1 rounded-full bg-muted overflow-hidden">
+                            <div className="h-full rounded-full bg-primary" style={{ width: `${Math.min(u.volumePct, 100)}%` }} />
+                          </div>
+                          <span className="text-[10px] text-muted-foreground shrink-0">{u.volumePct.toFixed(1)}%</span>
+                        </div>
+                      </div>
+                      <span className="text-sm font-semibold text-primary shrink-0">{formatCurrency(u.totalSpent)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
 
