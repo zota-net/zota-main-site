@@ -856,17 +856,17 @@ export default function VouchersPage() {
                   <Button
                     variant="outline"
                     onClick={() => handleCreateVouchers(true)}
-                    className="gap-2"
+                    className="gap-2 bg-[#FF6A00] hover:bg-[#FF6A00]/90 text-white font-semibold shadow-lg shadow-[#FF6A00]/25 ring-2 ring-[#FF6A00]/20 focus:ring-4 focus:ring-[#FF6A00]/40 transition-all"
                   >
                     <Printer className="h-4 w-4" />
                     Generate &amp; Print
                   </Button>
-                  <Button
+                  {/* <Button
                     onClick={() => handleCreateVouchers(false)}
                     className="bg-[#FF6A00] hover:bg-[#FF6A00]/90 text-white font-semibold shadow-lg shadow-[#FF6A00]/25 ring-2 ring-[#FF6A00]/20 focus:ring-4 focus:ring-[#FF6A00]/40 transition-all"
                   >
                     Generate {newVoucher.quantity} Vouchers
-                  </Button>
+                  </Button> */}
                 </DialogFooter>
               </DialogContent>
             </Dialog>
