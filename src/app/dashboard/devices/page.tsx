@@ -624,7 +624,7 @@ export default function DevicesPage() {
       setAddDialogOpen(false);
       setNewDevice({ name: '', type: 'router', mac: '', publicKey: '', location: '' });
       toast.success('Device added successfully');
-      fetchDevices();
+      // fetchDevices();
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Failed to add device');
     }
@@ -634,7 +634,7 @@ export default function DevicesPage() {
     try {
       await devicesService.delete(id);
       toast.success('Device deleted');
-      fetchDevices();
+      // fetchDevices();
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Failed to delete device');
     }
