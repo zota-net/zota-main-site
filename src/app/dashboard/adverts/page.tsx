@@ -41,6 +41,7 @@ export default function AdvertsPage() {
     duration: 604800,
   });
 
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost';
   // Local preview URL for the selected file (before upload)
   const [previewUrl, setPreviewUrl] = useState('');
 
@@ -314,7 +315,7 @@ export default function AdvertsPage() {
                   <div className="aspect-video bg-muted rounded-lg overflow-hidden mb-3">
                     {advert.mediaType === 'video' ? (
                       <video
-                        src={resolveMediaUrl(advert.media)}
+                        src={resolveMediaUrl(baseUrl+"/bop"+advert.media)}
                         className="w-full h-full object-cover"
                         muted
                         loop
@@ -324,7 +325,7 @@ export default function AdvertsPage() {
                       />
                     ) : (
                       <img
-                        src={resolveMediaUrl(advert.media)}
+                        src={resolveMediaUrl(baseUrl+"/bop"+advert.media)}
                         alt={advert.description}
                         className="w-full h-full object-cover"
                       />
