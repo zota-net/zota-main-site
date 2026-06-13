@@ -449,20 +449,7 @@ export default function DevicesPage() {
   });
   const user = useUserStore((s) => s.user);
 
-  const fetchDevices = useCallback(async () => {
-    if (!user?.client_id) return;
-    try {
-      setIsLoadingDevices(true);
-      const data = await devicesService.getByClient(user.client_id);
-      setDevices(data.map(mapApiDevice));
-    } catch (err) {
-      console.error('Failed to fetch devices:', err);
-      toast.error(err instanceof ApiError ? err.message : 'Failed to load devices');
-    } finally {
-      setIsLoadingDevices(false);
-    }
-  }, [user?.client_id]);
-
+  
   const fetchRouterDevices = useCallback(async () => {
     if (!user?.client_id) return;
     try {
@@ -478,7 +465,7 @@ export default function DevicesPage() {
   }, [user?.client_id]);
 
   useEffect(() => {
-    fetchDevices();
+    // fetchDevices();
     fetchRouterDevices();
   }, [user?.client_id]);
 

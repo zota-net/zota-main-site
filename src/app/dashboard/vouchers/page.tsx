@@ -158,13 +158,33 @@ function formatLocalDate(date: Date | undefined, userTimezone?: string): string 
   }
 }
 
+// ─── Printable field options ────────────────────────────────────────────────
+type VoucherCardField = 'code' | 'brand' | 'package' | 'duration' | 'price' | 'category' | 'created' | 'footer';
+
+const VOUCHER_FIELD_OPTIONS: { key: VoucherCardField; label: string; required?: boolean }[] = [
+  { key: 'code',     label: 'Voucher Code', required: true },
+  { key: 'brand',    label: 'Brand / Business Name' },
+  { key: 'package',  label: 'Package Name' },
+  { key: 'duration', label: 'Duration' },
+  { key: 'price',    label: 'Price' },
+  { key: 'category', label: 'Category' },
+  { key: 'created',  label: 'Created Date' },
+  { key: 'footer',   label: 'Help / Footer Line' },
+];
+
+const DEFAULT_VOUCHER_FIELDS: VoucherCardField[] = ['code', 'brand', 'package', 'duration', 'price', 'footer'];
+
+const MAX_VOUCHERS_PER_BATCH = 500;
+
 // ─── Print helper ─────────────────────────────────────────────────────────────
 function triggerVoucherCardPrint(
   selectedVoucherData: Voucher[],
   clientPackages: PkgType[],
   clientName: string,
   vouchersPerPage: number = 3,
+  fields: VoucherCardField[] = DEFAULT_VOUCHER_FIELDS,
 ) {
+  const show = (f: VoucherCardField) => fields.includes(f);
   const formatDuration = (seconds: number) => {
     const days  = seconds / 86400;
     const weeks = days / 7;
@@ -184,14 +204,24 @@ function triggerVoucherCardPrint(
     const duration = pkg?.period ?? 0;
     const pkgName  = voucher.packageTitle ?? pkg?.title ?? 'Daily';
     const dur      = formatDuration(duration);
+    const catLabel = categoryConfig[voucher.category]?.label ?? voucher.category;
+
+    const detailBlocks = [
+      show('package')  ? `<div class="detail-block"><div class="detail-label">PACKAGE</div><div class="detail-value">${pkgName}</div></div>` : '',
+      show('duration') ? `<div class="detail-block"><div class="detail-label">DURATION</div><div class="detail-value">${dur}</div></div>` : '',
+      show('price')    ? `<div class="detail-block"><div class="detail-label">PRICE</div><div class="detail-value price">UGX ${Number(price).toLocaleString()}</div></div>` : '',
+      show('category') ? `<div class="detail-block"><div class="detail-label">CATEGORY</div><div class="detail-value">${catLabel}</div></div>` : '',
+      show('created')  ? `<div class="detail-block"><div class="detail-label">CREATED</div><div class="detail-value">${formatLocalDate(voucher.createdAt)}</div></div>` : '',
+    ].filter(Boolean).join('');
 
     return `
       <div class="voucher-card">
         <div class="card-stripe"></div>
         <div class="card-inner">
+          ${show('brand') ? `
           <div class="card-top">
             <div class="brand-name">${clientName.toUpperCase()}</div>
-          </div>
+          </div>` : ''}
           <div class="voucher-code-row">
             <svg class="wifi-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/>
@@ -199,32 +229,35 @@ function triggerVoucherCardPrint(
             </svg>
             <span class="voucher-code">${voucher.code}</span>
           </div>
-          <div class="card-details">
-            <div class="detail-block">
-              <div class="detail-label">PACKAGE</div>
-              <div class="detail-value">${pkgName}</div>
-            </div>
-            <div class="detail-block">
-              <div class="detail-label">DURATION</div>
-              <div class="detail-value">${dur}</div>
-            </div>
-            <div class="detail-block">
-              <div class="detail-label">PRICE</div>
-              <div class="detail-value price">UGX ${Number(price).toLocaleString()}</div>
-            </div>
-          </div>
+          ${detailBlocks ? `<div class="card-details">${detailBlocks}</div>` : ''}
+          ${show('footer') ? `
           <div class="card-footer">
             <span>Help: +256770415425 &bull; +256704371231</span>
             <span class="footer-brand">XetiHub.com</span>
-          </div>
+          </div>` : ''}
         </div>
       </div>`;
   }).join('');
 
-  const cols = Math.min(vouchersPerPage, 4); // max 4 per row to keep readable
-  // Determine grid columns for the selected per-page layout
-  // vouchersPerPage means per row on the page; we always fill full pages
-  const gridCols = vouchersPerPage <= 2 ? vouchersPerPage : vouchersPerPage <= 4 ? vouchersPerPage : 3;
+  // ── Dynamic sizing: fewer selected fields → smaller card → more fit per row ──
+  const detailCount = ['package', 'duration', 'price', 'category', 'created']
+    .filter((f) => show(f as VoucherCardField)).length;
+
+  // Estimate the "natural" width a card needs given what's shown on it (inches)
+  let naturalCardWidthIn = 1.3; // base: border + code only
+  naturalCardWidthIn += detailCount * 0.35;
+  if (show('brand'))  naturalCardWidthIn += 0.15;
+  if (show('footer')) naturalCardWidthIn += 0.35;
+  naturalCardWidthIn = Math.min(Math.max(naturalCardWidthIn, 1.3), 3.4);
+
+  // Usable printable width (Letter/A4 minus margins, roughly)
+  const pageWidthIn = 8;
+
+  // vouchersPerPage is the MINIMUM number of columns: cap the card width so that
+  // at least that many always fit. If the card is naturally smaller than that
+  // cap, auto-fill squeezes more columns into the row instead of leaving gaps.
+  const minColumnCapIn = pageWidthIn / Math.max(vouchersPerPage, 1);
+  const cardMinWidthIn = Math.min(naturalCardWidthIn, minColumnCapIn);
 
   const printHTML = `<!DOCTYPE html>
 <html>
@@ -247,8 +280,9 @@ function triggerVoucherCardPrint(
   }
   .voucher-grid {
     display: grid;
-    grid-template-columns: repeat(${gridCols}, 1fr);
+    grid-template-columns: repeat(auto-fill, minmax(${cardMinWidthIn.toFixed(2)}in, 1fr));
     gap: 0.15in;
+    align-items: stretch;
   }
   .voucher-card {
     border: 1.5px solid #d1d5db;
@@ -266,6 +300,12 @@ function triggerVoucherCardPrint(
   }
   .card-inner {
     padding: 10px 12px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .card-top, .voucher-code-row, .card-details, .card-footer {
+    margin-bottom: 0;
   }
   .card-top {
     margin-bottom: 6px;
@@ -433,6 +473,13 @@ export default function VouchersPage() {
   // ── Print options state ────────────────────────────────────────────────────
   const [printDialogOpen,   setPrintDialogOpen]   = useState(false);
   const [vouchersPerPage,   setVouchersPerPage]   = useState<number>(3);
+  const [selectedFields, setSelectedFields] = useState<VoucherCardField[]>(DEFAULT_VOUCHER_FIELDS);
+
+  const toggleField = (field: VoucherCardField) => {
+    if (field === 'code') return; // mandatory, can't be toggled
+    setSelectedFields((prev) =>
+      prev.includes(field) ? prev.filter((f) => f !== field) : [...prev, field]);
+  };
 
   // ── New voucher form state ─────────────────────────────────────────────────
   const [newVoucher, setNewVoucher] = useState({
@@ -532,7 +579,7 @@ export default function VouchersPage() {
   const handleConfirmPrint = () => {
     const data = filteredVouchers.filter((v) => selectedVouchers.includes(v.id));
     const clientName = user?.client?.businessName ?? (user as any)?.name ?? 'Network';
-    triggerVoucherCardPrint(data, clientPackages, clientName, vouchersPerPage);
+    triggerVoucherCardPrint(data, clientPackages, clientName, vouchersPerPage, selectedFields);
     setPrintDialogOpen(false);
   };
 
@@ -540,6 +587,10 @@ export default function VouchersPage() {
     const clientId = user?.client_id;
     if (!clientId) { toast.error('No client ID'); return; }
     if (!newVoucher.packageId) { toast.error('Please select a package before generating vouchers'); return; }
+    if (newVoucher.quantity > MAX_VOUCHERS_PER_BATCH) {
+      toast.error(`You can generate a maximum of ${MAX_VOUCHERS_PER_BATCH} vouchers at a time`);
+      return;
+    }
 
     const selectedCharset = CHARSET_OPTIONS.find((o) => o.value === newVoucher.charsetKey)?.charset
       ?? CHARSET_OPTIONS[0].charset;
@@ -575,7 +626,7 @@ export default function VouchersPage() {
       
       if (printAfter && mappedVouchers.length > 0) {
         const clientName = user?.client?.businessName ?? (user as any)?.name ?? 'Network';
-        setTimeout(() => triggerVoucherCardPrint(mappedVouchers, clientPackages, clientName, vouchersPerPage), 500);
+        setTimeout(() => triggerVoucherCardPrint(mappedVouchers, clientPackages, clientName, vouchersPerPage, selectedFields), 500);
       }
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Failed to create vouchers');
@@ -743,13 +794,13 @@ export default function VouchersPage() {
                   {/* Count + Length */}
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label className="text-sm">Count <span className="text-muted-foreground font-normal">(how many)</span></Label>
+                      <Label className="text-sm">Count <span className="text-muted-foreground font-normal">(max {MAX_VOUCHERS_PER_BATCH})</span></Label>
                       <Input
                         type="number"
                         min={1}
-                        max={1000}
+                        max={MAX_VOUCHERS_PER_BATCH}
                         value={newVoucher.quantity}
-                        onChange={(e) => setNewVoucher({ ...newVoucher, quantity: Math.max(1, parseInt(e.target.value) || 1) })}
+                        onChange={(e) => setNewVoucher({ ...newVoucher, quantity: Math.min(MAX_VOUCHERS_PER_BATCH, Math.max(1, parseInt(e.target.value) || 1)) })}
                       />
                     </div>
                     <div className="space-y-2">
@@ -796,6 +847,31 @@ export default function VouchersPage() {
                     <p className="text-xs text-muted-foreground font-mono truncate px-1">
                       {previewCharset.slice(0, 60)}{previewCharset.length > 60 ? '…' : ''}
                     </p>
+                  </div>
+
+                  {/* Card fields to print */}
+                  <div className="space-y-2">
+                    <Label className="text-sm">
+                      Fields to Show on Voucher Card
+                    </Label>
+                    <div className="grid grid-cols-2 gap-2 p-3 rounded-lg border bg-muted/30">
+                      {VOUCHER_FIELD_OPTIONS.map((opt) => (
+                        <div key={opt.key} className="flex items-center gap-2">
+                          <Checkbox
+                            id={`field-${opt.key}`}
+                            checked={selectedFields.includes(opt.key)}
+                            disabled={opt.required}
+                            onCheckedChange={() => toggleField(opt.key)}
+                          />
+                          <Label
+                            htmlFor={`field-${opt.key}`}
+                            className={cn('text-sm font-normal cursor-pointer', opt.required && 'text-muted-foreground')}
+                          >
+                            {opt.label}{opt.required && ' (required)'}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
                   </div>
 
                   {/* Vouchers per page (for printing) */}
@@ -1233,6 +1309,27 @@ export default function VouchersPage() {
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-2">
+              <div className="space-y-2">
+                <Label>Fields to Show on Card</Label>
+                <div className="grid grid-cols-2 gap-2 p-3 rounded-lg border bg-muted/30">
+                  {VOUCHER_FIELD_OPTIONS.map((opt) => (
+                    <div key={opt.key} className="flex items-center gap-2">
+                      <Checkbox
+                        id={`print-field-${opt.key}`}
+                        checked={selectedFields.includes(opt.key)}
+                        disabled={opt.required}
+                        onCheckedChange={() => toggleField(opt.key)}
+                      />
+                      <Label
+                        htmlFor={`print-field-${opt.key}`}
+                        className={cn('text-sm font-normal cursor-pointer', opt.required && 'text-muted-foreground')}
+                      >
+                        {opt.label}{opt.required && ' (required)'}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
               <div className="space-y-2">
                 <Label>Vouchers per Row</Label>
                 <Select
