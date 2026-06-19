@@ -508,7 +508,7 @@ export default function DevicesPage() {
 
     const config = `# Run on MikroTik terminal after receiving from dashboard
       /interface wireguard add name=wg0 listen-port=51820
-      /ip address add address=${router.ipAddress || '<ASSIGNED_IP>'}/24 interface=wg0
+      /ip address add address=${router.ipAddress || '<ASSIGNED_IP>'}/16 interface=wg0
       /interface wireguard peers add \\
         interface=wg0 \\
         public-key="${vpsPublicKey}" \\
