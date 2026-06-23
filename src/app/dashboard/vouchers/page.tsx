@@ -270,8 +270,8 @@ function triggerVoucherCardPrint(
   }
   .voucher-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, 200px);
-    gap: 0.12in;
+    grid-template-columns: repeat(auto-fill, 150px);
+    gap: 2px;
     align-items: stretch;
     justify-content: center;
   }
@@ -284,31 +284,30 @@ function triggerVoucherCardPrint(
     break-inside: avoid;
     page-break-inside: avoid;
     -webkit-column-break-inside: avoid;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
   }
   .card-stripe {
-    height: 4px;
+    height: 3px;
     background: ${brandOrange};
   }
   .card-inner {
-    padding: 10px 12px 8px;
+    padding: 4px 6px 3px;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 2px;
   }
   .card-top, .voucher-code-row, .card-details, .card-footer {
     margin-bottom: 0;
   }
   .card-top {
-    margin-bottom: 6px;
+    margin-bottom: 2px;
     display: flex;
     align-items: center;
     justify-content: center;
   }
   .brand-name {
-    font-size: 10px;
+    font-size: 6px;
     font-weight: 700;
-    letter-spacing: 2px;
+    letter-spacing: 1.5px;
     color: ${brandOrange};
     text-align: center;
     text-transform: uppercase;
@@ -316,62 +315,62 @@ function triggerVoucherCardPrint(
   .voucher-code-row {
     display: flex;
     align-items: center;
-    gap: 6px;
-    margin-bottom: 8px;
+    gap: 3px;
+    margin-bottom: 2px;
   }
   .wifi-icon {
-    width: 16px;
-    height: 16px;
+    width: 10px;
+    height: 10px;
     color: ${accentColor};
     flex-shrink: 0;
   }
   .voucher-code {
     font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
-    font-size: 17px;
+    font-size: 11px;
     font-weight: 700;
     color: ${textPrimary};
-    letter-spacing: 0.5px;
+    letter-spacing: 0;
     word-break: break-all;
   }
   .card-details {
     display: flex;
-    gap: 4px;
+    gap: 2px;
     flex-wrap: wrap;
   }
   .detail-block {
     flex: 1;
-    min-width: 50px;
-    padding: 3px 6px;
+    min-width: 40px;
+    padding: 1px 3px;
     background: rgba(0,0,0,0.03);
     border-radius: 0;
   }
   .detail-label {
-    font-size: 7px;
+    font-size: 5px;
     font-weight: 600;
     color: ${textMuted};
-    letter-spacing: 0.6px;
+    letter-spacing: 0.4px;
     text-transform: uppercase;
-    margin-bottom: 1px;
+    margin-bottom: 0;
   }
   .detail-value {
-    font-size: 10px;
+    font-size: 7px;
     font-weight: 600;
     color: ${textPrimary};
   }
   .detail-value.price {
-    font-size: 11px;
+    font-size: 7px;
     font-weight: 700;
     color: ${brandOrange};
   }
   .card-footer {
     border-top: 1px solid ${borderColor};
-    padding-top: 5px;
+    padding-top: 2px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 7px;
+    font-size: 5px;
     color: ${textMuted};
-    gap: 4px;
+    gap: 2px;
   }
   .footer-brand {
     font-weight: 700;
