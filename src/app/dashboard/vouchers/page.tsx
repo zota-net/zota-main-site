@@ -377,8 +377,8 @@ function triggerVoucherCardPrint(
     color: ${textSecondary};
     white-space: nowrap;
   }
+  @page { margin: 0; }
   @media print {
-    @page { margin: 0; }
     body { background: ${bgPrimary} !important; margin: 0; }
     .print-wrapper { padding: 0; }
     .voucher-card { box-shadow: none; }
