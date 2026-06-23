@@ -5,6 +5,7 @@ import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from "lucide-react"
 import { Select as SelectPrimitive } from "radix-ui"
 
 import { cn } from "@/lib/utils"
+import { Class } from "node_modules/zod/v4/core/util.cjs"
 
 function Select({
   ...props
@@ -99,6 +100,7 @@ function SelectLabel({
     />
   )
 }
+
 
 function SelectItem({
   className,

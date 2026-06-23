@@ -198,11 +198,22 @@ function triggerVoucherCardPrint(
     return `${Math.round(mins)} Min${Math.round(mins) > 1 ? 's' : ''}`;
   };
 
+  const isDark = false;
+  const brandOrange = '#FF6A00';
+  const bgPrimary   = '#ffffff';
+  const bgSecondary = '#f5f5f4';
+  const textPrimary = '#111110';
+  const textSecondary = '#6b6a67';
+  const textMuted   = '#a09f9b';
+  const borderColor = 'rgba(0,0,0,0.08)';
+  const borderStrong = 'rgba(0,0,0,0.14)';
+  const accentColor = '#1a6af5';
+
   const cardHTML = selectedVoucherData.map((voucher) => {
     const pkg      = clientPackages.find((p) => String(p.id) === String(voucher.batchId));
     const price    = pkg?.price ?? 0;
     const duration = pkg?.period ?? 0;
-    const pkgName  = voucher.packageTitle ?? pkg?.title ?? 'Daily';
+    const pkgName  = pkg?.title ?? voucher.packageTitle ?? 'Daily';
     const dur      = formatDuration(duration);
     const catLabel = categoryConfig[voucher.category]?.label ?? voucher.category;
 
@@ -233,31 +244,11 @@ function triggerVoucherCardPrint(
           ${show('footer') ? `
           <div class="card-footer">
             <span>Help: +256770415425 &bull; +256704371231</span>
-            <span class="footer-brand">XetiHub.com</span>
+            <span class="footer-brand">Zota</span>
           </div>` : ''}
         </div>
       </div>`;
   }).join('');
-
-  // ── Dynamic sizing: fewer selected fields → smaller card → more fit per row ──
-  const detailCount = ['package', 'duration', 'price', 'category', 'created']
-    .filter((f) => show(f as VoucherCardField)).length;
-
-  // Estimate the "natural" width a card needs given what's shown on it (inches)
-  let naturalCardWidthIn = 1.3; // base: border + code only
-  naturalCardWidthIn += detailCount * 0.35;
-  if (show('brand'))  naturalCardWidthIn += 0.15;
-  if (show('footer')) naturalCardWidthIn += 0.35;
-  naturalCardWidthIn = Math.min(Math.max(naturalCardWidthIn, 1.3), 3.4);
-
-  // Usable printable width (Letter/A4 minus margins, roughly)
-  const pageWidthIn = 8;
-
-  // vouchersPerPage is the MINIMUM number of columns: cap the card width so that
-  // at least that many always fit. If the card is naturally smaller than that
-  // cap, auto-fill squeezes more columns into the row instead of leaving gaps.
-  const minColumnCapIn = pageWidthIn / Math.max(vouchersPerPage, 1);
-  const cardMinWidthIn = Math.min(naturalCardWidthIn, minColumnCapIn);
 
   const printHTML = `<!DOCTYPE html>
 <html>
@@ -266,126 +257,131 @@ function triggerVoucherCardPrint(
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Vouchers</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@700&display=swap');
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
-    font-family: 'Inter', Arial, sans-serif;
-    background: white;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+    background: ${bgPrimary};
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
   .print-wrapper {
-    padding: 0.3in;
-    background: white;
+    padding: 0;
+    background: ${bgPrimary};
   }
   .voucher-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(${cardMinWidthIn.toFixed(2)}in, 1fr));
-    gap: 0.15in;
+    grid-template-columns: repeat(auto-fill, 150px);
+    gap: 2px;
     align-items: stretch;
+    justify-content: center;
   }
   .voucher-card {
-    border: 1.5px solid #d1d5db;
-    border-radius: 8px;
+    border: 1px solid ${borderColor};
+    border-radius: 0;
     overflow: hidden;
-    background: white;
+    background: ${bgSecondary};
     position: relative;
     break-inside: avoid;
     page-break-inside: avoid;
     -webkit-column-break-inside: avoid;
   }
   .card-stripe {
-    height: 5px;
-    background: #16a34a;
+    height: 3px;
+    background: ${brandOrange};
   }
   .card-inner {
-    padding: 10px 12px 8px;
+    padding: 4px 6px 3px;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 2px;
   }
   .card-top, .voucher-code-row, .card-details, .card-footer {
     margin-bottom: 0;
   }
   .card-top {
-    margin-bottom: 6px;
+    margin-bottom: 2px;
     display: flex;
     align-items: center;
     justify-content: center;
   }
   .brand-name {
-    font-size: 11px;
+    font-size: 6px;
     font-weight: 700;
-    letter-spacing: 2px;
-    color: #15803d;
+    letter-spacing: 1.5px;
+    color: ${brandOrange};
     text-align: center;
+    text-transform: uppercase;
   }
   .voucher-code-row {
     display: flex;
     align-items: center;
-    gap: 6px;
-    margin-bottom: 8px;
+    gap: 3px;
+    margin-bottom: 2px;
   }
   .wifi-icon {
-    width: 18px;
-    height: 18px;
-    color: #16a34a;
+    width: 10px;
+    height: 10px;
+    color: ${accentColor};
     flex-shrink: 0;
   }
   .voucher-code {
-    font-family: 'JetBrains Mono', 'Courier New', monospace;
-    font-size: 18px;
+    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+    font-size: 11px;
     font-weight: 700;
-    color: #111827;
-    letter-spacing: 1px;
+    color: ${textPrimary};
+    letter-spacing: 0;
     word-break: break-all;
   }
   .card-details {
     display: flex;
-    gap: 6px;
-    margin-bottom: 8px;
+    gap: 2px;
     flex-wrap: wrap;
   }
   .detail-block {
     flex: 1;
-    min-width: 50px;
+    min-width: 40px;
+    padding: 1px 3px;
+    background: rgba(0,0,0,0.03);
+    border-radius: 0;
   }
   .detail-label {
-    font-size: 7px;
+    font-size: 5px;
     font-weight: 600;
-    color: #9ca3af;
-    letter-spacing: 0.8px;
+    color: ${textMuted};
+    letter-spacing: 0.4px;
     text-transform: uppercase;
-    margin-bottom: 2px;
+    margin-bottom: 0;
   }
   .detail-value {
-    font-size: 10px;
+    font-size: 7px;
     font-weight: 600;
-    color: #111827;
+    color: ${textPrimary};
   }
   .detail-value.price {
-    font-size: 11px;
+    font-size: 7px;
     font-weight: 700;
-    color: #15803d;
+    color: ${brandOrange};
   }
   .card-footer {
-    border-top: 1px solid #f3f4f6;
-    padding-top: 6px;
+    border-top: 1px solid ${borderColor};
+    padding-top: 2px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 7px;
-    color: #9ca3af;
-    gap: 4px;
+    font-size: 5px;
+    color: ${textMuted};
+    gap: 2px;
   }
   .footer-brand {
     font-weight: 700;
-    color: #6b7280;
+    color: ${textSecondary};
     white-space: nowrap;
   }
+  @page { margin: 0; }
   @media print {
-    body { background: white !important; }
-    .print-wrapper { padding: 0.2in; }
+    body { background: ${bgPrimary} !important; margin: 0; }
+    .print-wrapper { padding: 0; }
+    .voucher-card { box-shadow: none; }
   }
 </style>
 </head>
@@ -467,6 +463,7 @@ export default function VouchersPage() {
   const [dateTo,         setDateTo]         = useState<Date | undefined>(undefined);
   const [datePickerStep, setDatePickerStep] = useState<'start' | 'end'>('start');
   const [selectedVouchers, setSelectedVouchers] = useState<string[]>([]);
+  const [deletingVouchers, setDeletingVouchers] = useState<Set<string>>(new Set());
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [copiedCode, setCopiedCode]         = useState<string | null>(null);
 
@@ -689,12 +686,15 @@ export default function VouchersPage() {
   };
 
   const handleDeleteVoucher = async (id: string) => {
+    setDeletingVouchers((prev) => new Set(prev).add(id));
     try {
       await vouchersService.delete(id);
       toast.success('Voucher deleted');
       fetchVouchers();
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Failed to delete voucher');
+    } finally {
+      setDeletingVouchers((prev) => { const next = new Set(prev); next.delete(id); return next; });
     }
   };
 
@@ -1165,21 +1165,30 @@ export default function VouchersPage() {
                       const catInfo    = categoryConfig[voucher.category];
                       const StatusIcon = statusInfo.icon;
 
+                      const isDeleting = deletingVouchers.has(voucher.id);
                       return (
                         <motion.tr
                           key={voucher.id}
                           initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
+                          animate={{ opacity: isDeleting ? 0.5 : 1 }}
                           exit={{ opacity: 0 }}
-                          className="group"
+                          className={cn("group relative", isDeleting && "pointer-events-none select-none")}
                         >
-                          <TableCell className="p-2 sm:p-4">
+                          {isDeleting && (
+                            <td colSpan={8} className="absolute inset-0 z-10 flex items-center justify-center">
+                              <span className="text-xs font-semibold text-muted-foreground tracking-widest uppercase bg-background/80 px-3 py-1">
+                                Deleting Voucher…
+                              </span>
+                            </td>
+                          )}
+                          <TableCell className={cn("p-2 sm:p-4", isDeleting && "opacity-30")}>
                             <Checkbox
                               checked={selectedVouchers.includes(voucher.id)}
                               onCheckedChange={(checked) => handleSelectVoucher(voucher.id, checked as boolean)}
+                              disabled={isDeleting}
                             />
                           </TableCell>
-                          <TableCell className="p-2 sm:p-4">
+                          <TableCell className={cn("p-2 sm:p-4", isDeleting && "opacity-30")}>
                             <div className="flex items-center gap-1 sm:gap-2">
                               <code className="font-mono text-xs sm:text-sm bg-muted px-1.5 sm:px-2 py-0.5 sm:py-1 rounded truncate max-w-[100px] sm:max-w-none">
                                 {voucher.code}
@@ -1187,6 +1196,7 @@ export default function VouchersPage() {
                               <Button
                                 variant="ghost"
                                 size="icon"
+                                disabled={isDeleting}
                                 className="h-6 w-6 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
                                 onClick={() => handleCopyCode(voucher.code)}
                               >
@@ -1196,36 +1206,36 @@ export default function VouchersPage() {
                               </Button>
                             </div>
                           </TableCell>
-                          <TableCell className="hidden md:table-cell p-2 sm:p-4">
+                          <TableCell className={cn("hidden md:table-cell p-2 sm:p-4", isDeleting && "opacity-30")}>
                             <span className="text-xs sm:text-sm font-medium truncate max-w-[120px] sm:max-w-none">
                               {voucher.packageTitle}
                             </span>
                           </TableCell>
-                          <TableCell className="hidden md:table-cell p-2 sm:p-4">
+                          <TableCell className={cn("hidden md:table-cell p-2 sm:p-4", isDeleting && "opacity-30")}>
                             <Badge variant="outline" className={cn(catInfo.color, 'text-xs')}>
                               {catInfo.label}
                             </Badge>
                           </TableCell>
-                          <TableCell className="p-2 sm:p-4">
+                          <TableCell className={cn("p-2 sm:p-4", isDeleting && "opacity-30")}>
                             <Badge variant="outline" className={cn(statusInfo.color, 'text-xs')}>
                               <StatusIcon className="h-3 w-3 mr-0.5 sm:mr-1" />
                               <span className="hidden sm:inline">{statusInfo.label}</span>
                             </Badge>
                           </TableCell>
-                          <TableCell className="hidden lg:table-cell text-muted-foreground text-xs sm:text-sm p-2 sm:p-4">
+                          <TableCell className={cn("hidden lg:table-cell text-muted-foreground text-xs sm:text-sm p-2 sm:p-4", isDeleting && "opacity-30")}>
                             <span title={formatLocalDate(voucher.createdAt, userTimezone)}>
                               {formatLocalDate(voucher.createdAt, userTimezone)}
                             </span>
                           </TableCell>
-                          <TableCell className="hidden lg:table-cell text-muted-foreground text-xs sm:text-sm p-2 sm:p-4">
+                          <TableCell className={cn("hidden lg:table-cell text-muted-foreground text-xs sm:text-sm p-2 sm:p-4", isDeleting && "opacity-30")}>
                             {voucher.usedAt
                               ? <span title={formatLocalDate(voucher.usedAt, userTimezone)}>{formatLocalDate(voucher.usedAt, userTimezone)}</span>
                               : '—'}
                           </TableCell>
-                          <TableCell className="p-2 sm:p-4">
+                          <TableCell className={cn("p-2 sm:p-4", isDeleting && "opacity-30")}>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <Button variant="ghost" size="icon" disabled={isDeleting} className="h-8 w-8">
                                   <MoreHorizontal className="h-4 w-4" />
                                 </Button>
                               </DropdownMenuTrigger>
