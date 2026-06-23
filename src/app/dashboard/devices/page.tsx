@@ -443,7 +443,7 @@ export default function DevicesPage() {
   const [newRouter, setNewRouter] = useState({
     name: '',
     publicKey: '',
-    apiPort: 8728,
+    apiPort: 80,
     apiUser: '',
     apiPassword: '',
   });
@@ -518,12 +518,14 @@ export default function DevicesPage() {
         persistent-keepalive=25
       /ip firewall filter add \\
         chain=input \\
-        src-address=10.0.0.0/24 \\
+        src-address=10.0.0.0/16 \\
         protocol=tcp \\
-        dst-port=${router.apiPort || 8728} \\
+        dst-port=${router.apiPort || 80} \\
         action=accept \\
         comment="Allow API over WireGuard"
-      /ip firewall filter move [find comment="Allow API over WireGuard"] destination=0`;
+      /ip firewall filter move \\
+        [find comment="Allow API over WireGuard"] \\ 
+        destination=0`;
 
     setRouterConfig(config);
     setSelectedRouter(router);
