@@ -57,10 +57,10 @@ export function InstallPrompt() {
         <div className="rounded-xl border border-border bg-card p-4 shadow-lg backdrop-blur-xl">
           <div className="flex items-start gap-3">
             <div className="h-10 w-10 shrink-0 rounded-lg bg-[#FF6A00] flex items-center justify-center text-white font-bold text-sm">
-              Z
+              X
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-foreground">Install Zota</p>
+              <p className="text-sm font-semibold text-foreground">Install Xetihub</p>
               <p className="text-xs text-muted-foreground mt-0.5">
                 Install the app for quick access and offline support
               </p>

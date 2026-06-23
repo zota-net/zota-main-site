@@ -15,12 +15,12 @@ export const metadata: Metadata = {
   manifest: '/manifest.json',
   icons: {
     icon: '/icon.svg',
-    apple: '/icons/icon-192.png',
+    apple: '/icon.svg',
   },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'Zota',
+    title: 'XETIHUB',
   },
 };
 
@@ -40,10 +40,10 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="manifest" href="/manifest.json" />
-        <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+        <link rel="apple-touch-icon" href="/icon.svg" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="Zota" />
+        <meta name="apple-mobile-web-app-title" content="XETIHUB" />
       </head>
       <body className="antialiased">
         <RouteStateProvider>
