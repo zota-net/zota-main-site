@@ -69,6 +69,7 @@ import {
   routersService,
   routerStatsService,
   sessionsService,
+  profilesService,
 } from '@/lib/api/services/mikrotik';
 import { routerDevicesService } from '@/lib/api/services/base-operations';
 import { useUserStore } from '@/lib/store/user-store';
@@ -499,6 +500,21 @@ export default function DevicesPage() {
       fetchRouterDevices();
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Failed to delete router');
+    }
+  };
+
+  const [syncingRouter, setSyncingRouter] = useState<string | null>(null);
+
+  const handleSyncProfiles = async (routerId: string) => {
+    if (!user?.client_id) { toast.error('Missing client ID'); return; }
+    setSyncingRouter(routerId);
+    try {
+      await profilesService.syncForClient(user.client_id);
+      toast.success('Package profiles synced to router');
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Failed to sync profiles');
+    } finally {
+      setSyncingRouter(null);
     }
   };
 
@@ -957,7 +973,17 @@ export default function DevicesPage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="flex-1 h-8 text-xs text-destructive hover:text-destructive"
+                          className="h-8 text-xs text-blue-500 hover:text-blue-600 hover:bg-blue-500/10"
+                          onClick={() => handleSyncProfiles(router.id)}
+                          disabled={syncingRouter === router.id}
+                          title="Sync package profiles to this router"
+                        >
+                          <RefreshCw className={cn('h-3 w-3', syncingRouter === router.id && 'animate-spin')} />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8 text-xs text-destructive hover:text-destructive"
                           onClick={() => handleDeleteRouter(router.id)}
                         >
                           <Trash2 className="h-3 w-3" />

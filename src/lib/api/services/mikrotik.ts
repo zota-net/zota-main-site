@@ -113,6 +113,9 @@ export const profilesService = {
 
   setQos: (routerId: string, data: unknown) =>
     api.post<ApiResponse>(`/mikrotik/routers/${routerId}/hotspot/profiles/qos`, data),
+
+  syncForClient: (clientId: string) =>
+    api.post<ApiResponse>(`/mikrotik/routers/sync-profiles/${clientId}`),
 };
 
 // ─── Login Configuration ──────────────────────────────────────────────────────
