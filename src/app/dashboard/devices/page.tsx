@@ -951,42 +951,44 @@ export default function DevicesPage() {
                           ? `${router.connectedDevices} connected devices`
                           : 'No active connections'}
                       </div>
-                      <div className="flex gap-2">
+                      <div className="grid grid-cols-2 gap-2">
                         <Button
                           variant="outline"
                           size="sm"
-                          className="flex-1 h-8 text-xs"
+                          className="h-8 text-xs w-full"
                           onClick={() => handleViewRouterConfig(router)}
                         >
-                          <Eye className="h-3 w-3 mr-1" />
-                          Configurations
+                          <Eye className="h-3 w-3 shrink-0" />
+                          <span className="truncate ml-1">Configurations</span>
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
-                          className="flex-1 h-8 text-xs"
+                          className="h-8 text-xs w-full"
                           onClick={() => handleDownloadLoginConfig(router.id)}
                         >
-                          <Download className="h-3 w-3 mr-1" />
-                          Download Portal
+                          <Download className="h-3 w-3 shrink-0" />
+                          <span className="truncate ml-1">Portal Files</span>
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
-                          className="h-8 text-xs text-blue-500 hover:text-blue-600 hover:bg-blue-500/10"
+                          className="h-8 text-xs w-full text-blue-500 hover:text-blue-600 hover:bg-blue-500/10"
                           onClick={() => handleSyncProfiles(router.id)}
                           disabled={syncingRouter === router.id}
                           title="Sync package profiles to this router"
                         >
-                          <RefreshCw className={cn('h-3 w-3', syncingRouter === router.id && 'animate-spin')} />
+                          <RefreshCw className={cn('h-3 w-3 shrink-0', syncingRouter === router.id && 'animate-spin')} />
+                          <span className="truncate ml-1">Sync Profiles</span>
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
-                          className="h-8 text-xs text-destructive hover:text-destructive"
+                          className="h-8 text-xs w-full text-destructive hover:text-destructive"
                           onClick={() => handleDeleteRouter(router.id)}
                         >
-                          <Trash2 className="h-3 w-3" />
+                          <Trash2 className="h-3 w-3 shrink-0" />
+                          <span className="truncate ml-1">Delete</span>
                         </Button>
                       </div>
                     </CardContent>
