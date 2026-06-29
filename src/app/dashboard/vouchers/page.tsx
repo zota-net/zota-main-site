@@ -75,34 +75,14 @@ import { ApiError } from '@/lib/api/client';
 // ─── Charset options ──────────────────────────────────────────────────────────
 const CHARSET_OPTIONS = [
   {
-    label: 'Alphanumeric (A-Z, a-z, 0-9)',
-    value: 'alphanumeric',
-    charset: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789',
-  },
-  {
-    label: 'Uppercase + Numbers (A-Z, 0-9)',
-    value: 'upper_numeric',
-    charset: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
-  },
-  {
-    label: 'Lowercase + Numbers (a-z, 0-9)',
-    value: 'lower_numeric',
-    charset: 'abcdefghijklmnopqrstuvwxyz0123456789',
-  },
-  {
     label: 'Numbers Only (0-9)',
     value: 'numeric',
     charset: '0123456789',
   },
   {
-    label: 'Uppercase Only (A-Z)',
-    value: 'upper',
-    charset: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
-  },
-  {
-    label: 'Lowercase Only (a-z)',
-    value: 'lower',
-    charset: 'abcdefghijklmnopqrstuvwxyz',
+    label: 'Alphanumeric (A-Z, a-z, 0-9)',
+    value: 'alphanumeric',
+    charset: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789',
   },
 ];
 
@@ -485,7 +465,7 @@ export default function VouchersPage() {
     length:     8,
     prefix:     'NET',
     packageId:  '',
-    charsetKey: 'lower_numeric',
+    charsetKey: 'numeric',
   });
 
   useEffect(() => {
