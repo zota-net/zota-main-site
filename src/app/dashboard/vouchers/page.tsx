@@ -224,7 +224,7 @@ function triggerVoucherCardPrint(
           ${show('footer') ? `
           <div class="card-footer">
             <span>Help: +256770415425 &bull; +256704371231</span>
-            <span class="footer-brand">Zota</span>
+            <span class="footer-brand">XETIHUB</span>
           </div>` : ''}
         </div>
       </div>`;
