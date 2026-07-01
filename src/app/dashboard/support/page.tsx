@@ -435,9 +435,9 @@ export default function SupportPage() {
         </div>
 
         <Tabs value={mainTab} onValueChange={setMainTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-1">
             <TabsTrigger value="support">Support Tickets</TabsTrigger>
-            <TabsTrigger value="help">Help & Videos</TabsTrigger>
+            {/* <TabsTrigger value="help">Help & Videos</TabsTrigger> */}
           </TabsList>
 
           <TabsContent value="support" className="space-y-4">
@@ -793,7 +793,7 @@ export default function SupportPage() {
             </div>
           </TabsContent>
 
-          <TabsContent value="help" className="space-y-6">
+          {/* <TabsContent value="help" className="space-y-6">
             <div className="grid gap-6">
               <Card>
                 <CardHeader>
@@ -865,7 +865,7 @@ export default function SupportPage() {
                 </CardContent>
               </Card>
             </div>
-          </TabsContent>
+          </TabsContent> */}
         </Tabs>
       </div>
     </PageTransition>

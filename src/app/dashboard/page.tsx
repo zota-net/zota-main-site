@@ -416,7 +416,7 @@ export default function DashboardOverviewPage() {
 
         {/* Quick Stats */}
         <StaggerContainer className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <StaggerItem>
+          {/* <StaggerItem>
             <StatsCard
               title="Active Connections"
               value={metrics.activeConnections}
@@ -454,7 +454,7 @@ export default function DashboardOverviewPage() {
               description="Active users"
               icon={Users}
             />
-          </StaggerItem>
+          </StaggerItem> */}
         </StaggerContainer>
       </div>
     </PageTransition>
