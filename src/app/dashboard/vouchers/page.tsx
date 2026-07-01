@@ -706,14 +706,24 @@ export default function VouchersPage() {
 
           <div className="flex flex-wrap items-center gap-2">
             {/* ── Create Dialog ─────────────────────────────────────────── */}
-            <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="bg-[#FF6A00] hover:bg-[#FF6A00]/90 text-white font-semibold shadow-lg shadow-[#FF6A00]/25 ring-2 ring-[#FF6A00]/20 focus:ring-4 focus:ring-[#FF6A00]/40 transition-all h-8 sm:h-9">
-                  <Plus className="h-4 w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Generate Vouchers</span>
-                  <span className="sm:hidden">Generate</span>
-                </Button>
-              </DialogTrigger>
+            {clientPackages.length === 0 ? (
+              <Button
+                onClick={() => toast.error('To generate vouchers, need to create one or more packages. Switch to the packages page to proceed.')}
+                className="bg-[#FF6A00]/60 text-white font-semibold shadow-lg shadow-[#FF6A00]/25 h-8 sm:h-9 cursor-not-allowed"
+              >
+                <Plus className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Generate Vouchers</span>
+                <span className="sm:hidden">Generate</span>
+              </Button>
+            ) : (
+              <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button className="bg-[#FF6A00] hover:bg-[#FF6A00]/90 text-white font-semibold shadow-lg shadow-[#FF6A00]/25 ring-2 ring-[#FF6A00]/20 focus:ring-4 focus:ring-[#FF6A00]/40 transition-all h-8 sm:h-9">
+                    <Plus className="h-4 w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Generate Vouchers</span>
+                    <span className="sm:hidden">Generate</span>
+                  </Button>
+                </DialogTrigger>
 
               <DialogContent className="w-[95vw] max-w-[600px] max-h-[90vh] overflow-y-auto p-4 sm:p-6">
                 <DialogHeader>
@@ -754,19 +764,15 @@ export default function VouchersPage() {
                       onValueChange={(v) => setNewVoucher({ ...newVoucher, packageId: v })}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder={clientPackages.length ? 'Select package' : 'No package available'} />
+                        <SelectValue placeholder="Select package" />
                       </SelectTrigger>
                       <SelectContent>
-                        {clientPackages.length > 0 ? (
-                          clientPackages.map((pkg) => (
-                            <SelectItem key={pkg.id} value={String(pkg.id)}>
-                              {pkg.title} — {Math.round(pkg.period / 86400)}d •{' '}
-                              {new Intl.NumberFormat('en-UG', { style: 'currency', currency: 'UGX', maximumFractionDigits: 0 }).format(pkg.price)}
-                            </SelectItem>
-                          ))
-                        ) : (
-                          <SelectItem value="" disabled>No packages found for your client</SelectItem>
-                        )}
+                        {clientPackages.map((pkg) => (
+                          <SelectItem key={pkg.id} value={String(pkg.id)}>
+                            {pkg.title} — {Math.round(pkg.period / 86400)}d •{' '}
+                            {new Intl.NumberFormat('en-UG', { style: 'currency', currency: 'UGX', maximumFractionDigits: 0 }).format(pkg.price)}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -926,6 +932,8 @@ export default function VouchersPage() {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
+          )
+        }
           </div>
         </div>
 
