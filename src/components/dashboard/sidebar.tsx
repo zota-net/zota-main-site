@@ -75,7 +75,7 @@ const navGroups: NavGroup[] = [
     items: [
       { title: 'Support & Help', href: '/dashboard/support', icon: Headphones },
       // { title: 'Alerts', href: '/dashboard/alerts', icon: AlertTriangle },
-      { title: 'Security', href: '/dashboard/security', icon: Shield },
+      // { title: 'Security', href: '/dashboard/security', icon: Shield },
     ],
   },
   {

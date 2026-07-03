@@ -1,0 +1,15 @@
+{
+  "name": "XETIHUB — WiFi Hotspot Billing",
+  "short_name": "XETIHUB",
+  "description": "WiFi hotspot billing and network management platform",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#111110",
+  "theme_color": "#FF6A00",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" },
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}
