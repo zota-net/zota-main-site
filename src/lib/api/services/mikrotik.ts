@@ -90,13 +90,13 @@ export const hotspotUsersService = {
 
 export const sessionsService = {
   getActive: (routerId: string) =>
-    api.get<RouterSession[]>(`/mikrotik/routers/${routerId}/sessions`),
+    api.get<ApiResponse<RouterSession[]>>(`/mikrotik/routers/${routerId}/sessions`),
 
   getByMac: (routerId: string, mac: string) =>
-    api.get<RouterSession>(`/mikrotik/routers/${routerId}/sessions/mac/${mac}`),
+    api.get<ApiResponse<RouterSession>>(`/mikrotik/routers/${routerId}/sessions/mac/${mac}`),
 
   getByUser: (routerId: string, username: string) =>
-    api.get<RouterSession>(`/mikrotik/routers/${routerId}/sessions/user/${username}`),
+    api.get<ApiResponse<RouterSession>>(`/mikrotik/routers/${routerId}/sessions/user/${username}`),
 
   kickByUsername: (routerId: string, username: string) =>
     api.delete<ApiResponse>(`/mikrotik/routers/${routerId}/sessions/user/${username}`),

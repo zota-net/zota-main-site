@@ -200,8 +200,9 @@ export default function RouterDetailPage() {
   const fetchSessions = useCallback(async () => {
     try {
       setIsLoadingSessions(true);
-      const data = await sessionsService.getActive(routerId);
-      setSessions(Array.isArray(data) ? data : []);
+      const response = await sessionsService.getActive(routerId);
+      const sessionsData = response?.data ?? (response as unknown as RouterSession[]);
+      setSessions(Array.isArray(sessionsData) ? sessionsData : []);
     } catch (err) {
       console.error('Failed to fetch sessions:', err);
       // Sessions may not be available if router is offline
