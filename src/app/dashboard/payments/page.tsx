@@ -34,6 +34,7 @@ import {
   Headphones,
   ArrowLeftRight,
   CalendarDays,
+  Loader2,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -83,6 +84,7 @@ import { toast } from 'sonner';
 import { walletsService, purchasesService, reportsService, withdrawalsService } from '@/lib/api/services/wallet';
 import { useUserStore } from '@/lib/store/user-store';
 import { ApiError } from '@/lib/api/client';
+import { normalizePhoneUG, detectProviderUG, isValidPhoneUG } from '@/lib/phone';
 import type { Transaction as ApiTransaction, VoucherSale, SalesReport, Wallet } from '@/lib/api/types';
 import { format, parseISO } from 'date-fns';
 
@@ -271,6 +273,7 @@ export default function PaymentsPage() {
     phone: '',
     provider: 'MTN' as 'MTN' | 'Airtel'
   });
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
 
   // Get current revenue data based on time range - memoized to ensure proper reactivity
   const revenueData = useMemo(() => {
@@ -1154,7 +1157,14 @@ export default function PaymentsPage() {
         </Dialog>
 
         {/* Withdraw Dialog */}
-        <Dialog open={withdrawDialogOpen} onOpenChange={setWithdrawDialogOpen}>
+        <Dialog
+          open={withdrawDialogOpen}
+          onOpenChange={(open) => {
+            // Block dismissal (overlay click / Esc) while a withdrawal is in flight.
+            if (!open && isWithdrawing) return;
+            setWithdrawDialogOpen(open);
+          }}
+        >
           <DialogContent className="sm:max-w-[450px]">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
@@ -1188,11 +1198,12 @@ export default function PaymentsPage() {
                     <Label>Withdrawal Amount</Label>
                     <div className="relative">
                       <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input 
-                        type="number" 
-                        placeholder="0.00" 
+                      <Input
+                        type="number"
+                        placeholder="0.00"
                         className="pl-9"
                         value={withdrawalForm.amount}
+                        disabled={isWithdrawing}
                         onChange={(e) => setWithdrawalForm(prev => ({ ...prev, amount: e.target.value }))}
                       />
                     </div>
@@ -1201,19 +1212,40 @@ export default function PaymentsPage() {
                     <Label>Mobile Money Number</Label>
                     <div className="relative">
                       <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input 
-                        type="tel" 
-                        placeholder="+256 XXX XXX XXX" 
+                      <Input
+                        type="tel"
+                        placeholder="+256 XXX XXX XXX"
                         className="pl-9"
                         value={withdrawalForm.phone}
-                        onChange={(e) => setWithdrawalForm(prev => ({ ...prev, phone: e.target.value }))}
+                        disabled={isWithdrawing}
+                        onChange={(e) => {
+                          const phone = e.target.value;
+                          const detected = detectProviderUG(phone);
+                          setWithdrawalForm(prev => ({
+                            ...prev,
+                            phone,
+                            provider: detected ?? prev.provider,
+                          }));
+                        }}
                       />
                     </div>
+                    {withdrawalForm.phone && (
+                      detectProviderUG(withdrawalForm.phone) ? (
+                        <p className="text-xs text-muted-foreground">
+                          Detected network: <span className="font-medium text-foreground">{detectProviderUG(withdrawalForm.phone)}</span>
+                        </p>
+                      ) : (
+                        <p className="text-xs text-amber-500">
+                          Couldn&apos;t detect network from this number — please select it manually below.
+                        </p>
+                      )
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label>Mobile Money Provider</Label>
-                    <Select 
-                      value={withdrawalForm.provider} 
+                    <Select
+                      value={withdrawalForm.provider}
+                      disabled={isWithdrawing}
                       onValueChange={(value: 'MTN' | 'Airtel') => setWithdrawalForm(prev => ({ ...prev, provider: value }))}
                     >
                       <SelectTrigger>
@@ -1243,46 +1275,74 @@ export default function PaymentsPage() {
               )}
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setWithdrawDialogOpen(false)}>
+              <Button variant="outline" disabled={isWithdrawing} onClick={() => setWithdrawDialogOpen(false)}>
                 {wallet ? 'Cancel' : 'Close'}
               </Button>
               {wallet && (
-                <Button 
+                <Button
                   className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/25 font-semibold"
+                  disabled={isWithdrawing}
                   onClick={async () => {
+                    // Guard against double-submission from rapid/duplicate clicks.
+                    if (isWithdrawing) return;
+
                     const amount = parseFloat(withdrawalForm.amount);
                     if (!amount || amount < 2000) {
                       toast.error('Minimum withdrawal amount is UGX 2,000');
                       return;
                     }
-                    
+
+                    if (amount > (wallet.balance || 0)) {
+                      toast.error('Withdrawal amount exceeds your available balance');
+                      return;
+                    }
+
                     if (!withdrawalForm.phone) {
                       toast.error('Please enter a mobile money number');
                       return;
                     }
-                    
+
+                    const normalizedPhone = normalizePhoneUG(withdrawalForm.phone);
+                    if (!isValidPhoneUG(normalizedPhone)) {
+                      toast.error('Please enter a valid Ugandan mobile money number');
+                      return;
+                    }
+
+                    const provider = detectProviderUG(normalizedPhone) ?? withdrawalForm.provider;
+
+                    setIsWithdrawing(true);
                     try {
                       await withdrawalsService.initiate({
                         walletId: wallet.id,
                         amount,
-                        phone: withdrawalForm.phone,
-                        provider: withdrawalForm.provider
+                        phone: normalizedPhone,
+                        provider
                       });
-                      
+
                       toast.success('Withdrawal request submitted successfully!');
                       setWithdrawDialogOpen(false);
                       setWithdrawalForm({ amount: '', phone: '', provider: 'MTN' });
-                      
+
                       // Refresh wallet balance
                       const updatedWallet = await walletsService.getByUser(user!.id, 'Client');
                       setWallet(updatedWallet);
                     } catch (err) {
                       console.error('Withdrawal failed:', err);
-                      toast.error(err instanceof ApiError ? err.message : 'Withdrawal failed');
+                      if (err instanceof ApiError) {
+                        toast.error(err.message || 'Withdrawal failed. Please try again.');
+                      } else {
+                        toast.error('Network error — could not reach the server. Please check your connection and try again.');
+                      }
+                    } finally {
+                      setIsWithdrawing(false);
                     }
                   }}
                 >
-                  <Banknote className="h-4 w-4 mr-2" />
+                  {isWithdrawing ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Banknote className="h-4 w-4 mr-2" />
+                  )}
                   Withdraw Funds
                 </Button>
               )}

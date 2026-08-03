@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import {
   BarChart3,
@@ -16,11 +16,18 @@ import {
   Copy,
   ExternalLink,
   Users,
+  Wallet as WalletIcon,
+  PlusCircle,
+  ShoppingCart,
+  Phone,
+  Loader2,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -28,11 +35,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { PageTransition, AnimatedCounter } from '@/components/common';
-import { accountsService, purchasesService } from '@/lib/api/services/wallet';
+import { accountsService, purchasesService, walletsService, floatService } from '@/lib/api/services/wallet';
+import { packagesService } from '@/lib/api/services/base-operations';
 import { useUserStore } from '@/lib/store/user-store';
-import type { AgentAccount, VoucherSale } from '@/lib/api/types';
+import type { AgentAccount, VoucherSale, Wallet, Package } from '@/lib/api/types';
 import { cn } from '@/lib/utils';
+import { normalizePhoneUG, detectProviderUG, isValidPhoneUG } from '@/lib/phone';
+import { ApiError } from '@/lib/api/client';
+import { toast } from 'sonner';
 
 // Activity types
 type ActivityType = 'voucher_created' | 'voucher_used' | 'commission_earned' | 'target_update' | 'status_change';
@@ -107,11 +126,36 @@ const voucherStatusConfig: Record<VoucherStatus, { label: string; color: string;
 
 export default function AgentDashboardPage() {
   const { user } = useUserStore();
+  const isAgent = (user?.role as string) === 'Agent';
   const [filterType, setFilterType] = useState<string>('all');
   const [voucherStatusFilter, setVoucherStatusFilter] = useState<string>('all');
   const [agentAccounts, setAgentAccounts] = useState<AgentAccount[]>([]);
   const [voucherSales, setVoucherSales] = useState<VoucherSale[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
+
+  // ── Agent float (buy float, sell vouchers directly) ─────────────────────
+  const [floatWallet, setFloatWallet] = useState<Wallet | null>(null);
+  const [packages, setPackages] = useState<Package[]>([]);
+  const [topupDialogOpen, setTopupDialogOpen] = useState(false);
+  const [sellDialogOpen, setSellDialogOpen] = useState(false);
+  const [isToppingUp, setIsToppingUp] = useState(false);
+  const [isSelling, setIsSelling] = useState(false);
+  const [topupForm, setTopupForm] = useState({ amount: '', phone: '' });
+  const [sellForm, setSellForm] = useState({ packageId: '', customerPhone: '' });
+
+  const refreshFloatBalance = useCallback(() => {
+    if (!user?.id || !isAgent) return;
+    walletsService.getByUser(user.id, 'Agent').then(setFloatWallet).catch(() => setFloatWallet(null));
+  }, [user?.id, isAgent]);
+
+  useEffect(() => {
+    refreshFloatBalance();
+  }, [refreshFloatBalance]);
+
+  useEffect(() => {
+    if (!user?.client_id || !isAgent) return;
+    packagesService.getByClient(user.client_id).then(setPackages).catch(() => setPackages([]));
+  }, [user?.client_id, isAgent]);
 
   useEffect(() => {
     const clientId = user?.client_id;
@@ -186,6 +230,98 @@ export default function AgentDashboardPage() {
     return 'Just now';
   };
 
+  const handleTopupFloat = async () => {
+    if (isToppingUp || !user?.id) return;
+
+    const amount = parseFloat(topupForm.amount);
+    if (!amount || amount <= 0) {
+      toast.error('Please enter a valid amount');
+      return;
+    }
+
+    const normalizedPhone = normalizePhoneUG(topupForm.phone);
+    if (!isValidPhoneUG(normalizedPhone)) {
+      toast.error('Please enter a valid Ugandan mobile money number');
+      return;
+    }
+
+    const provider = detectProviderUG(normalizedPhone);
+    if (!provider) {
+      toast.error('Could not detect a supported network (MTN or Airtel) from this number');
+      return;
+    }
+
+    setIsToppingUp(true);
+    try {
+      const result = await floatService.topup({
+        agentId: user.id,
+        amount,
+        phone: normalizedPhone,
+        provider,
+      });
+      toast.success(`Float topped up! New balance: UGX ${(result?.balance ?? 0).toLocaleString()}`);
+      setTopupDialogOpen(false);
+      setTopupForm({ amount: '', phone: '' });
+      refreshFloatBalance();
+    } catch (err) {
+      console.error('Float top-up failed:', err);
+      if (err instanceof ApiError) {
+        toast.error(err.message || 'Float top-up failed. Please try again.');
+      } else {
+        toast.error('Network error — could not reach the server. Please try again.');
+      }
+    } finally {
+      setIsToppingUp(false);
+    }
+  };
+
+  const handleSellVoucher = async () => {
+    if (isSelling || !user?.id || !user?.client_id) return;
+
+    if (!sellForm.packageId) {
+      toast.error('Please select a package to sell');
+      return;
+    }
+
+    let normalizedPhone: string | undefined;
+    let provider: string | undefined;
+    if (sellForm.customerPhone) {
+      normalizedPhone = normalizePhoneUG(sellForm.customerPhone);
+      if (!isValidPhoneUG(normalizedPhone)) {
+        toast.error('Please enter a valid customer phone number, or leave it blank');
+        return;
+      }
+      provider = detectProviderUG(normalizedPhone) ?? undefined;
+    }
+
+    setIsSelling(true);
+    try {
+      const result = await purchasesService.purchaseWithFloat({
+        agentId: user.id,
+        clientId: user.client_id,
+        packageId: sellForm.packageId,
+        customerPhone: normalizedPhone,
+        customerProvider: provider,
+      });
+      toast.success(`Voucher sold! Code: ${result?.code}`);
+      setSellDialogOpen(false);
+      setSellForm({ packageId: '', customerPhone: '' });
+      refreshFloatBalance();
+      if (user.client_id) {
+        purchasesService.getVoucherSales(user.client_id).then(setVoucherSales).catch(() => {});
+      }
+    } catch (err) {
+      console.error('Voucher sale from float failed:', err);
+      if (err instanceof ApiError) {
+        toast.error(err.message || 'Failed to sell voucher. Please try again.');
+      } else {
+        toast.error('Network error — could not reach the server. Please try again.');
+      }
+    } finally {
+      setIsSelling(false);
+    }
+  };
+
   return (
     <PageTransition>
       <div className="space-y-6">
@@ -202,6 +338,44 @@ export default function AgentDashboardPage() {
             {agentAccounts.length > 0 ? `${agentAccounts.length} agents` : 'No agents'}
           </Badge>
         </div>
+
+        {/* Agent Float Card — buy float, sell vouchers directly to customers */}
+        {isAgent && (
+          <Card className="border-primary/30">
+            <CardContent className="pt-6">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                    <WalletIcon className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">My Float Balance</p>
+                    <p className="text-2xl font-bold text-primary">
+                      UGX {(floatWallet?.balance ?? 0).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setTopupDialogOpen(true)}>
+                    <PlusCircle className="h-4 w-4 mr-2" />
+                    Buy Float
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => setSellDialogOpen(true)}
+                    disabled={!floatWallet || floatWallet.balance <= 0}
+                  >
+                    <ShoppingCart className="h-4 w-4 mr-2" />
+                    Sell Voucher
+                  </Button>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground mt-3">
+                Top up your float via mobile money, then spend it instantly to sell vouchers to walk-in customers — no mobile money needed at the point of sale.
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Agent Info Card */}
         <Card>
@@ -485,7 +659,151 @@ export default function AgentDashboardPage() {
           </CardContent>
         </Card>
 
-        
+        {/* Buy Float Dialog */}
+        <Dialog
+          open={topupDialogOpen}
+          onOpenChange={(open) => {
+            if (!open && isToppingUp) return;
+            setTopupDialogOpen(open);
+          }}
+        >
+          <DialogContent className="sm:max-w-[420px]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <WalletIcon className="h-5 w-5 text-primary" />
+                Buy Float
+              </DialogTitle>
+              <DialogDescription>
+                Top up your float balance via mobile money. You can then use it to sell vouchers to customers instantly.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-2">
+              <div className="space-y-2">
+                <Label>Amount (UGX)</Label>
+                <div className="relative">
+                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="number"
+                    placeholder="0.00"
+                    className="pl-9"
+                    value={topupForm.amount}
+                    disabled={isToppingUp}
+                    onChange={(e) => setTopupForm((prev) => ({ ...prev, amount: e.target.value }))}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Mobile Money Number</Label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="tel"
+                    placeholder="+256 XXX XXX XXX"
+                    className="pl-9"
+                    value={topupForm.phone}
+                    disabled={isToppingUp}
+                    onChange={(e) => setTopupForm((prev) => ({ ...prev, phone: e.target.value }))}
+                  />
+                </div>
+                {topupForm.phone && (
+                  detectProviderUG(topupForm.phone) ? (
+                    <p className="text-xs text-muted-foreground">
+                      Detected network: <span className="font-medium text-foreground">{detectProviderUG(topupForm.phone)}</span>
+                    </p>
+                  ) : (
+                    <p className="text-xs text-amber-500">Enter a valid MTN or Airtel number.</p>
+                  )
+                )}
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" disabled={isToppingUp} onClick={() => setTopupDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleTopupFloat} disabled={isToppingUp}>
+                {isToppingUp ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <PlusCircle className="h-4 w-4 mr-2" />
+                )}
+                Buy Float
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Sell Voucher (from Float) Dialog */}
+        <Dialog
+          open={sellDialogOpen}
+          onOpenChange={(open) => {
+            if (!open && isSelling) return;
+            setSellDialogOpen(open);
+          }}
+        >
+          <DialogContent className="sm:max-w-[420px]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <ShoppingCart className="h-5 w-5 text-primary" />
+                Sell Voucher
+              </DialogTitle>
+              <DialogDescription>
+                Instantly generate a voucher for a walk-in customer, paid for from your float balance.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-2">
+              <div className="p-3 rounded-lg bg-muted/50 border text-sm flex items-center justify-between">
+                <span className="text-muted-foreground">Available Float</span>
+                <span className="font-semibold text-primary">UGX {(floatWallet?.balance ?? 0).toLocaleString()}</span>
+              </div>
+              <div className="space-y-2">
+                <Label>Package</Label>
+                <Select
+                  value={sellForm.packageId}
+                  onValueChange={(value) => setSellForm((prev) => ({ ...prev, packageId: value }))}
+                  disabled={isSelling}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a package" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {packages.map((pkg) => (
+                      <SelectItem key={pkg.id} value={pkg.id}>
+                        {pkg.title} — UGX {pkg.price.toLocaleString()}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Customer Phone (optional)</Label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="tel"
+                    placeholder="+256 XXX XXX XXX"
+                    className="pl-9"
+                    value={sellForm.customerPhone}
+                    disabled={isSelling}
+                    onChange={(e) => setSellForm((prev) => ({ ...prev, customerPhone: e.target.value }))}
+                  />
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" disabled={isSelling} onClick={() => setSellDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleSellVoucher} disabled={isSelling || !sellForm.packageId}>
+                {isSelling ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <ShoppingCart className="h-4 w-4 mr-2" />
+                )}
+                Sell Voucher
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </PageTransition>
   );

@@ -16,6 +16,8 @@ import type {
   WalletStatement,
   TopUser,
   ApiResponse,
+  TopupFloatRequest,
+  PurchaseVoucherWithFloatRequest,
 } from '../types';
 
 // Nginx proxies /wallet/ → wallet-service:3002
@@ -47,6 +49,8 @@ type RawVoucherSale = {
   phone: string;
   provider: string;
   paymentMethod?: string;
+  agentId?: string | number;
+  agentCommission?: string | number;
   createdAt: string;
 };
 
@@ -108,6 +112,8 @@ function normalizeVoucherSale(raw: RawVoucherSale): VoucherSale {
     phone: raw.phone,
     provider: raw.provider,
     paymentMethod: (raw.paymentMethod ?? 'Voucher') as VoucherSale['paymentMethod'],
+    agentId: raw.agentId !== undefined && raw.agentId !== null ? String(raw.agentId) : undefined,
+    agentCommission: raw.agentCommission !== undefined ? normalizeAmount(raw.agentCommission) : undefined,
     createdAt: raw.createdAt,
   };
 }
@@ -225,6 +231,14 @@ export const purchasesService = {
   recordVoucherSale: (data: RecordVoucherSaleRequest) =>
     api.post<ApiResponse>('/wallet/vouchers/record-sale', data),
 
+  purchaseWithFloat: (data: PurchaseVoucherWithFloatRequest) =>
+    api
+      .post<ApiResponse<{ code: string; amount: number; agentCommission: number; floatBalance: number }>>(
+        '/wallet/purchases/agent-float',
+        data,
+      )
+      .then((response) => response.data),
+
   getVoucherSales: (clientId: string) =>
     api
       .get<ApiResponse<RawVoucherSale[]>>(`/wallet/vouchers/sales/${clientId}`)
@@ -232,6 +246,15 @@ export const purchasesService = {
         const payload = Array.isArray(response.data) ? response.data : (response as unknown as RawVoucherSale[]);
         return Array.isArray(payload) ? payload.map(normalizeVoucherSale) : [];
       }),
+};
+
+// ─── Agent Float ─────────────────────────────────────────────────────────────
+
+export const floatService = {
+  topup: (data: TopupFloatRequest) =>
+    api
+      .post<ApiResponse<{ walletId: string; balance: number }>>('/wallet/wallets/floats/topup', data)
+      .then((response) => response.data),
 };
 
 // ─── Agent Accounts ──────────────────────────────────────────────────────────

@@ -305,8 +305,27 @@ export interface VoucherSale {
   netAmount: number;
   phone: string;
   provider: string;
-  paymentMethod: 'MobileMoney' | 'Voucher' | 'Cash' | 'Internal';
+  paymentMethod: 'MobileMoney' | 'Voucher' | 'Cash' | 'Internal' | 'AgentFloat';
+  agentId?: string;
+  agentCommission?: number;
   createdAt: string;
+}
+
+// ─── Agent Float Types ───────────────────────────────────────────────────────
+
+export interface TopupFloatRequest {
+  agentId: string;
+  amount: number;
+  phone: string;
+  provider: 'MTN' | 'Airtel';
+}
+
+export interface PurchaseVoucherWithFloatRequest {
+  agentId: string;
+  clientId: string;
+  packageId: string;
+  customerPhone?: string;
+  customerProvider?: string;
 }
 
 export interface Tutorial {
