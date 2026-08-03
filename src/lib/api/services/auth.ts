@@ -9,6 +9,7 @@ import type {
   ResetPasswordRequest,
   UpdateProfileRequest,
   AddAgentRequest,
+  AgentUser,
   ApiResponse,
 } from '../types';
 
@@ -48,6 +49,11 @@ export const authService = {
 
   addAgent: (data: AddAgentRequest) =>
     api.post<ApiResponse>('/auth/add-agent', data),
+
+  getAgentsByClient: (clientId: string) =>
+    api
+      .get<ApiResponseWithData<AgentUser[]>>(`/auth/agents/client/${clientId}`)
+      .then((response) => response.data ?? []),
 
   updateProfile: (data: UpdateProfileRequest) =>
     api.put<ApiResponse>('/auth/update-profile', data),

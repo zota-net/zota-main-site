@@ -64,6 +64,16 @@ export interface AddAgentRequest {
   email: string;
   password: string;
   client_id: string;
+  phone?: string;
+}
+
+export interface AgentUser {
+  id: string;
+  email: string;
+  fullname: string;
+  phone?: string;
+  client_id: string;
+  createdAt: string;
 }
 
 // ─── Client Types ────────────────────────────────────────────────────────────

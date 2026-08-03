@@ -1,12 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { AppSidebar, AppHeader } from '@/components/dashboard';
 import { GlobalSearch } from '@/components/global-search';
 import { useUserStore } from '@/lib/store/user-store';
 import { useAppStore } from '@/lib/store/app-store';
 import { LoadingOverlay } from '@/components/common';
+import { AGENT_HOME_PATH, isAgentAllowedPath } from '@/lib/agent-access';
 
 export default function DashboardLayout({
   children,
@@ -14,10 +15,12 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const { isAuthenticated, checkSession } = useUserStore();
+  const pathname = usePathname();
+  const { isAuthenticated, checkSession, user } = useUserStore();
   const { settings, isLoading } = useAppStore();
   const [isMobile, setIsMobile] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const isAgent = (user?.role as string) === 'Agent';
 
   useEffect(() => {
     setMounted(true);
@@ -35,8 +38,21 @@ export default function DashboardLayout({
     }
   }, [isAuthenticated, checkSession, router]);
 
+  useEffect(() => {
+    // Agents get a restricted portal — bounce them out of client-only pages
+    // (business overview/earnings, agent management, settings, etc.), even
+    // if they navigate there directly by URL.
+    if (isAgent && !isAgentAllowedPath(pathname)) {
+      router.replace(AGENT_HOME_PATH);
+    }
+  }, [isAgent, pathname, router]);
+
   if (!isAuthenticated) {
     return <LoadingOverlay show={true} text="Verifying session..." />;
+  }
+
+  if (isAgent && !isAgentAllowedPath(pathname)) {
+    return <LoadingOverlay show={true} text="Redirecting to your portal..." />;
   }
 
   const sidebarWidth = settings.sidebarCollapsed ? 72 : 280;

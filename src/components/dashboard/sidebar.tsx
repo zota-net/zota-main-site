@@ -34,6 +34,8 @@ import { Logo } from '@/components/common';
 import { useAppStore } from '@/lib/store/app-store';
 import { Badge } from '@/components/ui/badge';
 import { useNetworkStore } from '@/lib/store/network-store';
+import { useUserStore } from '@/lib/store/user-store';
+import { AGENT_HOME_PATH } from '@/lib/agent-access';
 
 interface NavItem {
   title: string;
@@ -87,6 +89,23 @@ const navGroups: NavGroup[] = [
   },
 ];
 
+// Agents get a restricted portal: their own float/voucher activity, and
+// support — not the client's business-wide management or settings pages.
+const agentNavGroups: NavGroup[] = [
+  {
+    title: 'Dashboard',
+    items: [
+      { title: 'My Activities', href: AGENT_HOME_PATH, icon: Activity },
+    ],
+  },
+  {
+    title: 'Operations',
+    items: [
+      { title: 'Support & Help', href: '/dashboard/support', icon: Headphones },
+    ],
+  },
+];
+
 interface SidebarProps {
   className?: string;
 }
@@ -95,9 +114,12 @@ export function AppSidebar({ className }: SidebarProps) {
   const pathname = usePathname();
   const { settings, setSetting, setMobileMenuOpen, mobileMenuOpen } = useAppStore();
   const { alerts } = useNetworkStore();
+  const user = useUserStore((s) => s.user);
+  const isAgent = (user?.role as string) === 'Agent';
+  const groups = isAgent ? agentNavGroups : navGroups;
   const collapsed = settings.sidebarCollapsed;
   const [isMobile, setIsMobile] = useState(false);
-  
+
   // Count unacknowledged alerts
   const unacknowledgedAlerts = alerts.filter((a) => !a.acknowledged).length;
 
@@ -193,7 +215,7 @@ export function AppSidebar({ className }: SidebarProps) {
           {/* Navigation */}
           <ScrollArea className="flex-1 h-[calc(100vh-280px)] px-3 py-4 scrollbar-thin scrollbar-thumb-rounded-full scrollbar-thumb-border scrollbar-track-transparent hover:scrollbar-thumb-border/80">
             <nav className="space-y-6 pr-4">
-              {navGroups.map((group) => (
+              {groups.map((group) => (
                 <div key={group.title} className="space-y-1">
                   {!collapsed && (
                     <motion.h4

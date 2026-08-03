@@ -45,6 +45,7 @@ import {
 } from '@/components/ui/dialog';
 import { PageTransition, AnimatedCounter } from '@/components/common';
 import { accountsService, purchasesService, walletsService, floatService } from '@/lib/api/services/wallet';
+import { authService } from '@/lib/api/services/auth';
 import { packagesService } from '@/lib/api/services/base-operations';
 import { useUserStore } from '@/lib/store/user-store';
 import type { AgentAccount, VoucherSale, Wallet, Package } from '@/lib/api/types';
@@ -162,11 +163,27 @@ export default function AgentDashboardPage() {
     if (!clientId) return;
 
     Promise.all([
-      accountsService.getAgentsByClient(clientId),
+      authService.getAgentsByClient(clientId),
+      // Commission accounts are best-effort: an agent still shows up (with
+      // 0 balance) even if this secondary record wasn't created.
+      accountsService.getAgentsByClient(clientId).catch(() => []),
       purchasesService.getVoucherSales(clientId),
     ])
-      .then(([agents, sales]) => {
-        setAgentAccounts(agents ?? []);
+      .then(([authAgents, accounts, sales]) => {
+        const accountByAgentId = new Map(accounts.map((a) => [String(a.agentId), a]));
+        const mergedAgents: AgentAccount[] = authAgents.map((u) => {
+          const account = accountByAgentId.get(String(u.id));
+          return {
+            id: account?.id ?? String(u.id),
+            agentId: String(u.id),
+            agentEmail: u.email,
+            agentFullname: u.fullname,
+            clientId,
+            balance: account?.balance ?? 0,
+            createdAt: u.createdAt,
+          };
+        });
+        setAgentAccounts(mergedAgents);
         setVoucherSales(sales ?? []);
 
         const mappedActivities: Activity[] = (sales ?? []).slice(0, 12).map((sale) => ({

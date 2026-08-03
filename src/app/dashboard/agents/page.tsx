@@ -78,7 +78,7 @@ import { authService } from '@/lib/api/services/auth';
 import { accountsService } from '@/lib/api/services/wallet';
 import { useUserStore } from '@/lib/store/user-store';
 import { ApiError } from '@/lib/api/client';
-import type { AgentAccount } from '@/lib/api/types';
+import type { AgentUser, AgentAccount } from '@/lib/api/types';
 
 // Agent types
 interface Agent {
@@ -99,17 +99,20 @@ interface Agent {
   monthlyAchieved: number;
 }
 
-// Map API agent account to local Agent interface
-const mapApiAgent = (a: AgentAccount): Agent => ({
-  id: a.id,
-  name: a.agentFullname,
-  email: a.agentEmail,
+// Auth-service is the source of truth for "who is an agent" (every Agent-role
+// user for this client), merged with wallet-service's commission Account —
+// which may not exist yet for some agents, so it's treated as best-effort.
+const mapApiAgent = (u: AgentUser, account?: AgentAccount): Agent => ({
+  id: u.id,
+  name: u.fullname,
+  email: u.email,
+  phone: u.phone,
   tier: 'bronze',
   status: 'active',
   commissionRate: 8,
   totalVouchersSold: 0,
-  totalEarnings: a.balance || 0,
-  createdAt: new Date(a.createdAt),
+  totalEarnings: account?.balance || 0,
+  createdAt: new Date(u.createdAt),
   monthlyTarget: 1500,
   monthlyAchieved: 0,
 });
@@ -137,8 +140,15 @@ export default function AgentsPage() {
     if (!user?.client_id) return;
     try {
       setIsLoadingAgents(true);
-      const data = await accountsService.getAgentsByClient(user.client_id);
-      setAgents(data.map(mapApiAgent));
+      const [authAgents, accounts] = await Promise.all([
+        authService.getAgentsByClient(user.client_id),
+        // Commission accounts are best-effort: an agent still shows up (with
+        // 0 earnings) even if this secondary record wasn't created.
+        accountsService.getAgentsByClient(user.client_id).catch(() => []),
+      ]);
+
+      const accountByAgentId = new Map(accounts.map((a) => [String(a.agentId), a]));
+      setAgents(authAgents.map((u) => mapApiAgent(u, accountByAgentId.get(String(u.id)))));
     } catch (err) {
       console.error('Failed to fetch agents:', err);
       toast.error(err instanceof ApiError ? err.message : 'Failed to load agents');
@@ -219,6 +229,7 @@ export default function AgentsPage() {
         email: formData.email,
         password: 'TempPassword123!', // Agent will reset on first login
         client_id: user.client_id,
+        phone: formData.phone || undefined,
       });
       setCreateDialogOpen(false);
       resetForm();

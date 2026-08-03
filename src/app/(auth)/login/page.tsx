@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent } from '@/components/ui/card';
 import { useUserStore } from '@/lib/store/user-store';
+import { AGENT_HOME_PATH } from '@/lib/agent-access';
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -42,10 +43,15 @@ export default function LoginPage() {
     defaultValues: { otp: '' },
   });
 
+  const redirectAfterLogin = () => {
+    const role = useUserStore.getState().user?.role as string | undefined;
+    router.push(role === 'Agent' ? AGENT_HOME_PATH : '/dashboard');
+  };
+
   const onSubmit = async (data: LoginFormData) => {
     const result = await login(data.email, data.password);
     if (result === true) {
-      router.push('/dashboard');
+      redirectAfterLogin();
     }
     // if 'otp_required', the store sets otpPending=true and the OTP form renders
   };
@@ -54,7 +60,7 @@ export default function LoginPage() {
     const email = otpEmail || form.getValues('email');
     const success = await verifyLoginOtp(email, data.otp);
     if (success) {
-      router.push('/dashboard');
+      redirectAfterLogin();
     }
   };
 
